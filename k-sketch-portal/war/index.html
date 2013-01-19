@@ -33,6 +33,28 @@
 	        top:70px;
 	      }
 	  }
+	  
+	  textarea {
+		  width: 100%;
+		  padding: 1px;
+		  border: 3px solid #999;
+		  display: none;
+	  }
+					
+	  #visibleTextData { 
+		  -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+		  -moz-box-sizing: border-box;    /* Firefox, other Gecko */
+		  box-sizing: border-box;         /* Opera/IE 8+ */
+	  }
+	  
+	  #swfcontainer {
+	  	  width: 99%;	  	  
+	  	  margin-top: 5px;
+	  	  border: 2px solid #999;
+	  	  -webkit-border-radius: 5px; /* Safari/Chrome, other WebKit */
+		  -moz-border-radius: 5px;    /* Firefox, other Gecko */
+		  border-radius: 5px;	  	  /* Opera/IE 8+ */ 
+	  }
     </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -47,8 +69,41 @@
       <link rel="apple-touch-icon-precomposed" sizes="72x72" href="ico/apple-touch-icon-72-precomposed.png">
                     <link rel="apple-touch-icon-precomposed" href="ico/apple-touch-icon-57-precomposed.png">
                                    <link rel="shortcut icon" href="ico/favicon.png">
+                                   
+    <!-- Code for K-Sketch App Plugin -->
+    <!-- Enable Browser History by replacing useBrowserHistory tokens with two hyphens -->
+    <!-- BEGIN Browser History required section -->
+    <link rel="stylesheet" type="text/css" href="history/history.css" />
+    <script type="text/javascript" src="history/history.js"></script>
+    <!-- END Browser History required section -->  
+    <script type="text/javascript" src="KSketchCallBacks.js"></script>
+    <script type="text/javascript" src="swfobject.js"></script>
+    <script type="text/javascript">
+        // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
+        var swfVersionStr = "10.2.0";
+        // To use express install, set to playerProductInstall.swf, otherwise the empty string. 
+        var xiSwfUrlStr = "playerProductInstall.swf";
+        var flashvars = {};
+        var params = {};
+        params.quality = "high";
+        params.bgcolor = "#ffffff";
+        params.allowScriptAccess = "always";
+        params.allowfullscreen = "true";
+        var attributes = {};
+        attributes.id = "KSketch2_Web";
+        attributes.name = "KSketch2_Web";
+        attributes.align = "middle";
+        swfobject.embedSWF(
+            "KSketch2_Web.swf", "flashContent", 
+            "100%", "580", 
+            swfVersionStr, xiSwfUrlStr, 
+            flashvars, params, attributes);
+        // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
+        swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
+    </script>
   </head>
 
+  <!-- Angular.JS Code Goes Here. -->
   <body ng-controller="FirstController">
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
@@ -83,70 +138,138 @@
           <div class="well sidebar-nav sidebar-nav-fixed">
             <ul class="nav nav-list">
               <!--This changes depending on current logged-in status.-->
-              <li class="nav-header">Navigation</li>
-              <li class="active"><a href="#">Home</a></li>
-              <li><a href="#">Sketchbook</a></li>
-              <li><a href="#">Create a Sketch</a></li>
-              <li><a href="#">View a Sketch</a></li>
+              
+              <li class="active"><a href="#Home" data-toggle="tab">Home</a></li>
+              <li><a href="#Sketchbook" data-toggle="tab">My Sketchbook</a></li>
+              <li><a href="#CreateSketch" data-toggle="tab">Create a Sketch</a></li>
+              <li><a href="#ViewSketch" data-toggle="tab">View a Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
         <div class="span9">
-          <div class="hero-unit">
-            <h1>Welcome to K-Sketch! </h1>
-            <br/>
-            <div class="row-fluid">
-            	<div class="span4">
-            		<iframe width="100%" src="http://www.youtube.com/embed/UYLR5Nf4mWs" frameborder="0" allowfullscreen></iframe>
-            	</div>
-            	<div class="span8">
-            		<p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-            		<p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p>
-            	</div>
-            </div>            
-          </div>
-          <div class="row-fluid">
-            <div class="span4">
-              <h2>About K-Sketch</h2>
-              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-              <p><a class="btn" href="#">Learn more &raquo;</a></p>
-            </div><!--/span-->
-            <div class="span4">
-              <h2>K-Sketch Developers</h2>
-              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-              <p><a class="btn" href="#">Learn more &raquo;</a></p>
-            </div><!--/span-->
-            <div class="span4">
-              <h2>The Kinnovators!</h2>
-              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-              <p><a class="btn" href="#">Learn more &raquo;</a></p>
-            </div><!--/span-->
-          </div><!--/row-->
-          <h2>Most Popular Sketches</h2>
-          <div class="row-fluid">
-            <div class="span4">
-              <h2>Lorem ipsum dolor</h2>
-              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-              <p><a class="btn" href="#">View Me! &raquo;</a></p>
-            </div><!--/span-->
-            <div class="span4">
-              <h2>Sit amet, consectetur</h2>
-              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-              <p><a class="btn" href="#">View Me! &raquo;</a></p>
-            </div><!--/span-->
-            <div class="span4">
-              <h2>Adipiscing elit.</h2>
-              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
-              <p><a class="btn" href="#">View Me! &raquo;</a></p>
-            </div><!--/span-->
-          </div><!--/row-->
+        	<div class="tab-content">
+        		<!-- Home Pane -->
+        		<div class="tab-pane active" id="Home">
+		          <div class="hero-unit">
+		            <h1>Welcome to K-Sketch! </h1>
+		            <br/>
+		            <div class="row-fluid">
+		            	<div class="span4">
+		            		<iframe width="100%" src="http://www.youtube.com/embed/UYLR5Nf4mWs" frameborder="0" allowfullscreen></iframe>
+		            	</div>
+		            	<div class="span8">
+		            		<p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+		            		<p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+		            	</div>
+		            </div>            
+		          </div>
+		          <div class="row-fluid">
+		            <div class="span4">
+		              <h2>About K-Sketch</h2>
+		              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+		              <p><a class="btn" href="#">Learn more &raquo;</a></p>
+		            </div><!--/span-->
+		            <div class="span4">
+		              <h2>K-Sketch Developers</h2>
+		              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+		              <p><a class="btn" href="#">Learn more &raquo;</a></p>
+		            </div><!--/span-->
+		            <div class="span4">
+		              <h2>The Kinnovators!</h2>
+		              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+		              <p><a class="btn" href="#">Learn more &raquo;</a></p>
+		            </div><!--/span-->
+		          </div><!--/row-->
+		          <h2>Most Popular Sketches</h2>
+		          <div class="row-fluid">
+	            <div class="span4">
+	              <h2>Lorem ipsum dolor</h2>
+	              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+	              <p><a class="btn" href="#">View Me! &raquo;</a></p>
+	            </div><!--/span-->
+	            <div class="span4">
+	              <h2>Sit amet, consectetur</h2>
+	              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+	              <p><a class="btn" href="#">View Me! &raquo;</a></p>
+	            </div><!--/span-->
+	            <div class="span4">
+	              <h2>Adipiscing elit.</h2>
+	              <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
+	              <p><a class="btn" href="#">View Me! &raquo;</a></p>
+	            </div><!--/span-->
+	          </div><!--/row-->
+        		</div>
+        		<!-- Sketchbook Pane -->
+        		<div class="tab-pane" id="Sketchbook">
+        			<!-- Stuff goes here. -->
+        			<!-- We have to think of a better name for this! -->
+        		</div>
+        		<!-- Create Sketch Pane -->
+        		<div class="tab-pane" id="CreateSketch">
+					<!-- Stuff goes here. -->
+					<div class="row-fluid">
+						<div>
+				        	<button class="btn btn-inverse btn-small" onclick="initSave()">Save</button>
+				            <button class="btn btn-inverse btn-small" onclick="initLoad()">Load</button>				        	
+				        </div>
+				        <div id="swfcontainer">
+		        			<div id="flashContent">
+					            <p>
+					                To view this page ensure that Adobe Flash Player version 
+					                10.2.0 or greater is installed. 
+					            </p>
+					            <script type="text/javascript"> 
+					                var pageHost = ((document.location.protocol == "https:") ? "https://" : "http://"); 
+					                document.write("<a href='http://www.adobe.com/go/getflashplayer'><img src='" 
+					                                + pageHost + "www.adobe.com/images/shared/download_buttons/get_flash_player.gif' alt='Get Adobe Flash player' /></a>" ); 
+					            </script> 
+					        </div>
+					        <noscript>
+					            <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="580" id="KSketch2_Web">
+					                <param name="movie" value="KSketch2_Web.swf" />
+					                <param name="quality" value="high" />
+					                <param name="bgcolor" value="#ffffff" />
+					                <param name="allowScriptAccess" value="always" />
+					                <param name="allowFullScreen" value="true" />
+					                <!--[if !IE]>-->
+					                <object type="application/x-shockwave-flash" width="100%" height="580" data="KSketch2_Web.swf">
+					                    <param name="quality" value="high" />
+					                    <param name="bgcolor" value="#ffffff" />
+					                    <param name="allowScriptAccess" value="always" />
+					                    <param name="allowFullScreen" value="true" />
+					                <!--<![endif]-->
+					                <!--[if gte IE 6]>-->
+					                    <p> 
+					                        Either scripts and active content are not permitted to run or Adobe Flash Player version
+					                        10.2.0 or greater is not installed.
+					                    </p>
+					                <!--<![endif]-->
+					                    <a href="http://www.adobe.com/go/getflashplayer">
+					                        <img src="http://www.adobe.com/images/shared/download_buttons/get_flash_player.gif" alt="Get Adobe Flash Player" />
+					                    </a>
+					                <!--[if !IE]>-->
+					                </object>
+					                <!--<![endif]-->
+					            </object>
+					        </noscript>
+					    </div>       			       
+						<div>
+							<textarea id="visibleTextData" rows="5" cols="9"></textarea>        
+						</div>
+					</div>
+        		</div>
+        		<!-- View Sketch Pane -->
+        		<div class="tab-pane" id="ViewSketch">
+        			<!-- Stuff goes here. -->
+        		</div>
+        	</div>
         </div><!--/span-->
       </div><!--/row-->
 
       <hr>
 
       <footer>
-        <p>&copy; Company 2012</p>
+        <p>&copy; Richard C. Davis 2013</p>
       </footer>
 
     </div><!--/.fluid-container-->
