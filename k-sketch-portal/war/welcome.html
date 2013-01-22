@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html ng-app="myApp" lang="en">
   <head>
     <meta charset="utf-8">
@@ -117,12 +116,12 @@
           <div class="nav-collapse collapse">
             <p class="navbar-text pull-left">
               <!--Username and profile link goes here.-->
-              Welcome to K-Sketch New User</a>! <a href="https://accounts.google.com/o/oauth2/auth?
+              Hello, {{name}}! <a href="https://accounts.google.com/o/oauth2/auth?
 scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&
 state=%2Fprofile&
-redirect_uri=https%3A%2F%2Fpanguiniapp.appspot.com%2Fwelcome.html&
+redirect_uri=https%3A%2F%2Fpanguiniapp.appspot.com%2Foauthcallback&
 response_type=token&
-client_id=147521914362-lt2k1mv2rqghmprm3lnbqj46akbqqune.apps.googleusercontent.com"><button type="button">Login</button></a>
+client_id=147521914362.apps.googleusercontent.com"><button type="button">Logout</button></a>
             </p>
             <ul class="nav pull-right">
               <li class="active">
