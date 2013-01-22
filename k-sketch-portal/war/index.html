@@ -2,61 +2,17 @@
 <html ng-app="myApp" lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Bootstrap, from Twitter</title>
+    <title>K-Sketch: The Kinetic Sketch Pad!</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
 
     <!-- Le styles -->
     <link href="css/bootstrap.css" rel="stylesheet">
-    <style type="text/css">
-      body {
-        padding-top: 60px;
-        padding-bottom: 40px;
-      }
-      .sidebar-nav {
-        padding: 9px 0;
-      }      
-      .sidebar-nav-fixed {
-	      position:fixed;
-	      top:60px;
-	      width:21.97%;
-	  }	
-	  @media (max-width: 767px) {
-	      .sidebar-nav-fixed {
-	        position:static;
-	        width:auto;
-	      }
-	  }	
-	  @media (max-width: 979px) {
-	      .sidebar-nav-fixed {
-	        top:70px;
-	      }
-	  }
-	  
-	  textarea {
-		  width: 100%;
-		  padding: 1px;
-		  border: 3px solid #999;
-		  display: none;
-	  }
-					
-	  #visibleTextData { 
-		  -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
-		  -moz-box-sizing: border-box;    /* Firefox, other Gecko */
-		  box-sizing: border-box;         /* Opera/IE 8+ */
-	  }
-	  
-	  #swfcontainer {
-	  	  width: 99%;	  	  
-	  	  margin-top: 5px;
-	  	  border: 2px solid #999;
-	  	  -webkit-border-radius: 5px; /* Safari/Chrome, other WebKit */
-		  -moz-border-radius: 5px;    /* Firefox, other Gecko */
-		  border-radius: 5px;	  	  /* Opera/IE 8+ */ 
-	  }
-    </style>
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    
+    <!-- Additional styles for individual components -->
+    <link href="css/additional.css" rel="stylesheet">
 
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -72,12 +28,73 @@
                                    
     <!-- Code for K-Sketch App Plugin -->
     <!-- Enable Browser History by replacing useBrowserHistory tokens with two hyphens -->
+    
     <!-- BEGIN Browser History required section -->
     <link rel="stylesheet" type="text/css" href="history/history.css" />
     <script type="text/javascript" src="history/history.js"></script>
     <!-- END Browser History required section -->  
-    <script type="text/javascript" src="KSketchCallBacks.js"></script>
+    
     <script type="text/javascript" src="swfobject.js"></script>
+    
+    <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
+    <!-- script type="text/javascript" src="KSketchCallBacks.js"></script -->
+    <script type="text/javascript">
+	//Function to trigger a save procedure in the flash object
+	//The flash object will call saveKSketchFile in return to pass the data from itself to javascript
+    function initSave() {
+		var swfObject = document.getElementById('KSketch2_Web');
+		if(typeof swfObject !='undefined'){
+			swfObject.save();//change load
+			
+		}
+		else
+		{
+			alert('the swf object does not exist! Unable to save');
+		}	
+    } 
+    
+	//Function to trigger a save procedure in the flash object
+	//The flash object will call saveKSketchFile in return to pass the data from itself to javascript	
+	function saveKSketchFile(fileData) {
+     	//var textAreaObject = document.getElementById('visibleTextData');
+		//textAreaObject.value = fileData;	
+		
+		e = document.getElementById('SaveSketch');
+		scope = angular.element(e).scope();
+		scope.$apply(function() {
+			scope.setData(fileData);
+		});	
+	}
+
+	//Don't care about this, it just allows this example to load a file from
+	//The text area
+	function initLoad() {
+		var textAreaObject = document.getElementById('visibleTextData');
+		if(typeof textAreaObject !='undefined'){
+			loadKSketchFile(textAreaObject.value);
+			//loadKSketchFile(textAreaObject.innerText);
+		}
+		else
+		{
+			alert('no text area!');
+		}	
+	}
+	
+	//Function receives an xml string from anywhere
+	//and asks the flash object to load it	
+	function loadKSketchFile(fileData) {
+		var swfObject = document.getElementById('KSketch2_Web');
+		if(typeof swfObject !='undefined'){
+			swfObject.load(fileData);//change load
+		}
+		else
+		{
+			alert('the swf object does not exist! Unable to save');
+		}	
+	}
+    </script>
+    
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
     <script type="text/javascript">
         // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
         var swfVersionStr = "10.2.0";
@@ -102,9 +119,10 @@
         swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
     </script>
   </head>
-
-  <!-- Angular.JS Code Goes Here. -->
-  <body ng-controller="FirstController">
+  
+  <body id="ksketchapp" ng-controller="FirstController" scrolling="no">
+  
+  	<!-- Top Bar -->
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
@@ -132,8 +150,11 @@
       </div>
     </div>
 
+	<!-- Main Body -->
     <div class="container-fluid">
       <div class="row-fluid">
+      	
+      	<!-- Navigation Sidebar (Access separate panes). -->
         <div class="span3">
           <div class="well sidebar-nav sidebar-nav-fixed">
             <ul class="nav nav-list">
@@ -146,18 +167,23 @@
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
+        
+        <!-- Main Body -->
         <div class="span9">
-        	<div class="tab-content">
+        
+        	<!-- Panes -->
+        	<div class="tab-content" id="main">
+        		
         		<!-- Home Pane -->
         		<div class="tab-pane active" id="Home">
 		          <div class="hero-unit">
 		            <h1>Welcome to K-Sketch! </h1>
 		            <br/>
 		            <div class="row-fluid">
-		            	<div class="span4">
-		            		<iframe width="100%" src="http://www.youtube.com/embed/UYLR5Nf4mWs" frameborder="0" allowfullscreen></iframe>
+		            	<div class="span6">
+		            		<iframe width="100%" height="250" src="http://www.youtube.com/embed/UYLR5Nf4mWs" frameborder="0" allowfullscreen></iframe>
 		            	</div>
-		            	<div class="span8">
+		            	<div class="span6">
 		            		<p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p>
 		            		<p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p>
 		            	</div>
@@ -199,17 +225,21 @@
 	            </div><!--/span-->
 	          </div><!--/row-->
         		</div>
+        		
         		<!-- Sketchbook Pane -->
         		<div class="tab-pane" id="Sketchbook">
         			<!-- Stuff goes here. -->
         			<!-- We have to think of a better name for this! -->
+        			<div class="row-fluid">
+        			</div>
         		</div>
+        		
         		<!-- Create Sketch Pane -->
         		<div class="tab-pane" id="CreateSketch">
 					<!-- Stuff goes here. -->
 					<div class="row-fluid">
 						<div>
-				        	<button class="btn btn-inverse btn-small" onclick="initSave()">Save</button>
+				        	<button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveSketch">Save</button>
 				            <button class="btn btn-inverse btn-small" onclick="initLoad()">Load</button>				        	
 				        </div>
 				        <div id="swfcontainer">
@@ -252,15 +282,53 @@
 					                <!--<![endif]-->
 					            </object>
 					        </noscript>
+					    </div>					    					   
+					    <div class="modal hide fade in" id="SaveSketch" style="display:none">
+					    	<div class="modal-header">
+								<a class="close" data-dismiss="modal">x</a>
+								<h3 id="myUploadItems">Save Sketch</h3>
+							</div>
+							<div class="modal-body">
+								<div class="control-group">
+									<label class="control-label" for="sketchName">Sketch Name</label>
+									<div class="controls">
+								  		<input type="text" ng-model="fileName" id="sketchName"/>
+									</div>
+									<div class="controls">
+									  <input type="text" id="visibleTextData" ng-model="fileData">
+									</div>
+								</div>
+								<div class="control-group">
+									<div class="controls">
+									  <input type="submit" ng-click="save()" value="Submit" data-dismiss="modal"/>
+									</div>
+								</div>	
+							</div>							
 					    </div>       			       
-						<div>
-							<textarea id="visibleTextData" rows="5" cols="9"></textarea>        
-						</div>
 					</div>
         		</div>
+        		
         		<!-- View Sketch Pane -->
         		<div class="tab-pane" id="ViewSketch">
         			<!-- Stuff goes here. -->
+        			<div class="row-fluid">       				
+        				<div class="span6">        					
+        					<hr/>
+        					<ul>
+	        					<li ng-repeat="fName in filenames">
+	        						{{fName}}
+	        					</li>
+	        				</ul>
+        				</div>
+        				<div class="span6">        					
+        					<hr/>
+	        				<ul>
+	        					<li ng-repeat="fData in files">
+	        						{{fData}}
+	        					</li>
+	        				</ul>
+	        			</div>	
+        			</div>
         		</div>
         	</div>
         </div><!--/span-->
