@@ -39,6 +39,8 @@
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
     <!-- script type="text/javascript" src="KSketchCallBacks.js"></script -->
     <script type="text/javascript">
+
+
 	//Function to trigger a save procedure in the flash object
 	//The flash object will call saveKSketchFile in return to pass the data from itself to javascript
     function initSave() {
@@ -71,13 +73,27 @@
 	function initLoad() {
 		var textAreaObject = document.getElementById('visibleTextData');
 		if(typeof textAreaObject !='undefined'){
+			//alert(fileData);
+			//loadKSketchFile(fileData);
 			loadKSketchFile(textAreaObject.value);
-			//loadKSketchFile(textAreaObject.innerText);
 		}
 		else
 		{
 			alert('no text area!');
 		}	
+	}
+
+	function fileLoad(fileData) {
+		var cs = document.getElementById('cs');
+		var vs = document.getElementById('vs');
+		vs.className = vs.className.replace
+			      ( /(?:^|\s)active(?!\S)/g , '' )
+		cs.className += "active";
+		
+		var textAreaObject = document.getElementById('visibleTextData');
+		textAreaObject.value = fileData; 
+		
+		loadKSketchFile(fileData);
 	}
 	
 	//Function receives an xml string from anywhere
@@ -162,8 +178,8 @@
               
               <li class="active"><a href="#Home" data-toggle="tab">Home</a></li>
               <li><a href="#Sketchbook" data-toggle="tab">My Sketchbook</a></li>
-              <li><a href="#CreateSketch" data-toggle="tab">Create a Sketch</a></li>
-              <li><a href="#ViewSketch" data-toggle="tab">View a Sketch</a></li>
+              <li id="cs"><a href="#CreateSketch" data-toggle="tab" onClick="loadKSketchFile('')">Create a Sketch</a></li>
+              <li id="vs"><a href="#ViewSketch" data-toggle="tab">View a Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -311,24 +327,16 @@
         		<!-- View Sketch Pane -->
         		<div class="tab-pane" id="ViewSketch">
         			<!-- Stuff goes here. -->
-        			<div class="row-fluid">       				
-        				<div class="span6">        					
-        					<hr/>
-        					<ul>
-	        					<li ng-repeat="fName in filenames">
-	        						{{fName}}
-	        					</li>
-	        				</ul>
-        				</div>
-        				<div class="span6">        					
-        					<hr/>
-	        				<ul>
-	        					<li ng-repeat="fData in files">
-	        						{{fData}}
-	        					</li>
-	        				</ul>
-	        			</div>	
-        			</div>
+        			<span >{{fileData}}</span>       			
+        				<ul>    					
+        					<li ng-repeat="files in filearray">
+        						<div class="row-fluid">
+        							<div class="span2">{{files.id}}</div>
+	        						<div class="span5"><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data}}')">{{files.name}}</a></div>
+	        						<div class="span5"><input type="text" value="{{files.data}}"/></div>
+	        					</div>	
+        					</li>
+        				</ul>			
         		</div>
         	</div>
         </div><!--/span-->

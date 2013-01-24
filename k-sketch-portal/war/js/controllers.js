@@ -10,17 +10,18 @@ function FirstController($scope) {
    	$scope.fileName = "";
 	$scope.files = [];
 	$scope.filenames = [];
+	
+	$scope.filearray = [];
 	   
 	$scope.save = function() {
 	   	
-		
-		$scope.filenames.push($scope.fileName);
-		$scope.files.push($scope.fileData);
-	   		
+		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
+		$scope.filearray.push({id: $scope.filearray.length + 1, name: $scope.fileName, data: $scope.fileData})
+	   	$scope.fileData = "";
+
 	}
    
 	$scope.setData = function(f) {
 		$scope.fileData = f;
 	}
-
 }
