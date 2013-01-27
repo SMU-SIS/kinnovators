@@ -139,7 +139,7 @@
   <body id="ksketchapp" ng-controller="FirstController" scrolling="no">
   
   	<!-- Top Bar -->
-    <div class="navbar navbar-inverse navbar-fixed-top">
+    <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
           <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
@@ -178,7 +178,7 @@
               
               <li class="active"><a href="#Home" data-toggle="tab">Home</a></li>
               <li><a href="#Sketchbook" data-toggle="tab">My Sketchbook</a></li>
-              <li id="cs"><a href="#CreateSketch" data-toggle="tab" onClick="loadKSketchFile('')">Create a Sketch</a></li>
+              <li id="cs"><a href="#CreateSketch" data-toggle="tab">Create a Sketch</a></li>
               <li id="vs"><a href="#ViewSketch" data-toggle="tab">View a Sketch</a></li>
             </ul>
           </div><!--/.well -->
@@ -193,7 +193,7 @@
         		<!-- Home Pane -->
         		<div class="tab-pane active" id="Home">
 		          <div class="hero-unit">
-		            <h1>Welcome to K-Sketch! </h1>
+		            <h1 id="title1">Welcome to K-Sketch! </h1>
 		            <br/>
 		            <div class="row-fluid">
 		            	<div class="span6">

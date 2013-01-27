@@ -12,4 +12,29 @@
   <servlet-name>SystemServiceServlet</servlet-name>
   <url-pattern>/_ah/spi/*</url-pattern>
  </servlet-mapping>
+ 
+<servlet>
+  <servlet-name>ListSketch</servlet-name>
+  <servlet-class>com.JSON.ListSketch</servlet-class>
+</servlet>
+<servlet-mapping>
+  <servlet-name>ListSketch</servlet-name>
+  <url-pattern>/list_sketch</url-pattern>
+</servlet-mapping>
+<servlet>
+  <servlet-name>LoadSketch</servlet-name>
+  <servlet-class>com.JSON.LoadSketch</servlet-class>
+</servlet>
+<servlet-mapping>
+  <servlet-name>LoadSketch</servlet-name>
+  <url-pattern>/load_sketch</url-pattern>
+</servlet-mapping>
+<servlet>
+  <servlet-name>SaveSketch</servlet-name>
+  <servlet-class>com.JSON.SaveSketch</servlet-class>
+</servlet>
+<servlet-mapping>
+  <servlet-name>SaveSketch</servlet-name>
+  <url-pattern>/save_sketch</url-pattern>
+</servlet-mapping>
 </web-app>

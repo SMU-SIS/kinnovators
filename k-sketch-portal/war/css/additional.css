@@ -14,16 +14,33 @@
 	      position:fixed;
 	      top:60px;
 	      width:21.97%;
+	  }
+	  #title2 {
+	  	  display: none;
 	  }	
 	  @media (max-width: 767px) {
 	      .sidebar-nav-fixed {
 	        position:static;
 	        width:auto;
 	      }
+	      #topbar {
+	      	padding-left: 20px;
+	      	padding-right: 20px;
+	      	position:fixed;
+	      	width:auto;
+	      }   
 	  }	
 	  @media (max-width: 979px) {
 	      .sidebar-nav-fixed {
 	        top:70px;
+	      }
+	      #topbar {	      
+	      	position:fixed;
+	      	width:auto;
+	      }
+	      #main {
+	      	overflow: hidden;
+	      	padding-top:10px;
 	      }
 	  }
 	  
