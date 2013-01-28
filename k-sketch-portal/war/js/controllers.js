@@ -3,15 +3,13 @@
 /* Controllers */
 
 //angular.module("myApp", []);
-function FirstController($scope,$resource) {
+function FirstController($scope) {
     $scope.name = "Prof. Richard";
-    
-    //resource
-    $scope.backend_locations = "";
-    
-	//local
+	
   	$scope.fileData = "?";  
    	$scope.fileName = "";
+	$scope.files = [];
+	$scope.filenames = [];
 	
 	$scope.filearray = [];
 	   
