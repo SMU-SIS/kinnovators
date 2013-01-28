@@ -29,5 +29,6 @@
       //To simulate GETs
   	  //$httpBackend.whenGET('/player').respond(player);
       $httpBackend.whenGET(/^partials/).passThrough();
+      //$httpBackend.whenGET(/^api/).passThrough();
       
 	});
