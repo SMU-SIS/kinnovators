@@ -18,6 +18,10 @@
 	  #title2 {
 	  	  display: none;
 	  }	
+	  #logo {
+	  	  padding: 0px 5px 0px;
+	  }
+	  
 	  @media (max-width: 767px) {
 	      .sidebar-nav-fixed {
 	        position:static;
@@ -57,7 +61,7 @@
 
       				
 	  #visibleTextData { 
-		  /*display: none;*/
+		  display: none;
 	  }
 	  
 	  #swfcontainer {
