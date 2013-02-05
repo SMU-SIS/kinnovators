@@ -4,7 +4,8 @@
 
 angular.module('app', ['ngResource']);
 function FirstController($scope,$resource){
-    $scope.name = "Anonymous User";
+    $scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
+    $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
 	
   	$scope.fileData = "?";  
    	$scope.fileName = "";
@@ -27,7 +28,7 @@ function FirstController($scope,$resource){
 	   	$scope.fileName = "";
 		$scope.fileData = "";
 		
-		$scope.add();
+		$scope.add("sketch");
 	}
    
 	$scope.setData = function(f) {
@@ -35,7 +36,8 @@ function FirstController($scope,$resource){
 	}
 	
 	$scope.setName = function(l) {
-		$scope.name = l;
+		$scope.name = l.displayName;
+		$scope.etag = l.etag;
 	}
 
 
@@ -64,24 +66,26 @@ function FirstController($scope,$resource){
                              }
                       );
 
-  $scope.add = function(){
+  //Generic model resource calls. Pass model-type.
+  
+  $scope.add = function(m_type){
     $scope.SaveResource = $resource('http://:remote_url/:apikey/:model', 
-                  {"remote_url":$scope.remote_url,"apikey":$scope.apikey,"model":$scope.model}, 
+                  {"remote_url":$scope.remote_url,"apikey":$scope.apikey,"model":m_type}, 
                   {'save': { method: 'POST',    params: {} }});
  
     $scope.waiting = "Loading";
     var item = new $scope.SaveResource($scope.item.data);
     $scope.item = item.$save(function(response) { 
             $scope.item = response;
-            $scope.list();
+            $scope.list(m_type);
             $scope.waiting = "Ready";
           }); 
   };
   
-  $scope.list = function(){
+  $scope.list = function(m_type){
     var data = {
   		  'remote_url':$scope.remote_url,
-			  'model_type':$scope.model,
+			  'model_type':m_type,
             'apikey':$scope.apikey
            }
     $scope.waiting = "Updating";       
@@ -92,5 +96,5 @@ function FirstController($scope,$resource){
           });  
   };
 
-  $scope.list();         
+  $scope.list("sketch");         
 }

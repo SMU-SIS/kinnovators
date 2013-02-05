@@ -43,7 +43,7 @@ var scopes = 'https://www.googleapis.com/auth/plus.me';
 		    	  l = document.getElementById('heading');
 		    	  loginscope = angular.element(l).scope();
 		    	  loginscope.$apply(function(){
-		    		 loginscope.setName(resp.displayName) ;
+		    		 loginscope.setName(resp) ;
 		    	  });
 		    	  
 		          //document.getElementById('content').appendChild(heading);
