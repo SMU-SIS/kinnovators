@@ -7,7 +7,7 @@
   var myApp = angular.module('myApp', ['ngResource']);
 
   myApp.config(['$routeProvider', function($routeProvider) {
-    $routeProvider.when('/view1', {templateUrl: 'partials/partial1.html', controller: FirstController});
-    $routeProvider.when('/view2', {templateUrl: 'partials/partial2.html', controller: FirstController});
+    $routeProvider.when('/view1', {templateUrl: 'partials/partial1.html', controller: SketchController});
+    $routeProvider.when('/view2', {templateUrl: 'partials/partial2.html', controller: SketchController});
     $routeProvider.otherwise({redirectTo: '/view1'});
   }]);

@@ -61,7 +61,7 @@
      	//var textAreaObject = document.getElementById('visibleTextData');
 		//textAreaObject.value = fileData;	
 
-		e = document.getElementById('SaveSketch');
+		e = document.getElementById('SaveAsSketch');
 		scope = angular.element(e).scope();
 		scope.$apply(function() {
 			scope.setData(fileData);
@@ -82,18 +82,62 @@
 			alert('no text area!');
 		}	
 	}
+	
+	function initNew() {
+		
+		e = document.getElementById('SaveAsSketch');
+		scope = angular.element(e).scope();
+		scope.$apply(function() {
+			scope.setMeta("", "", "", "", "");
+		});	
+		var textAreaObject = document.getElementById('visibleTextData');
+		textAreaObject.value = "";
+		if(typeof textAreaObject !='undefined'){
+			//alert(fileData);
+			//loadKSketchFile(fileData);
+			loadKSketchFile(textAreaObject.value);
+		}
+		else
+		{
+			alert('no text area!');
+		}	
+	}
+	
+	function searchSketch() {
+		var hm = document.getElementById('hm');
+		var sc = document.getElementById('sc');
+		var cs = document.getElementById('cs');
+		var vs = document.getElementById('vs');
+		hm.className = vs.className.replace
+	      		  ( /(?:^|\s)active(?!\S)/g , '' );
+	    sc.className = vs.className.replace
+			      ( /(?:^|\s)active(?!\S)/g , '' );
+		cs.className = vs.className.replace
+			      ( /(?:^|\s)active(?!\S)/g , '' );
+		if (vs.className.search("active") == -1) {
+			vs.className += "active";		
+		}
+	}
 
-	function fileLoad(fileData) {
+	function fileLoad(sketchId, version, owner, fileName, fileData, permissions) {
+		
 		var cs = document.getElementById('cs');
 		var vs = document.getElementById('vs');
 		vs.className = vs.className.replace
 			      ( /(?:^|\s)active(?!\S)/g , '' )
 		cs.className += "active";
-
+		
 		var textAreaObject = document.getElementById('visibleTextData');
-		textAreaObject.value = fileData; 
+		textAreaObject.value = fileData;
 
-		loadKSketchFile(fileData);
+		e = document.getElementById('SaveAsSketch');
+		scope = angular.element(e).scope();
+		scope.$apply(function() {
+			scope.setMeta(sketchId, version, owner, fileName, permissions);
+		});	
+		
+		//loadKSketchFile(fileData);
+		loadKSketchFile(textAreaObject.value);
 	}
 
 	//Function receives an xml string from anywhere
@@ -138,7 +182,7 @@
     <script src="https://apis.google.com/js/client.js?onload=OnLoadCallback"></script>
   </head>
   
-  <body id="ksketchapp" ng-controller="FirstController" scrolling="no">
+  <body id="ksketchapp" ng-controller="SketchController" scrolling="no">
   
   	<!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
@@ -151,18 +195,18 @@
           </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href="#">K-Sketch</a>
+          <p class="navbar-text pull-left">
+            <!--Username and profile link goes here.-->             
+            Hello, <a href="#" class="navbar-link"><span id="heading">{{name}}</span></a>!
+            <button id="authorize-button" class="button btn-inverse" onClick="handleAuthResult()">Login</button>
+          </p>
           <div class="nav-collapse collapse">
-            <p class="navbar-text pull-left">
-              <!--Username and profile link goes here.-->             
-              Hello, <a href="#" class="navbar-link"><span id="heading">{{name}}</span></a>!
-              <input id="authorize-button" type="submit" class="button btn-inverse" onClick="handleAuthResult()" value="Login">
-            </p>
             <ul class="nav pull-right">
               <li class="active">
-                 <form name="search" class="navbar-search pull-right" method="post" action="">
-                   <input type="text" class="search-query" id="search" name="search" placeholder="Search">
-                   <input type="submit" class="button btn-inverse" value="&raquo;">
-                 </form>
+                 <div class="navbar-search pull-right">
+                   <input type="text" class="search-query" id="search" ng-model="search" placeholder="Search by sketch name or owner">
+                   <a class="button btn-inverse" href="#ViewSketch" onClick="searchSketch()" data-toggle="tab">>></a>
+                 </div>
 			  </li>
             </ul>
           </div><!--/.nav-collapse -->
@@ -180,8 +224,8 @@
             <ul class="nav nav-list">
               <!--This changes depending on current logged-in status.-->
               
-              <li class="active"><a href="#Home" data-toggle="tab">Home</a></li>
-              <li><a href="#Sketchbook" data-toggle="tab">My Sketchbook</a></li>
+              <li id="hm" class="active"><a href="#Home" data-toggle="tab">Home</a></li>
+              <li id="sc"><a href="#Sketchbook" data-toggle="tab">My Sketchbook</a></li>
               <li id="cs"><a href="#CreateSketch" data-toggle="tab">Create a Sketch</a></li>
               <li id="vs"><a href="#ViewSketch" data-toggle="tab">View a Sketch</a></li>
             </ul>
@@ -256,6 +300,53 @@
         			<!-- Stuff goes here. -->
         			<!-- We have to think of a better name for this! -->
         			<div class="row-fluid">
+        				<div class="container" ng-show="name=='Anonymous User'" id="guestSketchbook">
+        					<h3>You are not logged in!</h3>
+        					<h3>Please Login to K-Sketch in order to access this function!</h3>
+        				</div>
+        				<div class="container" ng-hide="name=='Anonymous User'"id="userSketchbook">
+        					<div class="row-fluid">
+        						<h2>About Me</h2>
+        						<div class="row-fluid">
+        							<div class="span4">
+        								<div class="well">
+        									*insert image here*
+        								</div>
+        							</div>
+        							<div class="span7 offset1">
+        								Name: {{name}}
+        								Tag: {{etag}} <!-- This will be removed later! -->
+        								Description: <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p> 
+        							</div>
+        						</div>
+        						
+        					</div>
+        					<div class="row-fluid">
+        						<h2>My Sketches</h2>
+			       				<table class="table table-bordered table-striped">
+			       					<tbody>    					
+				       					<tr ng-repeat="files in items.entities | filter:name">
+			       							<td>{{files.data.sketchId}}</td>
+			       							<td>{{files.data.owner}}</td>
+			       							<!--  td>{{files.id}}</td-->
+			       							<td>{{files.data.original}}</td>       							
+			        						<td><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data.sketchId}}', '{{files.data.version}}', '{{files.data.owner}}', '{{files.data.fileName}}', '{{files.data.fileData}}', '{{files.data.permissions}}')">{{files.data.fileName}}</a></td>
+			        						<!-- td><input type="text" value="{{files.data.fileData}}"/></td -->
+			        						<td>{{files.data.changeDescription}}</td>
+				       					</tr>
+			       					</tbody>
+			       				</table>        						
+        					</div>
+        				</div>
+          				<!-- script type="text/javascript">
+        					if ("{{name}}" == "Anonymous User" && "{{etag}}" == "") {
+        						document.getElementById('guestSketchbook').style.display="none";
+        						document.getElementById('userSketchbook').style.display="block";
+        					} else {
+        						document.getElementById('guestSketchbook').style.display="block";
+        						document.getElementById('userSketchbook').style.display="none";
+        					}
+        				</script -->    				
         			</div>
         		</div>
         		
@@ -263,9 +354,17 @@
         		<div class="tab-pane" id="CreateSketch">
 					<!-- Stuff goes here. -->
 					<div class="row-fluid">
-						<div>
-				        	<button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveSketch">Save</button>
-				            <button class="btn btn-inverse btn-small" onclick="initLoad()">Load</button>				        	
+						<div class="row-fluid">
+							<div class="span6">
+								<button class="btn btn-inverse btn-small" onclick="initNew()">New</button>															
+								<button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''">Save</button> 
+					        	<button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveAsSketch">Save As</button>
+					            <button class="btn btn-inverse btn-small" onclick="initLoad()">Load/Revert</button>
+					            <input type="text" id="visibleTextData" ng-model="fileData">
+				        	</div>
+				        	<div class="span6">
+				        		{{fileName}} (version {{version}}) by {{owner}} [{{item.currentId}}]
+				        	</div>				        	
 				        </div>
 				        <div id="swfcontainer">
 		        			<div id="flashContent">
@@ -307,56 +406,141 @@
 					                <!--<![endif]-->
 					            </object>
 					        </noscript>
-					    </div>					    					   
+					    </div>				    					   
+					    <div class="modal hide fade in" id="SaveAsSketch" style="display:none">
+					    	<div class="modal-header">
+								<a class="close" data-dismiss="modal">x</a>
+								<h3 id="myUploadItems">Save Sketch</h3>
+							</div>
+							<div class="modal-body">
+								<div class="row-fluid">
+									<div class="span6">
+										<div class="control-group">
+											<label class="control-label" for="sketchName">Sketch Name</label>
+											<div class="controls">
+										  		<input type="text" ng-model="fileName" id="sketchName"/>
+											</div>
+											<div class="controls">
+										  		<textarea style="width: 200px; height: 112px; resize: none;" disabled>*thumbnail goes here*</textarea>
+											</div>
+											<label class="control-label" for="sketchDesc">Enter a description for this change (optional)</label>
+											<div class="controls">
+										  		<textarea ng-model="changeDescription" id="sketchDescription"></textarea>
+											</div>
+										</div>
+									</div>
+									<div class="span5 offset1" id="permissions">
+										<div class="well well-small">
+											<div class="control-group">
+												<label class="control-label" for="sketchView">Who can view this?</label>
+												<div class="controls">
+											  		<input type="radio" name="sketchView" value="Public" checked/>Public<br/>
+											  		<input type="radio" name="sketchView" value="Only Me"/>Only Me<br/>
+											  		<input type="radio" name="sketchView" value="Specific Users"/>Specific Users 
+											  		<input name="sketchView" disabled/>
+												</div>
+											</div>
+											<div class="control-group">
+												<label class="control-label" for="sketchEdit">Who can edit this?</label>
+												<input type="radio" name="sketchEdit" value="Public" checked/>Public<br/>
+										  		<input type="radio" name="sketchEdit" value="Only Me"/>Only Me<br/>
+										  		<input type="radio" name="sketchEdit" value="Specific Users"/>Specific Users 
+										  		<input name="sketchView" disabled/> 
+											</div>
+											<div class="control-group">
+												<label class="control-label" for="sketchComment">Who can comment on this?</label>
+												<input type="radio" name="sketchComment" value="Public" checked/>Public<br/>
+										  		<input type="radio" name="sketchComment" value="Only Me"/>Only Me<br/>
+										  		<input type="radio" name="sketchComment" value="Specific Users"/>Specific Users 
+										  		<input name="sketchView" disabled/> 
+											</div>
+										</div>
+									</div>
+									<div class="control-group">
+										<div class="controls">
+										  <input type="submit" ng-click="saveAs()" value="Submit" data-dismiss="modal"/>
+										</div>
+									</div>	
+								</div>																		
+							</div>							
+					    </div>
 					    <div class="modal hide fade in" id="SaveSketch" style="display:none">
 					    	<div class="modal-header">
 								<a class="close" data-dismiss="modal">x</a>
 								<h3 id="myUploadItems">Save Sketch</h3>
 							</div>
 							<div class="modal-body">
-								<div class="control-group">
-									<label class="control-label" for="sketchName">Sketch Name</label>
-									<div class="controls">
-								  		<input type="text" ng-model="fileName" id="sketchName"/>
+								<div class="row-fluid">
+									<div class="span6">
+										<div class="control-group">
+											<label class="control-label" for="sketchName">Sketch Name</label>
+											<div class="controls">
+										  		<span id="sketchName">{{fileName}}</span>
+											</div>
+											<div class="controls">
+										  		<textarea style="width: 200px; height: 112px; resize: none;" disabled>*thumbnail goes here*</textarea>
+											</div>
+											<label class="control-label" for="sketchDesc">Enter a description for this change (optional)</label>
+											<div class="controls">
+										  		<textarea ng-model="changeDescription" id="sketchDescription"></textarea>
+											</div>
+										</div>
 									</div>
-									<div class="controls">
-									  <input type="text" id="visibleTextData" ng-model="fileData">
+									<div class="span5 offset1" id="permissions">
+										<div class="well well-small">
+											<div class="control-group">
+												<label class="control-label" for="sketchView">Who can view this?</label>
+												<div class="controls">
+											  		<input type="radio" name="sketchView" value="Public" checked/>Public<br/>
+											  		<input type="radio" name="sketchView" value="Only Me"/>Only Me<br/>
+											  		<input type="radio" name="sketchView" value="Specific Users"/>Specific Users 
+											  		<input name="sketchView" disabled/>
+												</div>
+											</div>
+											<div class="control-group">
+												<label class="control-label" for="sketchEdit">Who can edit this?</label>
+												<input type="radio" name="sketchEdit" value="Public" checked/>Public<br/>
+										  		<input type="radio" name="sketchEdit" value="Only Me"/>Only Me<br/>
+										  		<input type="radio" name="sketchEdit" value="Specific Users"/>Specific Users 
+										  		<input name="sketchView" disabled/> 
+											</div>
+											<div class="control-group">
+												<label class="control-label" for="sketchComment">Who can comment on this?</label>
+												<input type="radio" name="sketchComment" value="Public" checked/>Public<br/>
+										  		<input type="radio" name="sketchComment" value="Only Me"/>Only Me<br/>
+										  		<input type="radio" name="sketchComment" value="Specific Users"/>Specific Users 
+										  		<input name="sketchView" disabled/> 
+											</div>
+										</div>
 									</div>
-								</div>
-								<div class="control-group">
-									<div class="controls">
-									  <input type="submit" ng-click="save()" value="Submit" data-dismiss="modal"/>
-									</div>
-								</div>	
-							</div>							
-					    </div>       			       
-					</div>
+									<div class="control-group">
+										<div class="controls">
+										  <input type="submit" ng-click="save()" value="Submit" data-dismiss="modal"/>
+										</div>
+									</div>							
+							   	</div>
+						  	</div>       			       
+					 	</div>
+        			</div>
         		</div>
         		
         		<!-- View Sketch Pane -->
         		<div class="tab-pane" id="ViewSketch">
         			<!-- Stuff goes here. -->
         			<span style="display:none">{{fileData}}</span>       			
-        				<!-- <ul>    					
-        					<li ng-repeat="files in filearray">
-        						<div class="row-fluid">
-        							<div class="span2">{{files.id}}</div>
-        							<div class="span3">{{files.owner}}</div>
-	        						<div class="span3"><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data}}')">{{files.name}}</a></div>
-	        						<div class="span4"><input type="text" value="{{files.data}}"/></div>
-	        					</div>	
-        					</li>
-        				</ul>		 -->
-        			<ul>    					
-        					<li ng-repeat="files in items.entities">
-        						<div class="row-fluid">
-        							<div class="span2">{{files.data.id}}</div>
-        							<div class="span3">{{files.data.owner}}</div>
-	        						<div class="span3"><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data.fileData}}')">{{files.data.fileName}}</a></div>
-	        						<div class="span4"><input type="text" value="{{files.data.fileData}}"/></div>
-	        					</div>	
-        					</li>
-        				</ul>				
+       				<table class="table table-bordered table-striped">
+       					<tbody>    					
+	       					<tr ng-repeat="files in items.entities | filter:query">
+       							<td>{{files.data.sketchId}}</td>
+       							<td>{{files.data.owner}}</td>
+       							<td>{{files.data.version}}</td>
+       							<td>{{files.data.original}}</td>       							
+        						<td><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data.sketchId}}', '{{files.data.version}}', '{{files.data.owner}}', '{{files.data.fileName}}', '{{files.data.fileData}}', '{{files.data.permissions}}')">{{files.data.fileName}}</a></td>
+        						<!-- td><input type="text" value="{{files.data.fileData}}"/></td -->
+        						<td>{{files.data.changeDescription}}</td>
+	       					</tr>
+       					</tbody>
+       				</table>				
         		</div>
         	</div>
         </div><!--/span-->
@@ -375,7 +559,7 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
-    <script src="js/controllers.js"></script>
+    <script src="js/angular/sketch-controller.js"></script>
     <script src="js/oauth2.js"></script>
     <!-- script src="js/angular-http-auth.js"></script -->
     <script src="js/app.js"></script>

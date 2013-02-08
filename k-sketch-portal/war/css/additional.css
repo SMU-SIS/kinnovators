@@ -22,6 +22,52 @@
 	  	  /*padding: 0px 5px 0px;*/
 	  }
 	  
+	  .navbar-text{
+	  	margin-bottom: 0;
+	  	margin-top: 10px;
+	  	line-height: 40px;
+	  	color: #777;
+	  }
+	  
+	  .navbar-search{
+	  	float: left;
+	  	margin-top: 12px;
+	  	margin-bottom: 0;
+	  }
+	  
+	  #sketchDescription {
+			width: 300px;
+			height: 125px;
+			resize: none;
+	  }
+
+	  #SaveSketch{
+			height: auto;
+			width: auto;
+	  }
+	  
+	  #SaveSketch .well{			
+			margin-bottom: 0px;  
+	  }
+	  
+	  #SaveSketch .modal-body{			
+			overflow-y: hidden; 
+	  }	  	  
+
+	  #SaveAsSketch{
+			height: auto;
+			width: auto;
+	  }
+	  
+	  #SaveAsSketch .well{			
+			margin-bottom: 0px;  
+	  }
+	  
+	  #SaveAsSketch .modal-body{			
+			overflow-y: hidden; 
+	  }	  	  
+	  
+
 	  @media (max-width: 767px) {
 	      .sidebar-nav-fixed {
 	        position:static;
@@ -32,7 +78,8 @@
 	      	padding-right: 20px;
 	      	position:fixed;
 	      	width:auto;
-	      }   
+	      }
+	              
 	  }	
 	  @media (max-width: 979px) {
 	      .sidebar-nav-fixed {
@@ -46,6 +93,12 @@
 	      	overflow: hidden;
 	      	padding-top:10px;
 	      }
+		  .navbar-text{
+		  	margin-bottom: 0;
+		  	margin-top: 0px;
+		  	line-height: 40px;
+		  	color: #777;
+		  }  	     	      
 	  }
 	  
 	  textarea {
