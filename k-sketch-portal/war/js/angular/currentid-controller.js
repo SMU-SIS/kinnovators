@@ -4,17 +4,10 @@
 
 angular.module('app', ['ngResource']);
 function CurrentIdController($scope,$resource){
-    $scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
-    $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
 	
-	   
+  $scope.currentId = "0";
 
-
-  $scope.backend_locations = [
-    {url : 'saitohikari89.appspot.com', urlName : 'remote backend' },       
-    {url : 'localhost:8080', urlName : 'localhost' } ];
-
-  $scope.showdetails = false;
+/*  $scope.showdetails = false;
   $scope.apikey = "DESU";
   
   //Replace this url with your final URL from the SingPath API path. 
@@ -23,8 +16,8 @@ function CurrentIdController($scope,$resource){
   $scope.model = "currentId";
   $scope.waiting = "Ready";
   
-  $scope.item = {};
-  $scope.item.data = {"currentid":""};
+  $scope.currentId = {};
+  $scope.currentId.data = {"currentId":""};
   
   //resource calls are defined here
 
@@ -33,7 +26,7 @@ function CurrentIdController($scope,$resource){
                              }
                       );
 
-/*  //Code to generate id to identify all versions of a particular sketch.
+//Code to generate id to identify all versions of a particular sketch.
   $scope.generateSketchId = function(m_type) {
 	  var data = {'remote_url':$scope.remote_url,
               'model_type':m_type,
@@ -42,49 +35,25 @@ function CurrentIdController($scope,$resource){
             }
       $scope.Model.get(data, 
           function(response){   
-              $scope.item = response;
-              $scope.item_data = $scope.item.data;
+              $scope.currentId = response;
+              $scope.currentId_data = $scope.currentId.data;
           }); 
-	  alert($scope.item.data.currentId);
+	  alert($scope.currentId.data.currentId);
   }
   
   //Code to update currentId counter.
-  $scope.updateSketchId = function(m_type){
+  $scope.updateSketchId = function(m_type, id){
     $scope.UpdateResource = $resource('http://:remote_url/:apikey/:model', 
                   {"remote_url":$scope.remote_url,"apikey":$scope.apikey,"model":m_type, "id":61003}, 
                   {'update': { method: 'PUT',    params: {} }});
     
  
-    $scope.item.currentId = parseInt($scope.item.currentId, 10) + 1;
+    $scope.currentId.data.currentId = parseInt($scope.item.currentId, 10) + 1;
     var item = new $scope.UpdateResource($scope.item.currentId);
     item.$update(function(response) { 
             $scope.item = response;
           });
   };
-    */
-  
-  //Generic model resource calls. Pass model-type.
-  
-  $scope.add = function(m_type){
-    $scope.SaveResource = $resource('http://:remote_url/:apikey/:model', 
-                  {"remote_url":$scope.remote_url,"apikey":$scope.apikey,"model":m_type}, 
-                  {'save': { method: 'POST',    params: {} }});
- 
-    $scope.waiting = "Loading";
-    var item = new $scope.SaveResource($scope.item.data);
-    $scope.item = item.$save(function(response) { 
-            $scope.item = response;
-            $scope.list(m_type);
-            $scope.waiting = "Ready";
-          }); 
-  };
-  
-  //To add key/value pairs when creating new objects
-  $scope.add_key_to_item = function(){
-    $scope.item.data[$scope.newItemKey] = $scope.newItemValue;
-    $scope.newItemKey = "";
-    $scope.newItemValue = "";
-  };    
   
   $scope.list = function(m_type){
     var data = {
@@ -100,5 +69,5 @@ function CurrentIdController($scope,$resource){
           });  
   };
 
-  $scope.list("currentId");         
+  $scope.list("currentId");      */   
 }

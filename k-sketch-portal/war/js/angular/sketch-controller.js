@@ -14,8 +14,9 @@ function SketchController($scope,$resource){
    	$scope.changeDescription = ""; //Placeholder value for changeDescription (change description for file edits)
 	
    	$scope.search = "";
+   	$scope.currentId = "0";
    	$scope.query = function(item) {
-   		return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
+   			return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
    	};
 	   
 	$scope.saveAs = function() { //Saving new file
@@ -24,16 +25,16 @@ function SketchController($scope,$resource){
 		document.getElementById('visibleTextData').value = "";
 		
 		//Retrieve and update current Sketch Id from server:
-		$scope.generateSketchId("sketchId");
-		if ($scope.item.data.currentId == "") {
+		//$scope.generateSketchId("sketchId");
+		//if ($scope.item.data.currentId == "") {
 			//If Id cannot be found, initialize from 0.
-			$scope.item.data.currentId == parseInt("0", 10);
-			$scope.add("currentId");
-		}
+			//$scope.item.data.currentId == "0";
+		//	$scope.add("currentId");
+		//}
 		
-		$scope.item.data.sketchId = $scope.item.data.currentId;
+		$scope.item.data.sketchId = $scope.currentId;
 		$scope.item.data.version = parseInt("1", 10);
-		$scope.item.data.original = $scope.item.data.sketchId + " " + $scope.item.data.version; 
+		$scope.item.data.original = $scope.item.data.sketchId + ":" + $scope.item.data.version; 
 		$scope.item.data.owner = $scope.name;
 		$scope.item.data.fileName = $scope.fileName;
 		$scope.item.data.fileData = $scope.fileData;
@@ -43,7 +44,7 @@ function SketchController($scope,$resource){
 	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName, $scope.item.data.permissions);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
-		$scope.updateSketchId("sketchId");
+		//$scope.updateSketchId("sketchId");
 		$scope.add("sketch");
 	}
 	
@@ -53,7 +54,7 @@ function SketchController($scope,$resource){
 		
 		$scope.item.data.sketchId = $scope.sketchId;
 		$scope.item.data.version = parseInt($scope.version, 10) + 1;
-		$scope.item.data.original = $scope.sketchId + " " + $scope.version; 
+		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
 		$scope.item.data.owner = $scope.owner;
 		$scope.item.data.fileName = $scope.fileName;
 		$scope.item.data.fileData = $scope.fileData;
@@ -110,7 +111,7 @@ function SketchController($scope,$resource){
                              }
                       );
 
-  //Code to generate id to identify all versions of a particular sketch.
+/*  //Code to generate id to identify all versions of a particular sketch.
   $scope.generateSketchId = function(m_type) {
 	  var data = {'remote_url':$scope.remote_url,
               'model_type':m_type,
@@ -137,7 +138,7 @@ function SketchController($scope,$resource){
     item.$update(function(response) { 
             $scope.item = response;
           });
-  };
+  };*/
     
   
   //Generic model resource calls. Pass model-type.

@@ -4,7 +4,7 @@
 
 angular.module('app', ['ngResource']);
 function LoginController($scope,$resource){
-    $scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
+ /*   $scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
     $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
 	
 	   
@@ -33,7 +33,7 @@ function LoginController($scope,$resource){
                              }
                       );
 
-/*  //Code to generate id to identify all versions of a particular sketch.
+  //Code to generate id to identify all versions of a particular sketch.
   $scope.generateSketchId = function(m_type) {
 	  var data = {'remote_url':$scope.remote_url,
               'model_type':m_type,
@@ -61,7 +61,7 @@ function LoginController($scope,$resource){
             $scope.item = response;
           });
   };
-    */
+    
   
   //Generic model resource calls. Pass model-type.
   
@@ -100,5 +100,6 @@ function LoginController($scope,$resource){
           });  
   };
 
-  $scope.list("login");         
+  $scope.list("login");  */
+         
 }

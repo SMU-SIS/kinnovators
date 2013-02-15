@@ -37,6 +37,7 @@
     <script type="text/javascript" src="swfobject.js"></script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
+    
     <!-- script type="text/javascript" src="KSketchCallBacks.js"></script -->
     <script type="text/javascript">
 
@@ -83,6 +84,7 @@
 		}	
 	}
 	
+	//Clears the K-Sketch app to create a new file.
 	function initNew() {
 		
 		e = document.getElementById('SaveAsSketch');
@@ -119,6 +121,7 @@
 		}
 	}
 
+	//Loads the selected file from Search Sketch
 	function fileLoad(sketchId, version, owner, fileName, fileData, permissions) {
 		
 		var cs = document.getElementById('cs');
@@ -154,7 +157,10 @@
 	}
     </script>
     
+    <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
+    
     <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    
     <script type="text/javascript">
         // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
         var swfVersionStr = "10.2.0";
@@ -179,11 +185,16 @@
         swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
     </script>
     
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    
     <script src="https://apis.google.com/js/client.js?onload=OnLoadCallback"></script>
   </head>
   
-  <body id="ksketchapp" ng-controller="SketchController" scrolling="no">
+  <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
+  <body id="ksketchapp"  scrolling="no">
   
+  	<div ng-controller="CurrentIdController">
+  	<div ng-controller="SketchController">
   	<!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
@@ -366,6 +377,9 @@
 				        		{{fileName}} (version {{version}}) by {{owner}} [{{item.currentId}}]
 				        	</div>				        	
 				        </div>
+				        
+				        <!-- Container for SWF Plugin - DO NOT REMOVE! -->
+				        
 				        <div id="swfcontainer">
 		        			<div id="flashContent">
 					            <p>
@@ -406,7 +420,10 @@
 					                <!--<![endif]-->
 					            </object>
 					        </noscript>
-					    </div>				    					   
+					    </div>		
+					    
+				        <!-- Dialog Box for Save As functionality (saving as different file). -->
+					    		    					   
 					    <div class="modal hide fade in" id="SaveAsSketch" style="display:none">
 					    	<div class="modal-header">
 								<a class="close" data-dismiss="modal">x</a>
@@ -464,6 +481,9 @@
 								</div>																		
 							</div>							
 					    </div>
+					    
+					    <!-- Dialog Box for Save functionality (saving new version of existing file). -->
+					    
 					    <div class="modal hide fade in" id="SaveSketch" style="display:none">
 					    	<div class="modal-header">
 								<a class="close" data-dismiss="modal">x</a>
@@ -554,11 +574,15 @@
 
     </div><!--/.fluid-container-->
 
+	</div>
+	</div>
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
+    <script src="js/angular/login-controller.js"></script>
+    <script src="js/angular/currentid-controller.js"></script>    
     <script src="js/angular/sketch-controller.js"></script>
     <script src="js/oauth2.js"></script>
     <!-- script src="js/angular-http-auth.js"></script -->
