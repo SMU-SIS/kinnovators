@@ -4,21 +4,47 @@
 
 angular.module('app', ['ngResource']);
 function SketchController($scope,$resource){
-    $scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
+    
+	//User
+	$scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
     $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
 	
+    
+    //Sketch
     $scope.sketchId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
     $scope.version = "";  //Placeholder value for version (identifies version of sketch - starts at "1" unless existing sketch is loaded).
   	$scope.fileData = "";  //Placeholder value for fileData (saved data)
    	$scope.fileName = "";  //Placeholder value for fileName (name file is saved under)
    	$scope.changeDescription = ""; //Placeholder value for changeDescription (change description for file edits)
 	
+   	//Current Id
    	$scope.search = "";
-   	$scope.currentId = "0";
+   	//$scope.currentId = "0";
+   	
+   	//Search Query Filter
    	$scope.query = function(item) {
    			return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
    	};
-	   
+
+    $scope.backend_locations = [
+      {url : 'saitohikari89.appspot.com', urlName : 'remote backend' },       
+      {url : 'localhost:8080', urlName : 'localhost' } ];
+
+    $scope.showdetails = false;
+    $scope.apikey = "DESU";
+    
+    //Replace this url with your final URL from the SingPath API path. 
+    //$scope.remote_url = "localhost:8080";
+    $scope.remote_url = "saitohikari89.appspot.com";
+    $scope.waiting = "Ready";
+    
+    //resource calls are defined here
+
+    $scope.Model = $resource('http://:remote_url/:apikey/:model_type/:id',
+                            {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
+                               }
+                        );
+       	
 	$scope.saveAs = function() { //Saving new file
 	   	
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
@@ -32,9 +58,13 @@ function SketchController($scope,$resource){
 		//	$scope.add("currentId");
 		//}
 		
-		$scope.item.data.sketchId = $scope.currentId;
+		//These values will be appended in the database.
+		$scope.item.data.sketchId = "";	
 		$scope.item.data.version = parseInt("1", 10);
-		$scope.item.data.original = $scope.item.data.sketchId + ":" + $scope.item.data.version; 
+		
+		
+		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
+		
 		$scope.item.data.owner = $scope.name;
 		$scope.item.data.fileName = $scope.fileName;
 		$scope.item.data.fileData = $scope.fileData;
@@ -81,35 +111,15 @@ function SketchController($scope,$resource){
 	
 	$scope.setName = function(l) {
 		$scope.name = l.displayName;
-		$scope.etag = l.etag;
+		$scope.etag = l.result;
 	}
 
 
-
-
-  $scope.backend_locations = [
-    {url : 'saitohikari89.appspot.com', urlName : 'remote backend' },       
-    {url : 'localhost:8080', urlName : 'localhost' } ];
-
-  $scope.showdetails = false;
-  $scope.apikey = "DESU";
-  
-  //Replace this url with your final URL from the SingPath API path. 
-  //$scope.remote_url = "localhost:8080";
-  $scope.remote_url = "saitohikari89.appspot.com";
-  $scope.model = "sketch";
-  $scope.waiting = "Ready";
-  
   $scope.item = {};
   $scope.item.currentId = "";
   $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
   
-  //resource calls are defined here
 
-  $scope.Model = $resource('http://:remote_url/:apikey/:model_type/:id',
-                          {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
-                             }
-                      );
 
 /*  //Code to generate id to identify all versions of a particular sketch.
   $scope.generateSketchId = function(m_type) {

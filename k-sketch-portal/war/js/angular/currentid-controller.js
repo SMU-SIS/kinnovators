@@ -4,10 +4,10 @@
 
 angular.module('app', ['ngResource']);
 function CurrentIdController($scope,$resource){
-	
-  $scope.currentId = "0";
 
-/*  $scope.showdetails = false;
+	/* 	
+  $scope.currentId = "0";
+ $scope.showdetails = false;
   $scope.apikey = "DESU";
   
   //Replace this url with your final URL from the SingPath API path. 
