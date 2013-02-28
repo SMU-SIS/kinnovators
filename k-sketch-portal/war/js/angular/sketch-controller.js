@@ -5,6 +5,9 @@
 angular.module('app', ['ngResource']);
 function SketchController($scope,$resource){
     
+	/*
+		Sketch
+	*/
 	//User
 	$scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
     $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
@@ -19,7 +22,6 @@ function SketchController($scope,$resource){
 	
    	//Current Id
    	$scope.search = "";
-   	//$scope.currentId = "0";
    	
    	//Search Query Filter
    	$scope.query = function(item) {
@@ -50,15 +52,7 @@ function SketchController($scope,$resource){
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		document.getElementById('visibleTextData').value = "";
 		
-		//Retrieve and update current Sketch Id from server:
-		//$scope.generateSketchId("sketchId");
-		//if ($scope.item.data.currentId == "") {
-			//If Id cannot be found, initialize from 0.
-			//$scope.item.data.currentId == "0";
-		//	$scope.add("currentId");
-		//}
-		
-		//These values will be appended in the database.
+		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
 		$scope.item.data.sketchId = "";	
 		$scope.item.data.version = parseInt("1", 10);
 		
@@ -74,7 +68,6 @@ function SketchController($scope,$resource){
 	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName, $scope.item.data.permissions);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
-		//$scope.updateSketchId("sketchId");
 		$scope.add("sketch");
 	}
 	
@@ -82,6 +75,7 @@ function SketchController($scope,$resource){
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		document.getElementById('visibleTextData').value = "";
 		
+		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
 		$scope.item.data.sketchId = $scope.sketchId;
 		$scope.item.data.version = parseInt($scope.version, 10) + 1;
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
@@ -114,44 +108,11 @@ function SketchController($scope,$resource){
 		$scope.etag = l.result;
 	}
 
-
-  $scope.item = {};
-  $scope.item.currentId = "";
-  $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
-  
-
-
-/*  //Code to generate id to identify all versions of a particular sketch.
-  $scope.generateSketchId = function(m_type) {
-	  var data = {'remote_url':$scope.remote_url,
-              'model_type':m_type,
-              'apikey':$scope.apikey,
-              'id': 61003
-            }
-      $scope.Model.get(data, 
-          function(response){   
-              $scope.item = response;
-              $scope.item_data = $scope.item.data;
-          }); 
-	  alert($scope.item.data.currentId);
-  }
-  
-  //Code to update currentId counter.
-  $scope.updateSketchId = function(m_type){
-    $scope.UpdateResource = $resource('http://:remote_url/:apikey/:model', 
-                  {"remote_url":$scope.remote_url,"apikey":$scope.apikey,"model":m_type, "id":61003}, 
-                  {'update': { method: 'PUT',    params: {} }});
-    
- 
-    $scope.item.currentId = parseInt($scope.item.currentId, 10) + 1;
-    var item = new $scope.UpdateResource($scope.item.currentId);
-    item.$update(function(response) { 
-            $scope.item = response;
-          });
-  };*/
-    
-  
-  //Generic model resource calls. Pass model-type.
+/*
+	General Add/List (pass "model" to m_type)
+*/
+	
+  $scope.item = {};  
   
   $scope.add = function(m_type){
     $scope.SaveResource = $resource('http://:remote_url/:apikey/:model', 

@@ -1,6 +1,10 @@
+/* This is changed based on the site registered in Google APIs! */
+
 var clientId = '956651233630.apps.googleusercontent.com';
 var apiKey = 'AIzaSyCIR4gJHND-tweKRydRuNLHFWQ8Visnpaw';
 var scopes = 'https://www.googleapis.com/auth/plus.me';
+
+/* This is changed based on the site registered in Google APIs! */
 
 	function handleClientLoad() {
 	  gapi.client.setApiKey(apiKey);
