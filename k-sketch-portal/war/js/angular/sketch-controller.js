@@ -54,7 +54,7 @@ function SketchController($scope,$resource){
 		
 		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
 		$scope.item.data.sketchId = "";	
-		$scope.item.data.version = parseInt("1", 10);
+		//$scope.item.data.version = parseInt("1", 10);
 		
 		
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
@@ -77,7 +77,7 @@ function SketchController($scope,$resource){
 		
 		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
 		$scope.item.data.sketchId = $scope.sketchId;
-		$scope.item.data.version = parseInt($scope.version, 10) + 1;
+		//$scope.item.data.version = parseInt($scope.version, 10) + 1;
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
 		$scope.item.data.owner = $scope.owner;
 		$scope.item.data.fileName = $scope.fileName;
@@ -107,6 +107,14 @@ function SketchController($scope,$resource){
 		$scope.name = l.displayName;
 		$scope.etag = l.result;
 	}
+		
+	$scope.logout = function() {
+		$scope.name = "Anonymous User";
+		$scope.etag = ""
+		
+		var authorizeButton = document.getElementById('authorize-button');
+		authorizeButton.style.visibility = '';			
+	}	
 
 /*
 	General Add/List (pass "model" to m_type)

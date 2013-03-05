@@ -210,6 +210,7 @@
             <!--Username and profile link goes here.-->             
             Hello, <a href="#" class="navbar-link"><span id="heading">{{name}}</span></a>!
             <button id="authorize-button" class="button btn-inverse" onClick="handleAuthResult()">Login</button>
+            <button class="button btn-inverse" ng-hide="name=='Anonymous User'" ng-click="logout()">Logout</button>
           </p>
           <div class="nav-collapse collapse">
             <ul class="nav pull-right">
@@ -325,8 +326,8 @@
         								</div>
         							</div>
         							<div class="span7 offset1">
-        								Name: {{name}}
-        								Tag: {{etag}} <!-- This will be removed later! -->
+        								Name: {{name}}<br>
+        								Tag: {{etag}}<br> <!-- This will be removed later! -->
         								Description: <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p> 
         							</div>
         						</div>
@@ -335,6 +336,16 @@
         					<div class="row-fluid">
         						<h2>My Sketches</h2>
 			       				<table class="table table-bordered table-striped">
+			       					<thead>
+			       						<tr>
+			       							<td>Sketch ID</td>
+			       							<td>File Owner</td>
+			       							<td>Sketch Version</td>
+			       							<td>Parent Sketch</td>
+			       							<td>Sketch Name</td>
+			       							<td>Sketch Description</td>
+			       						</tr>
+			       					</thead>			       				
 			       					<tbody>    					
 				       					<tr ng-repeat="files in items.entities | filter:name">
 			       							<td>{{files.data.sketchId}}</td>
@@ -366,16 +377,16 @@
 					<!-- Stuff goes here. -->
 					<div class="row-fluid">
 						<div class="row-fluid">
+				        	<div class="span6">
+				        		{{fileName}} (version {{version}}) by {{owner}}
+				        	</div>				
 							<div class="span6">
 								<button class="btn btn-inverse btn-small" onclick="initNew()">New</button>															
 								<button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''">Save</button> 
 					        	<button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveAsSketch">Save As</button>
 					            <button class="btn btn-inverse btn-small" onclick="initLoad()">Load/Revert</button>
 					            <input type="text" id="visibleTextData" ng-model="fileData">
-				        	</div>
-				        	<div class="span6">
-				        		{{fileName}} (version {{version}}) by {{owner}} [{{item.currentId}}]
-				        	</div>				        	
+				        	</div>				        	        	
 				        </div>
 				        
 				        <!-- Container for SWF Plugin - DO NOT REMOVE! -->
@@ -549,6 +560,16 @@
         			<!-- Stuff goes here. -->
         			<span style="display:none">{{fileData}}</span>       			
        				<table class="table table-bordered table-striped">
+       					<thead>
+       						<tr>
+       							<td>Sketch ID</td>
+       							<td>File Owner</td>
+       							<td>Sketch Version</td>
+       							<td>Parent Sketch</td>
+       							<td>Sketch Name</td>
+       							<td>Sketch Description</td>
+       						</tr>
+       					</thead>
        					<tbody>    					
 	       					<tr ng-repeat="files in items.entities | filter:query">
        							<td>{{files.data.sketchId}}</td>
