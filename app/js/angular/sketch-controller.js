@@ -113,7 +113,36 @@ function SketchController($scope,$resource){
 		$scope.etag = ""
 		
 		var authorizeButton = document.getElementById('authorize-button');
-		authorizeButton.style.visibility = '';			
+		authorizeButton.style.visibility = '';		
+		
+		var hm = document.getElementById('hm');
+		var sc = document.getElementById('sc');
+		var cs = document.getElementById('cs');
+		var vs = document.getElementById('vs');	
+		
+		var hm2 = document.getElementById('Home');
+		var sc2 = document.getElementById('Sketchbook');
+		var cs2 = document.getElementById('CreateSketch');
+		var vs2 = document.getElementById('ViewSketch');
+		
+		sc.className = sc.className.replace
+					( /(?:^|\s)active(?!\S)/g , '' );
+		sc2.className = sc2.className.replace
+		( /(?:^|\s) active(?!\S)/g , '' );	
+		cs.className = cs.className.replace
+			      ( /(?:^|\s)active(?!\S)/g , '' );
+		cs2.className = cs2.className.replace
+	      ( /(?:^|\s) active(?!\S)/g , '' );	      		
+		vs.className = vs.className.replace
+			      ( /(?:^|\s)active(?!\S)/g , '' )
+		vs2.className = vs2.className.replace
+		      ( /(?:^|\s) active(?!\S)/g , '' )
+		if (hm.className.search("active") == -1) {		      
+			hm.className += "active";				  
+		}
+		if (hm2.className.search(" active") == -1) {
+			hm2.className += " active";
+		}
 	}	
 
 /*
