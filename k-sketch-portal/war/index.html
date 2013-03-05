@@ -237,7 +237,7 @@
               <!--This changes depending on current logged-in status.-->
               
               <li id="hm" class="active"><a href="#Home" data-toggle="tab">Home</a></li>
-              <li id="sc"><a href="#Sketchbook" data-toggle="tab">My Sketchbook</a></li>
+              <li id="sc" ng-hide="name=='Anonymous User'"><a href="#Sketchbook" data-toggle="tab">My Sketchbook</a></li>
               <li id="cs"><a href="#CreateSketch" data-toggle="tab">Create a Sketch</a></li>
               <li id="vs"><a href="#ViewSketch" data-toggle="tab">View a Sketch</a></li>
             </ul>
