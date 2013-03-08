@@ -33,8 +33,7 @@ function SketchController($scope,$resource){
       {url : 'localhost:8080', urlName : 'localhost' } ];
 
     $scope.showdetails = false;
-    $scope.apikey = "DESU";
-    
+
     //Replace this url with your final URL from the SingPath API path. 
     //$scope.remote_url = "localhost:8080";
     $scope.remote_url = "saitohikari89.appspot.com";
@@ -42,20 +41,21 @@ function SketchController($scope,$resource){
     
     //resource calls are defined here
 
-    $scope.Model = $resource('http://:remote_url/:apikey/:model_type/:id',
+    $scope.Model = $resource('http://:remote_url/:model_type/:id',
                             {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                                }
                         );
-       	
+ 	
+    $scope.item = {};
+	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};    
+           	
 	$scope.saveAs = function() { //Saving new file
 	   	
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		document.getElementById('visibleTextData').value = "";
 		
-		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
-		$scope.item.data.sketchId = "";	
-		//$scope.item.data.version = parseInt("1", 10);
-		
+		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};
+		$scope.item.data.sketchId = "";			
 		
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
 		
@@ -63,9 +63,8 @@ function SketchController($scope,$resource){
 		$scope.item.data.fileName = $scope.fileName;
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
-		$scope.item.data.permissions = ""; //Placeholder value;
 		
-	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName, $scope.item.data.permissions);
+	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
 		$scope.add("sketch");
@@ -75,28 +74,25 @@ function SketchController($scope,$resource){
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		document.getElementById('visibleTextData').value = "";
 		
-		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":"", "permissions":""};
+		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};
 		$scope.item.data.sketchId = $scope.sketchId;
-		//$scope.item.data.version = parseInt($scope.version, 10) + 1;
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
 		$scope.item.data.owner = $scope.owner;
 		$scope.item.data.fileName = $scope.fileName;
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
-		$scope.item.data.permissions = $scope.permissions; //Placeholder value;
 		
-	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName, $scope.item.data.permissions);
+	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
 		$scope.add("sketch");		
 	}
    
-	$scope.setMeta = function(sketchId, version, owner, fileName, permissions) {
+	$scope.setMeta = function(sketchId, version, owner, fileName) {
 		$scope.sketchId = sketchId;
 		$scope.version = version;
 		$scope.owner = owner;
 		$scope.fileName = fileName;
-		$scope.permissions = permissions;
 	}
 	
 	$scope.setData = function(fileData) {
@@ -128,15 +124,15 @@ function SketchController($scope,$resource){
 		sc.className = sc.className.replace
 					( /(?:^|\s)active(?!\S)/g , '' );
 		sc2.className = sc2.className.replace
-		( /(?:^|\s) active(?!\S)/g , '' );	
+		( /(?:^|\s)active(?!\S)/g , '' );	
 		cs.className = cs.className.replace
 			      ( /(?:^|\s)active(?!\S)/g , '' );
 		cs2.className = cs2.className.replace
-	      ( /(?:^|\s) active(?!\S)/g , '' );	      		
+	      ( /(?:^|\s)active(?!\S)/g , '' );	      		
 		vs.className = vs.className.replace
 			      ( /(?:^|\s)active(?!\S)/g , '' )
 		vs2.className = vs2.className.replace
-		      ( /(?:^|\s) active(?!\S)/g , '' )
+		      ( /(?:^|\s)active(?!\S)/g , '' )
 		if (hm.className.search("active") == -1) {		      
 			hm.className += "active";				  
 		}
@@ -148,19 +144,21 @@ function SketchController($scope,$resource){
 /*
 	General Add/List (pass "model" to m_type)
 */
-	
-  $scope.item = {};  
   
   $scope.add = function(m_type){
-    $scope.SaveResource = $resource('http://:remote_url/:apikey/:model', 
-                  {"remote_url":$scope.remote_url,"apikey":$scope.apikey,"model":m_type}, 
+    $scope.SaveResource = $resource('http://:remote_url/:model', 
+                  {"remote_url":$scope.remote_url,"model":m_type}, 
                   {'save': { method: 'POST',    params: {} }});
  
     $scope.waiting = "Loading";
     var item = new $scope.SaveResource($scope.item.data);
-    $scope.item = item.$save(function(response) { 
-            $scope.item = response;
+    item.$save(function(response) { 
+            var result = response;
+            $scope.sketchId = result.sketchId;
+            $scope.version = result.version;
             $scope.list(m_type);
+            alert(result.version);
+            $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};               
             $scope.waiting = "Ready";
           }); 
   };
@@ -176,7 +174,6 @@ function SketchController($scope,$resource){
     var data = {
   		  'remote_url':$scope.remote_url,
 			  'model_type':m_type,
-            'apikey':$scope.apikey
            }
     $scope.waiting = "Updating";       
     $scope.Model.get(data,

@@ -19,13 +19,17 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 import json
 
 """
-Attributes and functions for Backend entity
+Attributes and functions for Sketch entity
 """
-class Backend(db.Model):
-  apikey = db.StringProperty(required=True,default='Default-APIKey')
-  model = db.StringProperty(required=True,default='Default-Model')
+class Sketch(db.Model):
   #Use backend record id as the model id for simplicity
-  jsonString = db.TextProperty(required=True,default='{}')
+  sketchId = db.IntegerProperty(required=True)
+  version = db.IntegerProperty(required=True)
+  changeDescription = db.StringProperty()
+  fileName = db.StringProperty(required=True)
+  owner = db.StringProperty(required=True) #might be changed
+  fileData = db.TextProperty(required=True)
+  original = db.StringProperty(required=True) #might be changed
   created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created    
   modified = db.DateTimeProperty(auto_now=True)
   
@@ -36,116 +40,113 @@ class Backend(db.Model):
 
       
   @staticmethod
-  def add(apikey, model, data):
+  def add(data):
     #update ModelCount when adding
     jsonData = json.loads(data)
-    modelCount = ModelCount.all().filter('en_type','Backend').filter('apikey',apikey).filter('model', model).get()
-    if modelCount:
-      modelCount.count += 1
-      modelCount.put()
-    else:
-      modelCount = ModelCount(en_type='Backend', apikey=apikey, model=model, count=1)
-      modelCount.put()
-
+    modelCount = ModelCount.all().filter('en_type','Sketch').get()
+    
     #For sketch files saved through "Save As"
     if jsonData['sketchId'] == '':
+      if modelCount:
+        modelCount.count += 1
+        modelCount.put()
+      else:
+        modelCount = ModelCount(en_type='Sketch', count=1)
+        modelCount.put()
       jsonData['sketchId'] = str(modelCount.count)
     #For sketch files saved through "Save As" that were not derived from another file  
     if jsonData['original'] == ':':
       jsonData['original'] = 'original'
     
     #update VersionCount when adding  
-    versionCount = VersionCount.all().filter('sketchId', int(jsonData['sketchId'])).get()
+    versionCount = VersionCount.all().filter('sketchId', long(jsonData['sketchId'])).get()
     if versionCount:
       versionCount.lastVersion += 1
       versionCount.put()
     else:
-      versionCount = VersionCount(sketchId=int(jsonData['sketchId']), lastVersion=1)
+      versionCount = VersionCount(sketchId=long(jsonData['sketchId']), lastVersion=1)
       versionCount.put()
     
     jsonData['version'] = str(versionCount.lastVersion)
      
-    entity = Backend(apikey=apikey,
-                    model=model,
-                    jsonString=json.dumps(jsonData))
+    entity = Sketch(sketchId=long(jsonData['sketchId']),
+                    version=long(jsonData['version']),
+                    changeDescription=jsonData['changeDescription'],
+                    fileName=jsonData['fileName'],
+                    owner=jsonData['owner'],
+                    fileData=jsonData['fileData'],
+                    original=jsonData['original'])
     
     entity.put()
     
-    result = {'model':model,
-              'apikey': apikey,
-              'id': entity.key().id(), 
+    result = {'id': entity.key().id(), 
               'data': jsonData} #this would also check if the json submitted was valid
         
     return result
   
   @staticmethod
-  def get_entities(apikey, model=None, offset=0, limit=50):
+  def get_entities(offset=0, limit=50):
     #update ModelCount when adding
-    theQuery = Backend.all().filter('apikey',apikey)
-    if model:
-      theQuery = theQuery.filter('model', model)
+    theQuery = Sketch.all()
+    #if model:
+      #theQuery = theQuery.filter('model', model)
 
     objects = theQuery.fetch(limit=limit, offset=offset)
 
     entities = []
     for object in objects:
-      entity = {'model':object.model,
-              'apikey': apikey,
-              'id': object.key().id(),
+      data = {'sketchId': object.sketchId,
+              'version': object.version,
+              'changeDescription': object.changeDescription,
+              'fileName': object.fileName,
+              'owner': object.owner,
+              'fileData': object.fileData,
+              'original': object.original}
+      entity = {'id': object.key().id(),
               'created': object.created,
               'modified': object.modified, 
-              'data': json.loads(object.jsonString)}
+              'data': data}
       entities.append(entity)
     
     count = 0
-    modelCount = ModelCount.all().filter('en_type','Backend').filter('apikey',apikey).filter('model', model).get()
+    modelCount = ModelCount.all().filter('en_type','Sketch').get()
     if modelCount:
       count = modelCount.count
     result = {'method':'get_entities',
-              'apikey': apikey,
-              'en_type': 'Backend',
-              'model': model,
+              'en_type': 'Sketch',
               'count': count,
               'offset': offset,
               'limit':limit,
-              'entities': entities}      
+              'entities': entities}
     return result
     
   @staticmethod
-  def get_entity(apikey,model,model_id):
-    theobject = Backend.get_by_id(int(model_id))
+  def get_entity(model_id):
+    theobject = Sketch.get_by_id(long(model_id))
+    
+    data = {'sketchId': theobject.sketchId,
+              'version': theobject.version,
+              'changeDescription': theobject.changeDescription,
+              'fileName': theobject.fileName,
+              'owner': theobject.owner,
+              'fileData': theobject.fileData,
+              'original': theobject.original}
     
     result = {'method':'get_model',
-                  'apikey': apikey,
-                  'model': model,
                   'id': model_id,
-                  'data': json.loads(theobject.jsonString)
+                  'data': data
                   }
     return result
   
   @staticmethod
-  def clear(apikey, model):
+  def clear():
     #update model count when clearing model on api
     count = 0
-    for object in Backend.all().filter('apikey',apikey).filter('model', model):
+    for object in Sketch.all():
       count += 1
       object.delete()
       
-    modelCount = ModelCount.all().filter('en_type','Backend').filter('apikey',apikey).filter('model', model).get()
-    if modelCount:
-      modelCount.delete()
-    result = {'items_deleted': count}
-    return result
-    
-  @staticmethod
-  def clearapikey(apikey):
-    #update model count when clearing model on api
-    count = 0
-    for object in Backend.all().filter('apikey',apikey):
-      count += 1
-      object.delete()
-      
-    modelCount = ModelCount.all().filter('en_type','Backend').filter('apikey',apikey).get()
+    modelCount = ModelCount.all().filter('en_type','Sketch').get()
     if modelCount:
       modelCount.delete()
     result = {'items_deleted': count}
@@ -153,22 +154,20 @@ class Backend(db.Model):
   
   #You can't name it delete since db.Model already has a delete method
   @staticmethod
-  def remove(apikey, model, model_id):
+  def remove(model_id):
     #update model count when deleting
-    entity = Backend.get_by_id(int(model_id))
+    entity = Sketch.get_by_id(long(model_id))
     
-    if entity and entity.apikey == apikey and entity.model == model:
+    if entity:
         entity.delete()
     
         result = {'method':'delete_model_success',
-                  'apikey': apikey,
-                  'model': model,
                   'id': model_id
                   }
     else:
         result = {'method':'delete_model_not_found'}
         
-    modelCount = ModelCount.all().filter('en_type','Backend').filter('apikey',apikey).filter('model', model).get()
+    modelCount = ModelCount.all().filter('en_type','Sketch').get()
     if modelCount:
         modelCount.count -= 1
         modelCount.put()
@@ -177,35 +176,77 @@ class Backend(db.Model):
 
   #data is a dictionary that must be merged with current json data and stored. 
   @staticmethod
-  def edit_entity(apikey, model, model_id, data):
-    jsonString = data
-    entity = Backend.get_by_id(int(model_id))
-    entity.jsonString = jsonString
+  def edit_entity(model_id, data):
+    jsonData = json.loads(data)
+    entity = Sketch.get_by_id(long(model_id))
+    
+    if jsonData['sketchId']!='':
+      entity.sketchId=long(jsonData['sketchId'])
+    if jsonData['version']!='':
+      entity.version=long(jsonData['version'])
+    if jsonData['changeDescription']!='':
+      entity.changeDescription=jsonData['changeDescription']
+    if jsonData['fileName']!='':
+      entity.fileName=jsonData['fileName']
+    if jsonData['owner']!='':
+      entity.owner=jsonData['owner']
+    if jsonData['fileData']!='':
+      entity.fileData=jsonData['fileData']
+    if jsonData['original']!='':
+      entity.original=jsonData['original']
     entity.put()
-    if entity.jsonString:
-      data = json.loads(entity.jsonString)
-    else:
-      data = {}
-    result = {'model':model,
-              'apikey': apikey,
-              'id': entity.key().id(), 
-              'data': data #this would also check if the json submitted was valid
+    
+    result = {'id': entity.key().id(), 
+              'data': json.dumps(jsonData) #this would also check if the json submitted was valid
               }
     return result
     
 #Quick retrieval for supported models metadata and count stats
 class ModelCount(db.Model):
-  apikey = db.StringProperty(required=True,default='Default-APIKey')
   en_type = db.StringProperty(required=True,default='Default-entype')
-  model = db.StringProperty(required=True,default='Default-Model')
   count = db.IntegerProperty(required=True, default=0)
-  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created    
-  modified = db.DateTimeProperty(auto_now=True)
   
 class VersionCount(db.Model):
   sketchId = db.IntegerProperty(required=True, default=0)
   lastVersion = db.IntegerProperty(required=True, default=0)
-
+  
+class User(db.Model):
+  user_name = db.StringProperty(required=True)
+  full_name = db.StringProperty(required=True)
+  email = db.StringProperty()
+  pass_word = db.StringProperty(required=True)
+  google_id = db.TextProperty()
+  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
+  
+class Comment(db.Model):
+  sketch_id = db.IntegerProperty(required=True)
+  user_id = db.IntegerProperty(required=True)
+  content = db.StringProperty(required=True)
+  reply_to_id = db.IntegerProperty()
+  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
+  
+class Permissions(db.Model):
+  sketch_id = db.IntegerProperty(required=True)
+  view_private = db.BooleanProperty(required=True)
+  view_public = db.BooleanProperty(required=True)
+  view_group = db.TextProperty()
+  view_user = db.TextProperty()
+  edit_private = db.BooleanProperty(required=True)
+  edit_public = db.BooleanProperty(required=True)
+  edit_group = db.TextProperty()
+  edit_user = db.TextProperty()
+  comment = db.BooleanProperty(required=True)
+  
+class Group(db.Model):
+  group_name = db.StringProperty(required=True)
+  group_sketches = db.TextProperty()
+  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
+  
+class UserGroupMgmt(db.Model):
+  user_id = db.IntegerProperty(required=True)
+  group_id = db.IntegerProperty(required=True)
+  role = db.StringProperty(required=True)
+  
 class ActionHandler(webapp.RequestHandler):
     """Class which handles bootstrap procedure and seeds the necessary
     entities in the datastore.
@@ -230,14 +271,13 @@ class ActionHandler(webapp.RequestHandler):
             
         return self.response.out.write(json.dumps(result,default=dthandler)) 
 
-    def metadata(self,apikey):
-        #Fetch all ModelCount records for apikey to produce metadata on currently supported models. 
+    def metadata(self):
+        #Fetch all ModelCount records to produce metadata on currently supported models. 
         models = []
-        for mc in ModelCount.all().filter('apikey',apikey):
+        for mc in ModelCount.all():
           models.append({'model':mc.model, 'count': mc.count})
     
         result = {'method':'metadata',
-                  'apikey': apikey,
                   'model': "metadata",
                   'count': len(models),
                   'entities': models
@@ -245,70 +285,17 @@ class ActionHandler(webapp.RequestHandler):
         
         return self.respond(result)
 
-    #Dump apikey table
-    def backup(self,apikey):
-        #Fetch all ModelCount records for apikey to produce metadata on currently supported models. 
-        dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
-        
-        offset = 0
-        new_offset = self.request.get("offset")
-        if new_offset:
-            offset = int(new_offset)
-
-        result = Backend.get_entities(apikey,offset=offset)
-        
-        filename = "Backup_"+apikey+"_offset_"+str(offset)+".json"
-        self.response.headers['Content-Type'] = 'application/streaming-json'
-        self.response.content_disposition = 'attachment; filename="'+filename+'"'
-        
-        for obj in result['entities']:
-          self.response.out.write(json.dumps(obj,default=dthandler)+"\n")
-        return
-
-    #Delete this experimental backup method
-    def backup_test(self,apikey):
-        #Fetch all ModelCount records for apikey to produce metadata on currently supported models. 
-        dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
-        
-        offset = 0
-        new_offset = self.request.get("offset")
-        if new_offset:
-            offset = int(new_offset)
-
-        filename = "Backup_test_"+apikey+"_offset_"+str(offset)+".json"
-        self.response.headers['Content-Type'] = 'application/streaming-json'
-        self.response.content_disposition = 'attachment; filename="'+filename+'"'
-        
-        for entity in Backend.all():
-          self.response.out.write(json.dumps(entity.to_dict(),default=dthandler)+"\n")
-        return
-
-        #return self.respond(result)
-
-
-    def clear_apikey(self,apikey):
-        """Clears the datastore for a an apikey. 
-                """
-        result = Backend.clearapikey(apikey)
-        return self.respond({'method':'clear_apikey'})
-      
-    def clear_model(self,apikey, model):
-        """Clears the datastore for a model and apikey.
-        """
-        result = Backend.clear(apikey, model)
-        return self.respond(result)
-
-    def add_or_list_model(self,apikey,model):
+    def add_or_list_sketch(self):
         #Check for GET paramenter == model to see if this is an add or list. 
-        #Call Backend.add(apikey, model, data) or
-        #Fetch all models for apikey and return a list. 
+        #Call Sketch.add(model, data) or
+        #Fetch all models and return a list. 
                 
         #Todo - Check for method.
         logging.info(self.request.method)
         if self.request.method=="POST":
           logging.info("in POST")
           logging.info(self.request.body)
-          result = Backend.add(apikey, model, self.request.body)
+          result = Sketch.add(self.request.body)
           #logging.info(result)
           return self.respond(result)
     
@@ -316,61 +303,52 @@ class ActionHandler(webapp.RequestHandler):
           data = self.request.get("obj")
           if data: 
             logging.info("Adding new data: "+data)
-            result = Backend.add(apikey, model, data)
+            result = Sketch.add(data)
           else:
             offset = 0
             new_offset = self.request.get("offset")
             if new_offset:
               offset = int(new_offset)
 
-            result = Backend.get_entities(apikey, model,offset=offset)
+            result = Sketch.get_entities(offset=offset)
           
           return self.respond(result)
 
-    def delete_model(self,apikey,model, model_id):
-        result = Backend.remove(apikey,model, model_id)
+    def delete_sketch(self, model_id):
+        result = Sketch.remove(model_id)
         
         return self.respond(result)
       
-    def get_or_edit_model(self,apikey,model, model_id):
+    def get_or_edit_sketch(self, model_id):
         #Check for GET parameter == model to see if this is a get or an edit
-        #technically the apikey and model are not required. 
-        #To create an error message if the id is not from this apikey?
         logging.info("**********************")
         logging.info(self.request.method)
         logging.info("**********************")
 
         if self.request.method=="DELETE":
           logging.info("It was options")
-          result = Backend.remove(apikey,model, model_id)
+          result = Sketch.remove(model_id)
           logging.info(result)
           return self.respond(result)#(result)
         
         elif self.request.method=="PUT":
           logging.info("It was PUT")
           logging.info(self.request.body)
-          result = Backend.edit_entity(apikey,model,model_id,self.request.body)
-          #result = Backend.remove(apikey,model, model_id)
-          #result = json.loads(self.request.body)
-          #logging.info(result)
+          result = Sketch.edit_entity(model_id,self.request.body)
           return self.respond(result)#(result)          
         else:
           data = self.request.get("obj")
           if data:
-              result = Backend.edit_entity(apikey,model,model_id,data)
+              result = Sketch.edit_entity(model_id,data)
           else:
-              result = Backend.get_entity(apikey,model,model_id)
+              result = Sketch.get_entity(model_id)
           return self.respond(result)
 
 application = webapp.WSGIApplication([
-    webapp.Route('/<apikey>/metadata', handler=ActionHandler, handler_method='metadata'), 
-    webapp.Route('/<apikey>/backup_test', handler=ActionHandler, handler_method='backup_test'),     
-    webapp.Route('/<apikey>/backup', handler=ActionHandler, handler_method='backup'),     
-    webapp.Route('/<apikey>/clear', handler=ActionHandler, handler_method='clear_apikey'),
-    webapp.Route('/<apikey>/<model>/clear', handler=ActionHandler, handler_method='clear_model'), 
-    webapp.Route('/<apikey>/<model>/<model_id>/delete', handler=ActionHandler, handler_method='delete_model'), 
-    webapp.Route('/<apikey>/<model>/<model_id>', handler=ActionHandler, handler_method='get_or_edit_model'), 
-    webapp.Route('/<apikey>/<model>', handler=ActionHandler, handler_method='add_or_list_model'),
+    webapp.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
+    webapp.Route('/sketch/<model_id>/delete', handler=ActionHandler, handler_method='delete_sketch'), 
+    webapp.Route('/sketch/<model_id>', handler=ActionHandler, handler_method='get_or_edit_sketch'), 
+    webapp.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'),
     ],
     debug=True)
 
