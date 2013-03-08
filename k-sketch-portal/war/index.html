@@ -90,7 +90,7 @@
 		e = document.getElementById('SaveAsSketch');
 		scope = angular.element(e).scope();
 		scope.$apply(function() {
-			scope.setMeta("", "", "", "", "");
+			scope.setMeta("", "", "", "");
 		});	
 		var textAreaObject = document.getElementById('visibleTextData');
 		textAreaObject.value = "";
@@ -122,7 +122,7 @@
 	}
 
 	//Loads the selected file from Search Sketch
-	function fileLoad(sketchId, version, owner, fileName, fileData, permissions) {
+	function fileLoad(sketchId, version, owner, fileName, fileData) {
 		
 		var cs = document.getElementById('cs');
 		var vs = document.getElementById('vs');
@@ -136,7 +136,7 @@
 		e = document.getElementById('SaveAsSketch');
 		scope = angular.element(e).scope();
 		scope.$apply(function() {
-			scope.setMeta(sketchId, version, owner, fileName, permissions);
+			scope.setMeta(sketchId, version, owner, fileName);
 		});	
 		
 		//loadKSketchFile(fileData);
@@ -352,7 +352,7 @@
 			       							<td>{{files.data.owner}}</td>
 			       							<!--  td>{{files.id}}</td-->
 			       							<td>{{files.data.original}}</td>       							
-			        						<td><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data.sketchId}}', '{{files.data.version}}', '{{files.data.owner}}', '{{files.data.fileName}}', '{{files.data.fileData}}', '{{files.data.permissions}}')">{{files.data.fileName}}</a></td>
+			        						<td><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data.sketchId}}', '{{files.data.version}}', '{{files.data.owner}}', '{{files.data.fileName}}', '{{files.data.fileData}}')">{{files.data.fileName}}</a></td>
 			        						<!-- td><input type="text" value="{{files.data.fileData}}"/></td -->
 			        						<td>{{files.data.changeDescription}}</td>
 				       					</tr>
@@ -576,7 +576,7 @@
        							<td>{{files.data.owner}}</td>
        							<td>{{files.data.version}}</td>
        							<td>{{files.data.original}}</td>       							
-        						<td><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data.sketchId}}', '{{files.data.version}}', '{{files.data.owner}}', '{{files.data.fileName}}', '{{files.data.fileData}}', '{{files.data.permissions}}')">{{files.data.fileName}}</a></td>
+        						<td><a href="#CreateSketch" data-toggle="tab" onClick="fileLoad('{{files.data.sketchId}}', '{{files.data.version}}', '{{files.data.owner}}', '{{files.data.fileName}}', '{{files.data.fileData}}')">{{files.data.fileName}}</a></td>
         						<!-- td><input type="text" value="{{files.data.fileData}}"/></td -->
         						<td>{{files.data.changeDescription}}</td>
 	       					</tr>
