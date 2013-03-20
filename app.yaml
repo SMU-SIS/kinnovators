@@ -1,5 +1,5 @@
-application: saitohikari89
-version: 5
+application: k-sketch-test
+version: 9
 runtime: python27
 api_version: 1
 threadsafe: false
@@ -20,6 +20,15 @@ handlers:
 - url: /test
   static_dir: test
   expiration: 1m
+
+- url: /getuser
+  script: rpx.application
+  
+- url: /logout
+  script: rpx.application
+  
+- url: /janrain
+  script: rpx.application
 
 - url: /.*
   script: backend.application

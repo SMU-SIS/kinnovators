@@ -29,14 +29,14 @@ function SketchController($scope,$resource){
    	};
 
     $scope.backend_locations = [
-      {url : 'saitohikari89.appspot.com', urlName : 'remote backend' },       
+      {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
       {url : 'localhost:8080', urlName : 'localhost' } ];
 
     $scope.showdetails = false;
 
     //Replace this url with your final URL from the SingPath API path. 
     //$scope.remote_url = "localhost:8080";
-    $scope.remote_url = "saitohikari89.appspot.com";
+    $scope.remote_url = "k-sketch-test.appspot.com";
     $scope.waiting = "Ready";
     
     //resource calls are defined here
@@ -46,6 +46,21 @@ function SketchController($scope,$resource){
                                }
                         );
  	
+    $scope.User = $resource('http://:remote_url/getuser',
+                            {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
+                                   }
+                            );
+                            
+    $scope.getuser = function(){
+        var data = {'remote_url':$scope.remote_url};
+        $scope.waiting = "Updating";       
+        $scope.User.get(data,
+            function(response) { 
+              $scope.User = response;
+              $scope.waiting = "Ready";
+            });
+    }
+    
     $scope.item = {};
 	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};    
            	
@@ -154,10 +169,9 @@ function SketchController($scope,$resource){
     var item = new $scope.SaveResource($scope.item.data);
     item.$save(function(response) { 
             var result = response;
-            $scope.sketchId = result.sketchId;
-            $scope.version = result.version;
+            $scope.sketchId = result.data.sketchId;
+            $scope.version = result.data.version;
             $scope.list(m_type);
-            alert(result.version);
             $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};               
             $scope.waiting = "Ready";
           }); 
@@ -183,5 +197,6 @@ function SketchController($scope,$resource){
           });  
   };
 
-  $scope.list("sketch");         
+  $scope.list("sketch"); 
+  $scope.getuser();
 }

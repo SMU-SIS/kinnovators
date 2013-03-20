@@ -1,14 +1,15 @@
 """Backend Module
 
-Created on Dec 6, 2012
-@author: Chris Boesch
-@modified: Goh Kian Wei (Brandon)
+@created: Goh Kian Wei (Brandon)
+@code_adapted_from: Chris Boesch, Daniel Tsou
 """
 """
 Note to self: json.loads = json string to objects. json.dumps is object to json string.
 """
 import datetime
 import logging
+import os
+import urllib
 
 import webapp2 as webapp
 
@@ -17,6 +18,18 @@ from google.appengine.ext import db
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 import json
+
+"""
+Attributes and functions for User entity (incl. Janrain login)
+"""
+    
+class User(db.Model):
+  user_name = db.StringProperty(required=True)
+  full_name = db.StringProperty()
+  email = db.StringProperty()
+  pass_word = db.StringProperty()
+  google_id = db.TextProperty()
+  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
 
 """
 Attributes and functions for Sketch entity
@@ -210,14 +223,6 @@ class VersionCount(db.Model):
   sketchId = db.IntegerProperty(required=True, default=0)
   lastVersion = db.IntegerProperty(required=True, default=0)
   
-class User(db.Model):
-  user_name = db.StringProperty(required=True)
-  full_name = db.StringProperty(required=True)
-  email = db.StringProperty()
-  pass_word = db.StringProperty(required=True)
-  google_id = db.TextProperty()
-  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
-  
 class Comment(db.Model):
   sketch_id = db.IntegerProperty(required=True)
   user_id = db.IntegerProperty(required=True)
@@ -351,5 +356,3 @@ application = webapp.WSGIApplication([
     webapp.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'),
     ],
     debug=True)
-
-
