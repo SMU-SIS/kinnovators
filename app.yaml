@@ -1,0 +1,40 @@
+application: k-sketch-test
+version: 11
+runtime: python27
+api_version: 1
+threadsafe: false
+
+handlers:
+- url: /
+  static_files: index.html
+  upload: index.html
+  
+- url: /index.html
+  static_files: index.html
+  upload: index.html
+  
+- url: /app
+  static_dir: app
+  expiration: 1m
+
+- url: /test
+  static_dir: test
+  expiration: 1m
+
+- url: /getuser
+  script: rpx.application
+  
+- url: /logout
+  script: rpx.application
+  
+- url: /janrain
+  script: rpx.application
+
+- url: /.*
+  script: backend.application
+
+libraries:
+- name: webapp2
+  version: "2.5.1"
+
+

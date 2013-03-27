@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html ng-app="myApp" lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>K-Sketch: The Kinetic Sketch Pad!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    
+    <!-- Additional styles for individual components -->
+    <link href="css/additional.css" rel="stylesheet">
+    
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+    
+    <!-- Fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="ico/apple-touch-icon-57-precomposed.png">
+    <link rel="shortcut icon" href="ico/favicon.png">
+    
+    <!-- Code for K-Sketch App Plugin -->
+    <!-- Enable Browser History by replacing useBrowserHistory tokens with two hyphens -->
+    
+    <!-- BEGIN Browser History required section -->
+    <link rel="stylesheet" type="text/css" href="history/history.css" />
+    <script type="text/javascript" src="history/history.js"></script>
+    <!-- END Browser History required section -->  
+    
+    <script type="text/javascript" src="swfobject.js"></script>
+    
+    <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
+    
+    <!-- script type="text/javascript" src="KSketchCallBacks.js"></script -->
+    <script type="text/javascript">
+      
+      //Function to trigger Janrain login plugin
+      
+      (function() {
+        if (typeof window.janrain !== 'object') window.janrain = {};
+        if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
+        
+        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/janrain';
+        
+        function isReady() { janrain.ready = true; };
+        if (document.addEventListener) {
+          document.addEventListener("DOMContentLoaded", isReady, false);
+        } else {
+          window.attachEvent('onload', isReady);
+        }
+        
+        var e = document.createElement('script');
+        e.type = 'text/javascript';
+        e.id = 'janrainAuthWidget';
+        
+        if (document.location.protocol === 'https:') {
+          e.src = 'https://rpxnow.com/js/lib/k-sketch/engage.js';
+        } else {
+          e.src = 'http://widget-cdn.rpxnow.com/js/lib/k-sketch/engage.js';
+        }
+        
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(e, s);
+      })();
+    </script>
+    
+    <script type="text/javascript">
+      //Function to trigger a save procedure in the flash object
+      //The flash object will call saveKSketchFile in return to pass the data from itself to javascript
+      function initSave() {
+        var swfObject = document.getElementById('KSketch2_Web');
+        if(typeof swfObject !='undefined'){
+          swfObject.save();//change load
+          
+        }
+        else
+        {
+          alert('the swf object does not exist! Unable to save');
+        }	
+      } 
+      
+      //Function to trigger a save procedure in the flash object
+      //The flash object will call saveKSketchFile in return to pass the data from itself to javascript	
+      function saveKSketchFile(fileData) {
+        //var textAreaObject = document.getElementById('visibleTextData');
+        //textAreaObject.value = fileData;	
+        
+        e = document.getElementById('SaveAsSketch');
+        scope = angular.element(e).scope();
+        scope.$apply(function() {
+          scope.setData(fileData);
+        });	
+      }
+      
+      //Don't care about this, it just allows this example to load a file from
+      //The text area
+      function initLoad() {
+        var textAreaObject = document.getElementById('visibleTextData');
+        if(typeof textAreaObject !='undefined'){
+          //alert(fileData);
+          //loadKSketchFile(fileData);
+          loadKSketchFile(textAreaObject.value);
+        }
+        else
+        {
+          alert('no text area!');
+        }	
+      }
+      
+      //Clears the K-Sketch app to create a new file.
+      function initNew() {
+        
+        e = document.getElementById('SaveAsSketch');
+        scope = angular.element(e).scope();
+        scope.$apply(function() {
+          scope.setMeta("", "", "", "");
+        });	
+        var textAreaObject = document.getElementById('visibleTextData');
+        textAreaObject.value = "";
+        if(typeof textAreaObject !='undefined'){
+          //alert(fileData);
+          //loadKSketchFile(fileData);
+          loadKSketchFile(textAreaObject.value);
+        }
+        else
+        {
+          alert('no text area!');
+        }	
+      }
+      
+      //Loads the selected file from Search Sketch
+      function fileLoad(sketchId, version, owner, fileName, fileData) {
+        
+        var cs = document.getElementById('cs');
+        var vs = document.getElementById('vs');
+        vs.className = vs.className.replace
+        ( /(?:^|\s)active(?!\S)/g , '' )
+        cs.className += "active";
+        
+        var textAreaObject = document.getElementById('visibleTextData');
+        textAreaObject.value = fileData;
+        
+        e = document.getElementById('SaveAsSketch');
+        scope = angular.element(e).scope();
+        scope.$apply(function() {
+          scope.setMeta(sketchId, version, owner, fileName);
+        });	
+        
+        //loadKSketchFile(fileData);
+        loadKSketchFile(textAreaObject.value);
+      }
+      
+      //Function receives an xml string from anywhere
+      //and asks the flash object to load it	
+      function loadKSketchFile(fileData) {
+        var swfObject = document.getElementById('KSketch2_Web');
+        if(typeof swfObject !='undefined'){
+          swfObject.load(fileData);//change load
+        }
+        else
+        {
+          alert('the swf object does not exist! Unable to save');
+        }	
+      }
+    </script>
+    
+    <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
+    
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    
+    <script type="text/javascript">
+      // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
+      var swfVersionStr = "10.2.0";
+      // To use express install, set to playerProductInstall.swf, otherwise the empty string. 
+      var xiSwfUrlStr = "playerProductInstall.swf";
+      var flashvars = {};
+      var params = {};
+      params.quality = "high";
+      params.bgcolor = "#ffffff";
+      params.allowScriptAccess = "always";
+      params.allowfullscreen = "true";
+      var attributes = {};
+      attributes.id = "KSketch2_Web";
+      attributes.name = "KSketch2_Web";
+      attributes.align = "middle";
+      swfobject.embedSWF(
+        "KSketch2_Web.swf", "flashContent", 
+        "100%", "580", 
+        swfVersionStr, xiSwfUrlStr, 
+        flashvars, params, attributes);
+      // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
+      swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
+    </script>
+    
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    
+    <script src="https://apis.google.com/js/client.js?onload=OnLoadCallback"></script>
+  </head>
+  
+  <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
+  <body ng-controller="SketchController" id="ksketchapp"  scrolling="no">
+    
+    <!-- Top Bar -->
+    <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
+          <a class="brand" id="logo" href="#">K-Sketch</a>
+          <p class="navbar-text pull-left">
+            <!--Username and profile link goes here.-->             
+            Hello, <a href="#" class="navbar-link"><span id="heading">{{name}}</span></a>!
+            <a class="janrainEngage" href="#">Sign-In</button>
+            <a href="/logout">Logout {{User.name}}</a>
+            <!--button id="authorize-button" class="button btn-inverse" onClick="handleAuthResult()">Login</button>
+<button class="button btn-inverse" ng-hide="name=='Anonymous User'" ng-click="logout()">Logout</button-->
+          </p>
+          <div class="nav-collapse collapse">
+            <ul class="nav pull-right">
+              <li class="active">
+                <div class="navbar-search pull-right">
+                  <!--input type="text" class="search-query" id="search" ng-model="search" placeholder="Search by sketch name or owner">
+                  <a class="button btn-inverse" href="search.html"  ng-click="searchlist()">>></a-->
+                </div>
+              </li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Body -->
+    <div class="container-fluid">
+      <div class="row-fluid">
+        
+        <!-- Navigation Sidebar (Access separate panes). -->
+        <div class="span3">
+          <div class="well sidebar-nav sidebar-nav-fixed">
+            <ul class="nav nav-list">
+              <!--This changes depending on current logged-in status.-->
+              
+              <li id="hm"><a href="index.html">Home</a></li>
+              <li id="sc" ng-hide="name=='Anonymous User'"><a href="index.html">My Sketchbook</a></li>
+              <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
+              <li id="vs" class="active"><a>Search for Sketch</a></li>
+            </ul>
+          </div><!--/.well -->
+        </div><!--/span-->
+        
+        <!-- Main Body -->
+        <div class="span9">
+          <!-- Stuff goes here. -->
+          <input type="text" id="search" ng-model="search" placeholder="Search by sketch name">
+          <a class="button btn-inverse" ng-click="searchlist()">>></a>
+          <table class="table table-bordered table-striped">
+            <thead>
+              <tr>
+                <td>Sketch ID</td>
+                <td>File Owner</td>
+                <td>Sketch Version</td>
+                <td>Parent Sketch</td>
+                <td>Sketch Name</td>
+                <td>Sketch Description</td>
+              </tr>
+            </thead>
+            <tbody>    					
+              <tr ng-repeat="files in searchitems.entities">
+                <td>{{files.data.sketchId}}</td>
+                <td>{{files.data.owner}}</td>
+                <td>{{files.data.version}}</td>
+                <td>{{files.data.original}}</td>       							
+                <td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td>
+                <!-- td><input type="text" value="{{files.data.fileData}}"/></td -->
+                <td>{{files.data.changeDescription}}</td>
+              </tr>
+            </tbody>
+          </table>				
+        </div><!--/span-->
+      </div><!--/row-->
+      
+      <hr>
+      
+      <footer>
+        <p>&copy; Richard C. Davis 2013</p>
+      </footer>
+      
+    </div><!--/.fluid-container-->
+    
+    
+    <!-- Le javascript
+================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="lib/angular/angular.min.js"></script>
+    <script src="lib/angular/angular-resource.min.js"></script>
+    <script src="js/angular/login-controller.js"></script>
+    <script src="js/angular/currentid-controller.js"></script>    
+    <script src="js/angular/sketch-controller.js"></script>
+    <script src="js/oauth2.js"></script>
+    <!-- script src="js/angular-http-auth.js"></script -->
+    <script src="js/app.js"></script>
+    <!-- script src="../test/lib/angular/angular-mocks.js"></script -->
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap-transition.js"></script>
+    <script src="js/bootstrap-alert.js"></script>
+    <script src="js/bootstrap-modal.js"></script>
+    <script src="js/bootstrap-dropdown.js"></script>
+    <script src="js/bootstrap-scrollspy.js"></script>
+    <script src="js/bootstrap-tab.js"></script>
+    <script src="js/bootstrap-tooltip.js"></script>
+    <script src="js/bootstrap-popover.js"></script>
+    <script src="js/bootstrap-button.js"></script>
+    <script src="js/bootstrap-collapse.js"></script>
+    <script src="js/bootstrap-carousel.js"></script>
+    <script src="js/bootstrap-typeahead.js"></script>
+    
+  </body>
+</html>
