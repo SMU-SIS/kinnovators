@@ -22,6 +22,7 @@ function SketchController($scope,$resource){
 	
    	//Current Id
    	$scope.search = "";
+    $scope.test = "";
    	
    	//Search Query Filter
    	$scope.query = function(item) {
@@ -110,6 +111,11 @@ function SketchController($scope,$resource){
 		$scope.fileName = fileName;
 	}
 	
+    
+    $scope.setTest = function(test) {
+        $scope.test = test;
+    }
+    
 	$scope.setData = function(fileData) {
 		$scope.fileData = fileData;
 	}
@@ -196,7 +202,30 @@ function SketchController($scope,$resource){
             $scope.waiting = "Ready";
           });  
   };
-
-  $scope.list("sketch"); 
+  
+  $scope.searchlist = function(){
+    $scope.SearchResource = $resource('http://:remote_url/list/sketch/:criteria',
+    {"remote_url":$scope.remote_url,"criteria":$scope.search}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Updating";   
+    $scope.SearchResource.get(function(response) { 
+        $scope.searchitems = response;
+        $scope.waiting = "Ready";
+      });  
+  };
+  
+  $scope.get_sketch = function(id) {
+    $scope.getSketch = $resource('http://:remote_url/get/sketch/:id', 
+             {"remote_url":$scope.remote_url,"id":$scope.test}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Updating";   
+    $scope.getSketch.get(function(response) { 
+        var rsketch = response.data;
+        $scope.setMeta(rsketch.sketchId, rsketch.version, rsketch.owner, rsketch.fileName);
+        $scope.setData(rsketch.fileData);
+        loadKSketchFile($scope.fileData);
+        $scope.waiting = "Ready";
+      });  
+  }
   $scope.getuser();
 }

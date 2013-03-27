@@ -10,9 +10,9 @@ import datetime
 import logging
 import os
 import urllib
+import urllib2
 
-import webapp2 as webapp
-
+import webapp2
 from google.appengine.api import memcache
 from google.appengine.ext import db
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -23,13 +23,13 @@ import json
 Attributes and functions for User entity (incl. Janrain login)
 """
     
-class User(db.Model):
-  user_name = db.StringProperty(required=True)
-  full_name = db.StringProperty()
-  email = db.StringProperty()
-  pass_word = db.StringProperty()
-  google_id = db.TextProperty()
-  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
+#class User(db.Model):
+  #user_name = db.StringProperty(required=True)
+  #full_name = db.StringProperty()
+  #email = db.StringProperty()
+  #pass_word = db.StringProperty()
+  #google_id = db.TextProperty()
+  #created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
 
 """
 Attributes and functions for Sketch entity
@@ -98,7 +98,7 @@ class Sketch(db.Model):
     return result
   
   @staticmethod
-  def get_entities(offset=0, limit=50):
+  def get_entities(offset=0, limit=50, criteria=""):
     #update ModelCount when adding
     theQuery = Sketch.all()
     #if model:
@@ -108,18 +108,26 @@ class Sketch(db.Model):
 
     entities = []
     for object in objects:
-      data = {'sketchId': object.sketchId,
+      include = True
+      if criteria != "":
+        if criteria.lower() in object.fileName.lower():
+          include = True
+        else:
+          include = False
+          
+      if include:
+        data = {'sketchId': object.sketchId,
               'version': object.version,
               'changeDescription': object.changeDescription,
               'fileName': object.fileName,
               'owner': object.owner,
               'fileData': object.fileData,
               'original': object.original}
-      entity = {'id': object.key().id(),
+        entity = {'id': object.key().id(),
               'created': object.created,
               'modified': object.modified, 
               'data': data}
-      entities.append(entity)
+        entities.append(entity)
     
     count = 0
     modelCount = ModelCount.all().filter('en_type','Sketch').get()
@@ -252,7 +260,7 @@ class UserGroupMgmt(db.Model):
   group_id = db.IntegerProperty(required=True)
   role = db.StringProperty(required=True)
   
-class ActionHandler(webapp.RequestHandler):
+class ActionHandler(webapp2.RequestHandler):
     """Class which handles bootstrap procedure and seeds the necessary
     entities in the datastore.
     """
@@ -347,12 +355,56 @@ class ActionHandler(webapp.RequestHandler):
               result = Sketch.edit_entity(model_id,data)
           else:
               result = Sketch.get_entity(model_id)
-          return self.respond(result)
+          return self.respond(result) 
+          
+    def search_sketch(self, criteria):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
 
-application = webapp.WSGIApplication([
-    webapp.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
-    webapp.Route('/sketch/<model_id>/delete', handler=ActionHandler, handler_method='delete_sketch'), 
-    webapp.Route('/sketch/<model_id>', handler=ActionHandler, handler_method='get_or_edit_sketch'), 
-    webapp.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'),
+        offset = 0
+        new_offset = self.request.get("offset")
+        if new_offset:
+          offset = int(new_offset)
+
+        result = Sketch.get_entities(offset=offset, criteria=criteria)
+        return self.respond(result)
+      
+    def list_sketch(self):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        offset = 0
+        new_offset = self.request.get("offset")
+        if new_offset:
+          offset = int(new_offset)
+
+        result = Sketch.get_entities(offset=offset)
+        return self.respond(result)
+      
+    def get_sketch(self, model_id):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        data = self.request.get("obj")
+        if data:
+          result = Sketch.edit_entity(model_id,data)
+        else:
+          result = Sketch.get_entity(model_id)
+        return self.respond(result) 
+          
+application = webapp2.WSGIApplication([
+    webapp2.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
+    webapp2.Route('/sketch/<model_id>/delete', handler=ActionHandler, handler_method='delete_sketch'), 
+    webapp2.Route('/sketch/<model_id>', handler=ActionHandler, handler_method='get_or_edit_sketch'), 
+    webapp2.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'), 
+    webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), 
+    webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'),
+    webapp2.Route('/get/sketch/<model_id>', handler=ActionHandler, handler_method='get_sketch')
     ],
     debug=True)
