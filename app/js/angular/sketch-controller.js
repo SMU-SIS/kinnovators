@@ -9,60 +9,56 @@ function SketchController($scope,$resource){
 		Sketch
 	*/
 	//User
-	$scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
-    $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
-	
+	//$scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
+  //  $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
+	$scope.User = {"u_name" :"Anonymous User", "u_login": false, "u_email": ""}
     
-    //Sketch
-    $scope.sketchId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
-    $scope.version = "";  //Placeholder value for version (identifies version of sketch - starts at "1" unless existing sketch is loaded).
-  	$scope.fileData = "";  //Placeholder value for fileData (saved data)
-   	$scope.fileName = "";  //Placeholder value for fileName (name file is saved under)
-   	$scope.changeDescription = ""; //Placeholder value for changeDescription (change description for file edits)
-	
-   	//Current Id
-   	$scope.search = "";
-    $scope.test = "";
-   	
-   	//Search Query Filter
-   	$scope.query = function(item) {
-   			return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
-   	};
+  //Sketch
+  $scope.sketchId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
+  $scope.version = "";  //Placeholder value for version (identifies version of sketch - starts at "1" unless existing sketch is loaded).
+  $scope.fileData = "";  //Placeholder value for fileData (saved data)
+  $scope.fileName = "";  //Placeholder value for fileName (name file is saved under)
+  $scope.changeDescription = ""; //Placeholder value for changeDescription (change description for file edits)
 
-    $scope.backend_locations = [
-      {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
-      {url : 'localhost:8080', urlName : 'localhost' } ];
+  //Current Id
+  $scope.search = "";
+  $scope.test = "";
+  
+  //Search Query Filter
+  $scope.query = function(item) {
+      return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
+  };
 
-    $scope.showdetails = false;
+  $scope.backend_locations = [
+    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
+    {url : 'localhost:8080', urlName : 'localhost' } ];
 
-    //Replace this url with your final URL from the SingPath API path. 
-    //$scope.remote_url = "localhost:8080";
-    $scope.remote_url = "k-sketch-test.appspot.com";
-    $scope.waiting = "Ready";
-    
-    //resource calls are defined here
+  $scope.showdetails = false;
 
-    $scope.Model = $resource('http://:remote_url/:model_type/:id',
-                            {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
-                               }
-                        );
- 	
-    $scope.User = $resource('http://:remote_url/getuser',
-                            {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
-                                   }
-                            );
-                            
-    $scope.getuser = function(){
-        var data = {'remote_url':$scope.remote_url};
-        $scope.waiting = "Updating";       
-        $scope.User.get(data,
-            function(response) { 
-              $scope.User = response;
-              $scope.waiting = "Ready";
-            });
-    }
-    
-    $scope.item = {};
+  //Replace this url with your final URL from the SingPath API path. 
+  //$scope.remote_url = "localhost:8080";
+  $scope.remote_url = "k-sketch-test.appspot.com";
+  $scope.waiting = "Ready";
+  
+  //resource calls are defined here
+
+  $scope.Model = $resource('http://:remote_url/:model_type/:id',
+                          {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
+                             }
+                      );
+                          
+  $scope.getuser = function(){
+      $scope.UserResource = $resource('http://:remote_url/getuser?',
+                          {'remote_url':$scope.remote_url},
+                          {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});  
+      $scope.waiting = "Updating";       
+      $scope.UserResource.get(function(response) {
+            $scope.User = response;
+            $scope.waiting = "Ready";
+          });
+  }
+  
+  $scope.item = {};
 	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};    
            	
 	$scope.saveAs = function() { //Saving new file
@@ -75,7 +71,7 @@ function SketchController($scope,$resource){
 		
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
 		
-		$scope.item.data.owner = $scope.name;
+		$scope.item.data.owner = $scope.User.u_name;
 		$scope.item.data.fileName = $scope.fileName;
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
@@ -112,10 +108,10 @@ function SketchController($scope,$resource){
 	}
 	
     
-    $scope.setTest = function(test) {
-        $scope.test = test;
-    }
-    
+  $scope.setTest = function(test) {
+    $scope.test = test;
+  }
+  
 	$scope.setData = function(fileData) {
 		$scope.fileData = fileData;
 	}
@@ -222,10 +218,15 @@ function SketchController($scope,$resource){
     $scope.getSketch.get(function(response) { 
         var rsketch = response.data;
         $scope.setMeta(rsketch.sketchId, rsketch.version, rsketch.owner, rsketch.fileName);
-        $scope.setData(rsketch.fileData);
+        $scope.fileData = rsketch.fileData;
         loadKSketchFile($scope.fileData);
         $scope.waiting = "Ready";
       });  
   }
+  
+  $scope.reload_sketch = function() {
+	loadKSketchFile($scope.fileData);
+  }
+  
   $scope.getuser();
 }

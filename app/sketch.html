@@ -94,14 +94,14 @@
           query_string[pair[0]].push(pair[1]);
         }
       } 
-        e = document.getElementById('testdiv');
-        scope = angular.element(e).scope();
+      e = document.getElementById('testdiv');
+      scope = angular.element(e).scope();
+      if (query_string.id !== undefined) {
         scope.$apply(function() {
-          if (typeof query_string !== 'undefined') {
             scope.setTest(query_string.id);
             scope.get_sketch();
-          }
         });
+      }
     }
       
       
@@ -185,7 +185,7 @@
       //Function receives an xml string from anywhere
       //and asks the flash object to load it	
       function loadKSketchFile(fileData) {
-        var swfObject = document.getElementById('KSketch2_Web');
+        var swfObject = swfobject.getObjectById('KSketch2_Web');
         if(typeof swfObject !='undefined'){
           swfObject.load(fileData);//change load
         }
@@ -245,22 +245,14 @@
           <a class="brand" id="logo" href="#">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->             
-            Hello, <a href="#" class="navbar-link"><span id="heading">{{name}}</span></a>!
-            <a class="janrainEngage" href="#">Sign-In</button>
-            <a href="/logout">Logout {{User.name}}</a>
+            Hello, 
+              <a ng-hide="User.login" ng-block href="/index.html" class="navbar-link"><span id="heading">Anonymous User</span></a>
+              <a ng-show="User.login" ng-block href="#" class="navbar-link"><span id="heading">{{User.u_name}}</span></a>!
+              <a ng-hide="User.login" ng-block class="janrainEngage" href="#">Sign-In</a>
+              <a ng-show="User.login" ng-block href="/logout">Logout {{User.u_name}}</a>
             <!--button id="authorize-button" class="button btn-inverse" onClick="handleAuthResult()">Login</button>
 <button class="button btn-inverse" ng-hide="name=='Anonymous User'" ng-click="logout()">Logout</button-->
           </p>
-          <div class="nav-collapse collapse">
-            <ul class="nav pull-right">
-              <li class="active">
-                <div class="navbar-search pull-right">
-                  <!--input type="text" class="search-query" id="search" ng-model="search" placeholder="Search by sketch name or owner">
-                  <a class="button btn-inverse" href="search.html"  ng-click="searchlist()">>></a-->
-                </div>
-              </li>
-            </ul>
-          </div><!--/.nav-collapse -->
         </div>
       </div>
     </div>
@@ -295,8 +287,8 @@
                   <button class="btn btn-inverse btn-small" onclick="initNew()">New</button>															
                   <button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''">Save</button> 
                   <button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveAsSketch">Save As</button>
-                  <button class="btn btn-inverse btn-small" onclick="initLoad()">Load/Revert</button>
-                  <input type="text" id="visibleTextData" ng-model="fileData">
+                  <button class="btn btn-inverse btn-small" ng-click="reload_sketch()">Load/Revert</button>
+                  <input type="text" id="visibleTextData">
                 </div>				        	        	
               </div>
               <span id="testdiv" ng-model="test"></span>
