@@ -186,8 +186,15 @@
       //and asks the flash object to load it	
       function loadKSketchFile(fileData) {
         var swfObject = swfobject.getObjectById('KSketch2_Web');
-        if(typeof swfObject !='undefined'){
-          swfObject.load(fileData);//change load
+        if(swfObject){
+          var loading = true;
+          while (loading) {
+            try {
+              swfObject.load(fileData);//change load
+              loading = false;
+            } catch (e) {
+            }
+          }
         }
         else
         {
@@ -242,16 +249,13 @@
             <span class="icon-bar"></span>
           </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
-          <a class="brand" id="logo" href="#">K-Sketch</a>
+          <a class="brand" id="logo" href="index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->             
             Hello, 
-              <a ng-hide="User.login" ng-block href="/index.html" class="navbar-link"><span id="heading">Anonymous User</span></a>
-              <a ng-show="User.login" ng-block href="#" class="navbar-link"><span id="heading">{{User.u_name}}</span></a>!
-              <a ng-hide="User.login" ng-block class="janrainEngage" href="#">Sign-In</a>
-              <a ng-show="User.login" ng-block href="/logout">Logout {{User.u_name}}</a>
-            <!--button id="authorize-button" class="button btn-inverse" onClick="handleAuthResult()">Login</button>
-<button class="button btn-inverse" ng-hide="name=='Anonymous User'" ng-click="logout()">Logout</button-->
+              <a ng-show="User.u_login" ng-cloak href="#" class="navbar-link"><span id="heading">{{User.u_name}}</span></a>!
+              <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
+              <a ng-show="User.u_login" ng-cloak href="/logout">Logout</a>
           </p>
         </div>
       </div>
@@ -267,8 +271,8 @@
             <ul class="nav nav-list">
               <!--This changes depending on current logged-in status.-->
               
-              <li id="hm"><a href="index.html">Home</a></li>
-              <li id="sc" ng-hide="name=='Anonymous User'"><a href="index.html">My Sketchbook</a></li>
+              
+              <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
               <li id="cs" class="active"><a>Create a Sketch</a></li>
               <li id="vs"><a href="search.html">Search for Sketch</a></li>
             </ul>
@@ -281,7 +285,7 @@
             <div class="row-fluid">
               <div class="row-fluid">
                 <div class="span6">
-                  {{fileName}} (version {{version}}) by {{owner}} {{test}}
+                  {{fileName}} (version {{version}}) by {{owner}}
                 </div>				
                 <div class="span6">
                   <button class="btn btn-inverse btn-small" onclick="initNew()">New</button>															

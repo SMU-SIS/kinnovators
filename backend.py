@@ -110,7 +110,10 @@ class Sketch(db.Model):
     for object in objects:
       include = True
       if criteria != "":
+        #Change this soon!
         if criteria.lower() in object.fileName.lower():
+          include = True
+        elif criteria.lower() in object.owner.lower():
           include = True
         else:
           include = False

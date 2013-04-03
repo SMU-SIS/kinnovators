@@ -85,7 +85,7 @@
             <span class="icon-bar"></span>
           </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
-          <a class="brand" id="logo" href=" index.html">K-Sketch</a>
+          <a class="brand" id="logo" href="index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->             
             Hello,
@@ -108,53 +108,66 @@
               <!--This changes depending on current logged-in status.-->
               
               
-              <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
+              <li id="sc" class="active" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
               <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
-              <li id="vs" class="active"><a>Search for Sketch</a></li>
+              <li id="vs"><a href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
         
         <!-- Main Body -->
-        <div class="span9">
+        <div class="span9">   
           <!-- Stuff goes here. -->
-          <!--input type="text" id="search" ng-model="search" placeholder="Search by sketch name"-->
-		  <input type="text" id="search" onkeypress="searchKeyPress(event);" ng-model="search" placeholder="Search by sketch name">
-          <a class="button btn-inverse" ng-click="searchlist()">>></a>
-		  <script>
-            function searchKeyPress(e)
-            {
-                // look for window.event in case event isn't passed in
-                if (typeof e == 'undefined' && window.event) { e = window.event; }
-                if (e.keyCode == 13)
-                {
-                    document.getElementsByClassName('button btn-inverse')[0].click();
-                }
-            }
-          </script>		  
-          <table class="table table-bordered table-striped">
-            <thead>
-              <tr>
-                <td>Sketch ID</td>
-                <td>File Owner</td>
-                <td>Sketch Version</td>
-                <td>Parent Sketch</td>
-                <td>Sketch Name</td>
-                <td>Sketch Description</td>
-              </tr>
-            </thead>
-            <tbody>    					
-              <tr ng-repeat="files in searchitems.entities">
-                <td>{{files.data.sketchId}}</td>
-                <td>{{files.data.owner}}</td>
-                <td>{{files.data.version}}</td>
-                <td>{{files.data.original}}</td>       							
-                <td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td>
-                <!-- td><input type="text" value="{{files.data.fileData}}"/></td -->
-                <td>{{files.data.changeDescription}}</td>
-              </tr>
-            </tbody>
-          </table>				
+          <!-- We have to think of a better name for this! -->
+          <div class="row-fluid">
+            <div class="container-fluid" ng-hide="User.u_login" ng-cloak id="guestSketchbook">
+              <h3>You are not logged in!</h3>
+              <h3>Please Login to K-Sketch in order to access this function!</h3>
+            </div>
+            <div class="container-fluid" ng-show="User.u_login" ng-cloak id="userSketchbook">
+              <div class="row-fluid">
+                <h2>About Me</h2>
+                <div class="row-fluid">
+                  <div class="span4">
+                    <div class="well">
+                      *insert image here*
+                    </div>
+                  </div>
+                  <div class="span7 offset1">
+                    Name: {{User.u_name}}<br>
+                    E-mail: {{User.u_email}}<br> <!-- This will be removed later! -->
+                    Description: <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui. </p> 
+                  </div>
+                </div>
+                
+              </div>
+              <div class="row-fluid">
+                <h2>My Sketches</h2>
+                <table class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <td>Sketch ID</td>
+                      <td>Sketch Owner</td>
+                      <td>Sketch Version</td>
+                      <td>Parent Sketch</td>
+                      <td>Sketch Name</td>
+                      <td>Sketch Description</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr ng-repeat="files in items.entities">
+                      <td>{{files.data.sketchId}}</td>
+                      <td>{{files.data.owner}}</td>
+                      <td>{{files.data.version}}</td>
+                      <td>{{files.data.original}}</td>
+                      <td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td>
+                      <td>{{files.data.changeDescription}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div><!--/span-->
       </div><!--/row-->
       

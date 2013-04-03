@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import urllib
+import urllib2
 import webapp2
 import logging
 
@@ -42,14 +43,14 @@ class BaseHandler(webapp2.RequestHandler):
     """
 
     def dispatch(self):
-        """
-          Save the sessions for preservation across requests
-        """
-        try:
-            response = super(BaseHandler, self).dispatch()
-            self.response.write(response)
-        finally:
-            self.session_store.save_sessions(self.response)
+      """
+        Save the sessions for preservation across requests
+      """
+      try:
+          response = super(BaseHandler, self).dispatch()
+          self.response.write(response)
+      finally:
+          self.session_store.save_sessions(self.response)
 
     @webapp2.cached_property
     def auth(self):
@@ -70,8 +71,8 @@ class BaseHandler(webapp2.RequestHandler):
         Dict to hold urls for login/logout
       """
       return {
-          'login_url': self.uri_for('login'),
-          'logout_url': self.uri_for('logout')
+          'login_url': '/index.html',
+          'logout_url': '/index.html'
       }    
     
 class RPXTokenHandler(BaseHandler):
@@ -118,42 +119,39 @@ class RPXTokenHandler(BaseHandler):
           self.session.add_flash('There was an error while processing the login', 'error')
           self.redirect('/')
 
-class GetUser(BaseHandler):
+class GetUser(webapp2.RequestHandler):
     """Class which handles bootstrap procedure and seeds the necessary
     entities in the datastore.
     """
-        
-    def respond(self,result):
-        """Returns a JSON response to the client.
-        """
-        callback = self.request.get('callback')
-        self.response.headers['Content-Type'] = 'application/json'
-        #self.response.headers['Content-Type'] = '%s; charset=%s' % (config.CONTENT_TYPE, config.CHARSET)
-        self.response.headers['Access-Control-Allow-Origin'] = '*'
-        self.response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-        self.response.headers['Access-Control-Allow-Headers'] = 'Origin, Content-Type, X-Requested-With'
-        self.response.headers['Access-Control-Allow-Credentials'] = 'True'
-
-        #Add a handler to automatically convert datetimes to ISO 8601 strings. 
-        dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
-        if callback:
-            content = str(callback) + '(' + json.dumps(result,default=dthandler) + ')'
-            return self.response.out.write(content)
-            
-        return self.response.out.write(json.dumps(result,default=dthandler)) 
-        
-    def get(self):
-      result = {'u_login': bool(False)}
+    @webapp2.cached_property
+    def auth(self):
+        return auth.get_auth()
+    
+    def get(self, **kwargs):
+      result = {'u_login': "Not logged in",
+                'u_name': "Anonymous User",
+                'u_email': ""}
       auser = self.auth.get_user_by_session()
-      userid = auser['user_id']
-      if userid:
-        user = User.get_by_id(userid)
-        if user:
-          result = {'u_login': bool(True),
-                      'u_name': user.display_name,
-                      'u_email': user.email}
-      return self.respond(result)   
-
+      if auser:
+        userid = auser['user_id']
+        if userid:
+          user = User.get_by_id(userid)
+          if user:
+            result = {'u_login': bool(True),
+                        'u_name': user.display_name,
+                        'u_email': user.email}
+            result = json.dumps(result)
+                        
+      callback = self.request.get('callback')
+      self.response.headers['Content-Type'] = 'application/json'
+      self.response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+        
+      if callback:
+        content = str(callback) + '(' + str(result) + ')'
+        return self.response.out.write(content)
+      
+      return self.response.out.write(result)    
+      
 class LogoutPage(BaseHandler):
     def get(self):
       self.auth.unset_session()
@@ -170,8 +168,6 @@ webapp2_config['webapp2_extras.sessions'] = {
 
 application = webapp2.WSGIApplication([('/getuser', GetUser),
                                       ('/logout', LogoutPage),
-                                      ('/janrain', RPXTokenHandler),
-                                     ], config=webapp2_config)
-
-def main(): run_wsgi_app(application)
-if __name__ == '__main__': main()
+                                      ('/janrain', RPXTokenHandler)
+                                     ], config=webapp2_config,
+                                     debug=True)

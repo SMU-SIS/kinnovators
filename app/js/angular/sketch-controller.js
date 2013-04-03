@@ -48,14 +48,21 @@ function SketchController($scope,$resource){
                       );
                           
   $scope.getuser = function(){
-      $scope.UserResource = $resource('http://:remote_url/getuser?',
-                          {'remote_url':$scope.remote_url},
-                          {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});  
-      $scope.waiting = "Updating";       
-      $scope.UserResource.get(function(response) {
-            $scope.User = response;
-            $scope.waiting = "Ready";
-          });
+    $scope.UserResource = $resource('http://:remote_url/getuser',
+                        {'remote_url':$scope.remote_url},
+                        {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
+                           });  
+    $scope.waiting = "Updating";       
+    $scope.UserResource.get(function(response) {
+          var result = response;
+          $scope.iiii = result.u_login;
+          if (result.u_login === "True" || result.u_login === true) {
+            $scope.User = result;            
+          } else {
+            $scope.User = {"u_name" :"Anonymous User", "u_login": false, "u_email": ""}
+          }
+          $scope.waiting = "Ready";
+    });
   }
   
   $scope.item = {};
@@ -76,7 +83,7 @@ function SketchController($scope,$resource){
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
 		
-	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName);
+	  $scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
 		$scope.add("sketch");
@@ -94,7 +101,7 @@ function SketchController($scope,$resource){
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
 		
-	   	$scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName);
+	  $scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
 		$scope.add("sketch");		
@@ -116,47 +123,6 @@ function SketchController($scope,$resource){
 		$scope.fileData = fileData;
 	}
 	
-	$scope.setName = function(l) {
-		$scope.name = l.displayName;
-		$scope.etag = l.result;
-	}
-		
-	$scope.logout = function() {
-		$scope.name = "Anonymous User";
-		$scope.etag = ""
-		
-		var authorizeButton = document.getElementById('authorize-button');
-		authorizeButton.style.visibility = '';		
-		
-		var hm = document.getElementById('hm');
-		var sc = document.getElementById('sc');
-		var cs = document.getElementById('cs');
-		var vs = document.getElementById('vs');	
-		
-		var hm2 = document.getElementById('Home');
-		var sc2 = document.getElementById('Sketchbook');
-		var cs2 = document.getElementById('CreateSketch');
-		var vs2 = document.getElementById('ViewSketch');
-		
-		sc.className = sc.className.replace
-					( /(?:^|\s)active(?!\S)/g , '' );
-		sc2.className = sc2.className.replace
-		( /(?:^|\s)active(?!\S)/g , '' );	
-		cs.className = cs.className.replace
-			      ( /(?:^|\s)active(?!\S)/g , '' );
-		cs2.className = cs2.className.replace
-	      ( /(?:^|\s)active(?!\S)/g , '' );	      		
-		vs.className = vs.className.replace
-			      ( /(?:^|\s)active(?!\S)/g , '' )
-		vs2.className = vs2.className.replace
-		      ( /(?:^|\s)active(?!\S)/g , '' )
-		if (hm.className.search("active") == -1) {		      
-			hm.className += "active";				  
-		}
-		if (hm2.className.search(" active") == -1) {
-			hm2.className += " active";
-		}
-	}	
 
 /*
 	General Add/List (pass "model" to m_type)
@@ -186,17 +152,15 @@ function SketchController($scope,$resource){
     $scope.newItemValue = "";
   };    
   
-  $scope.list = function(m_type){
-    var data = {
-  		  'remote_url':$scope.remote_url,
-			  'model_type':m_type,
-           }
-    $scope.waiting = "Updating";       
-    $scope.Model.get(data,
-          function(response) { 
-            $scope.items = response;
-            $scope.waiting = "Ready";
-          });  
+  $scope.list = function(){
+    $scope.SearchResource = $resource('http://:remote_url/list/sketch/:criteria',
+    {"remote_url":$scope.remote_url,"criteria":$scope.User.u_name}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Updating";   
+    $scope.SearchResource.get(function(response) { 
+        $scope.items = response;
+        $scope.waiting = "Ready";
+     });  
   };
   
   $scope.searchlist = function(){
@@ -207,7 +171,7 @@ function SketchController($scope,$resource){
     $scope.SearchResource.get(function(response) { 
         $scope.searchitems = response;
         $scope.waiting = "Ready";
-      });  
+    });
   };
   
   $scope.get_sketch = function(id) {
@@ -225,8 +189,9 @@ function SketchController($scope,$resource){
   }
   
   $scope.reload_sketch = function() {
-	loadKSketchFile($scope.fileData);
+    loadKSketchFile($scope.fileData);
   }
   
   $scope.getuser();
+  $scope.list();
 }
