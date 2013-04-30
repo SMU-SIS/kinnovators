@@ -21,7 +21,37 @@
 	  #logo {
 	  	  /*padding: 0px 5px 0px;*/
 	  }
-
+    
+    #mainbody{
+      min-height:480px;
+    }
+    
+    /*LoadingDiv*/
+    #LoadingDiv{
+        position: fixed;
+        _position: absolute;
+        z-index: 99;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        _height: expression(document.body.offsetHeight + "px");
+        background-color: rgba(216, 216, 216, 0.2);
+      }
+      
+    #Loading {
+      top: 50%;
+      width: 200px;
+      text-align: center;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    /*IE will need an 'adjustment'*/
+    * html #LoadingDiv{
+         position: absolute;
+         height: expression(document.body.scrollHeight &gt; document.body.offsetHeight ? document.body.scrollHeight : document.body.offsetHeight + 'px');
+    }
+  
     [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
       display: none !important;
     }
@@ -83,7 +113,9 @@
 	      	position:fixed;
 	      	width:auto;
 	      }
-	              
+        #mainbody{
+          min-height:360px;
+        }        
 	  }	
 	  @media (max-width: 979px) {
 	      .sidebar-nav-fixed {
@@ -102,7 +134,10 @@
 		  	margin-top: 0px;
 		  	line-height: 40px;
 		  	color: #777;
-		  }  	     	      
+		  }
+      #mainbody{
+        min-height:420px;
+      }     	      
 	  }
 	  
 	  textarea {

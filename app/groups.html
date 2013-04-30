@@ -82,10 +82,42 @@
         s.parentNode.insertBefore(e, s);
       })();
     </script>
+    
+    <script type="text/javascript">
+      function QueryString() {
+        // This function is anonymous, is executed immediately and 
+        // the return value is assigned to QueryString!
+        var query_string = {};
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+          var pair = vars[i].split("=");
+            // If first entry with this name
+          if (typeof query_string[pair[0]] === "undefined") {
+            query_string[pair[0]] = pair[1];
+            // If second entry with this name
+          } else if (typeof query_string[pair[0]] === "string") {
+            var arr = [ query_string[pair[0]], pair[1] ];
+            query_string[pair[0]] = arr;
+            // If third or later entry with this name
+          } else {
+            query_string[pair[0]].push(pair[1]);
+          }
+        }
+        e = document.getElementById('testdiv');
+        scope = angular.element(e).scope();
+        //if (query_string.id !== undefined) {
+          scope.$apply(function() {
+              scope.setTest(query_string.id);
+              scope.get_group();
+          });
+        //} 
+      }
+    </script>
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
-  <body ng-controller="SearchController" id="ksketchapp"  scrolling="no">  
+  <body ng-controller="GroupsController" id="ksketchapp"  scrolling="no" onload="QueryString()">
     <!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
@@ -96,7 +128,7 @@
             <span class="icon-bar"></span>
           </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
-          <a class="brand" id="logo" href=" index.html">K-Sketch</a>
+          <a class="brand" id="logo" href="index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -116,7 +148,7 @@
         <div class="modal-body">
           <span>Loading........</span>
         </div>
-      </div>      
+      </div>    
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
@@ -128,66 +160,63 @@
               
               <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
               <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
-              <li id="vs" class="active"><a>Search for Sketch</a></li>
+              <li id="vs"><a href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
         
         <!-- Main Body -->
-        <div class="span9">
+        <div class="span9">   
           <!-- Stuff goes here. -->
-          <div class="span6">
-            <input type="text" id="search" onkeypress="searchKeyPress(event);" ng-model="search" placeholder="Search by sketch name or owner">
-            <button class="btn btn-inverse" ng-click="searchlist()">>></button>
+          <!-- We have to think of a better name for this! -->
+          <div class="row-fluid">
+            <div class="row-fluid">
+              <span id="testdiv" ng-model="test"></span>
+              <h2 ng-cloak>{{group_name}}</h2>
+              <div class="row-fluid">
+              </div>
+              
+            </div>
+            
+            <div class="tabbable">
+              <ul class="nav nav-tabs">
+                <li class="active">
+                  <a href="#GroupMembers" data-toggle="tab">Group Members</a>
+                </li>
+                <li>
+                  <a href="#GroupSketches" data-toggle="tab">Group Sketches</a>
+                </li>
+              </ul>
+              <div class="tab-content" id="main">
+                <div class="tab-pane active" id="GroupMembers">
+                  <div class="row-fluid">
+                    <h2>Group Members</h2>
+                    <table class="table table-bordered table-striped" ui-if="!!u_groups.length"  ng-cloak>
+                      <thead>
+                        <th>
+                          User
+                        </th>
+                        <th>
+                          Role
+                        </th>
+                      </thead>
+                      <tbody>
+                        <tr ng-repeat="users in u_groups">
+                          <td>{{users.user}}</td>
+                          <td>{{users.role}}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>                
+                </div>
+                <div class="tab-pane" id="GroupSketches">
+                  <div class="row-fluid">
+                    <h2>Group Sketches</h2>
+                  </div>                
+                </div>                
+              </div>
+            </div>
           </div>
-          <script>
-            function searchKeyPress(e)
-            {
-                // look for window.event in case event isn't passed in
-                if (typeof e == 'undefined' && window.event) { e = window.event; }
-                if (e.keyCode == 13)
-                {
-                    document.getElementsByClassName('btn btn-inverse')[0].click();
-                }
-            }
-          </script>		  
-          <table class="table table-bordered table-striped" ui-if="!!searchitems.entities.length"  ng-cloak>
-            <thead>
-              <th>
-                <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">Sketch ID
-                </a>
-              </th>
-              <th>
-                <a href="" ng-click="predicate_users = 'data.version'; reverse=!reverse">Sketch Version
-                </a>
-              </th>
-              <!--th>Parent Sketch</th-->
-              <th>
-                <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
-                </a>
-              </th>
-              <th>Sketch Description</th>
-              <th>
-                <a href="" ng-click="predicate_users = 'data.owner'; reverse=!reverse">File Owner
-                </a>
-              </th>              
-              <th>
-                <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">SketchDate
-                </a>
-              </th>
-            </thead>
-            <tbody>
-              <tr ng-repeat="files in searchitems.entities | orderBy:predicate_users:reverse">
-                <td>{{files.data.sketchId}}</td>
-                <td>{{files.data.version}}</td>
-                <!--td>{{files.data.original}}</td-->
-                <td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td>
-                <td>{{files.data.changeDescription}}</td>
-                <td>{{files.data.owner}}</td>
-                <td>{{files.created}}</td>
-              </tr>
-            </tbody>
-          </table>
         </div><!--/span-->
       </div><!--/row-->
       
@@ -207,7 +236,7 @@
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
-    <script src="js/angular/search-controller.js"></script>
+    <script src="js/angular/groups-controller.js"></script>
     <script src="js/app.js"></script>
     <script src="js/bootstrap-transition.js"></script>
     <script src="js/bootstrap-alert.js"></script>

@@ -128,7 +128,8 @@ class GetUser(webapp2.RequestHandler):
         return auth.get_auth()
     
     def get(self, **kwargs):
-      result = {'u_login': "Not logged in",
+      result = {'id': 0,
+                'u_login': "Not logged in",
                 'u_name': "Anonymous User",
                 'u_email': ""}
       auser = self.auth.get_user_by_session()
@@ -137,7 +138,8 @@ class GetUser(webapp2.RequestHandler):
         if userid:
           user = User.get_by_id(userid)
           if user:
-            result = {'u_login': bool(True),
+            result = {'id': userid,
+                      'u_login': bool(True),
                         'u_name': user.display_name,
                         'u_email': user.email}
             result = json.dumps(result)

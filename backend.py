@@ -34,6 +34,17 @@ Attributes and functions for User entity (incl. Janrain login)
 """
 Attributes and functions for Sketch entity
 """
+
+class UTC(datetime.tzinfo):
+  def utcoffset(self, dt):
+    return datetime.timedelta(hours=0)
+    
+  def dst(self, dt):
+    return datetime.timedelta(0)
+    
+  def tzname(self, dt):
+    return "UTC"
+
 class Sketch(db.Model):
   #Use backend record id as the model id for simplicity
   sketchId = db.IntegerProperty(required=True)
@@ -99,6 +110,7 @@ class Sketch(db.Model):
   
   @staticmethod
   def get_entities(offset=0, limit=50, criteria=""):
+    utc = UTC()
     #update ModelCount when adding
     theQuery = Sketch.all()
     #if model:
@@ -127,8 +139,8 @@ class Sketch(db.Model):
               'fileData': object.fileData,
               'original': object.original}
         entity = {'id': object.key().id(),
-              'created': object.created,
-              'modified': object.modified, 
+              'created': object.created.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"),
+              'modified': object.modified.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"), 
               'data': data}
         entities.append(entity)
     
@@ -146,6 +158,7 @@ class Sketch(db.Model):
     
   @staticmethod
   def get_entity(model_id):
+    utc = UTC()
     theobject = Sketch.get_by_id(long(model_id))
     
     data = {'sketchId': theobject.sketchId,
@@ -158,6 +171,8 @@ class Sketch(db.Model):
     
     result = {'method':'get_model',
                   'id': model_id,
+                  'created': theobject.created.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"),
+                  'modified': theobject.modified.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"), 
                   'data': data
                   }
     return result
@@ -257,6 +272,95 @@ class Group(db.Model):
   group_name = db.StringProperty(required=True)
   group_sketches = db.TextProperty()
   created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
+  
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+
+  @staticmethod
+  def add(data):
+    #update ModelCount when adding
+    jsonData = json.loads(data)       
+    if jsonData['group_name'] != '':
+      if jsonData['user_id'] != '':
+    
+        entity = Group(group_name=jsonData['group_name'])
+      
+        entity.put()
+        
+        usergroupmgmt = UserGroupMgmt(user_id=int(jsonData['user_id']),
+                                      group_id=entity.key().id(),
+                                      role="Founder")
+        usergroupmgmt.put()
+        
+    result = {'g_name': jsonData['group_name'],
+              'u_id': jsonData['user_id'],
+              'role': "Founder"}
+              
+    return result
+    
+  @staticmethod
+  def get_name(model_id):
+    try:
+      entity = Group.get_by_id(int(model_id))
+      
+      if entity:
+        return entity.group_name
+      else:
+        return "N/A"
+    except ValueError:
+      return "N/A"
+      
+  @staticmethod
+  def get_entities(criteria=""):
+    utc = UTC()
+    theQuery = UserGroupMgmt.all()
+    objects = theQuery.run()
+    group = ""
+    entities = []
+    for object in objects:
+      include = True
+      if criteria != "":
+        #Change this soon!
+        if int(criteria) == object.user_id:
+          include = True
+        else:
+          include = False
+          
+      if include:
+        group = Group.get_name(object.group_id)
+        data = {'group_name': group,
+              'user': object.user_id, #placeholder
+              'role': object.role}
+        entity = {'id': object.group_id, 
+              'data': data}
+        entities.append(entity)
+    result = {'method':'get_entities',
+              'en_type': 'Group',
+              'entities': entities}
+    return result
+    
+  @staticmethod
+  def get_entity(model_id):
+    utc = UTC()
+    theobject = Group.get_by_id(long(model_id))
+    
+    user_groups_query = UserGroupMgmt.all().filter('group_id', theobject.key().id()).run()
+    u_groups = []
+    
+    if user_groups_query:
+      for u_g in user_groups_query:
+        u_entity = {'user': u_g.user_id, #placeholder
+              'role': u_g.role}
+        u_groups.append(u_entity)    
+    
+    result = {'method':'get_entity',
+                  'id': model_id,
+                  'group_name': theobject.group_name,
+                  'u_groups': u_groups
+                  }
+    return result    
   
 class UserGroupMgmt(db.Model):
   user_id = db.IntegerProperty(required=True)
@@ -400,7 +504,51 @@ class ActionHandler(webapp2.RequestHandler):
         else:
           result = Sketch.get_entity(model_id)
         return self.respond(result) 
-          
+        
+    def add_group(self):
+        #Check for GET paramenter == model to see if this is an add or list. 
+        #Call Sketch.add(model, data) or
+        #Fetch all models and return a list. 
+                
+        #Todo - Check for method.
+        logging.info(self.request.method)
+        if self.request.method=="POST":
+          logging.info("in POST")
+          logging.info(self.request.body)
+          result = Group.add(self.request.body)
+          #logging.info(result)
+          return self.respond(result)
+    
+        else:
+          data = self.request.get("obj")
+          if data: 
+            logging.info("Adding new data: "+data)
+            result = Group.add(data)
+          return self.respond(result)
+
+    def get_group(self, model_id):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        result = Group.get_entity(model_id)
+        return self.respond(result) 
+
+    def user_group(self, criteria):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        offset = 0
+        new_offset = self.request.get("offset")
+        if new_offset:
+          offset = int(new_offset)
+
+        result = Group.get_entities(criteria=criteria)
+        return self.respond(result)
+        
 application = webapp2.WSGIApplication([
     webapp2.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
     webapp2.Route('/sketch/<model_id>/delete', handler=ActionHandler, handler_method='delete_sketch'), 
@@ -408,6 +556,9 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'), 
     webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), 
     webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'),
-    webapp2.Route('/get/sketch/<model_id>', handler=ActionHandler, handler_method='get_sketch')
+    webapp2.Route('/get/sketch/<model_id>', handler=ActionHandler, handler_method='get_sketch'),
+    webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), 
+    webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'),
+    webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group')
     ],
     debug=True)

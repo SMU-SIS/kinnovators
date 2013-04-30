@@ -1,27 +1,18 @@
 'use strict';
 
-/* Controller for Saving and Loading of Sketch */
+/* Controller for sketch.html */
 
-angular.module('app', ['ngResource']);
+//angular.module('app', ['ngResource']);
 function SketchController($scope,$resource){
-    
-	/*
-		Sketch
-	*/
-	//User
-	//$scope.name = "Anonymous User"; //Id name - retrieved from Google Login resp.displayName
-  //  $scope.etag = ""; //Unique tag identifier - retrieved from Google Login resp.etag
-	$scope.User = {"u_name" :"Anonymous User", "u_login": false, "u_email": ""}
-    
+
+	$scope.User = {"id": 0, "u_name" :"Anonymous User", "u_login": false, "u_email": ""}
   //Sketch
   $scope.sketchId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
   $scope.version = "";  //Placeholder value for version (identifies version of sketch - starts at "1" unless existing sketch is loaded).
   $scope.fileData = "";  //Placeholder value for fileData (saved data)
   $scope.fileName = "";  //Placeholder value for fileName (name file is saved under)
+  $scope.tempFileName = ""; //Temporary placeholder for fileName during saveAs.
   $scope.changeDescription = ""; //Placeholder value for changeDescription (change description for file edits)
-
-  //Current Id
-  $scope.search = "";
   $scope.test = "";
   
   //Search Query Filter
@@ -59,7 +50,7 @@ function SketchController($scope,$resource){
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;            
           } else {
-            $scope.User = {"u_name" :"Anonymous User", "u_login": false, "u_email": ""}
+            $scope.User = {"id": 0, "u_name" :"Anonymous User", "u_login": false, "u_email": ""}
           }
           $scope.waiting = "Ready";
     });
@@ -79,7 +70,7 @@ function SketchController($scope,$resource){
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
 		
 		$scope.item.data.owner = $scope.User.u_name;
-		$scope.item.data.fileName = $scope.fileName;
+		$scope.item.data.fileName = $scope.tempFileName;
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
 		
@@ -139,7 +130,6 @@ function SketchController($scope,$resource){
             var result = response;
             $scope.sketchId = result.data.sketchId;
             $scope.version = result.data.version;
-            $scope.list(m_type);
             $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "fileName":"", "fileData":"", "changeDescription":""};               
             $scope.waiting = "Ready";
           }); 
@@ -152,29 +142,7 @@ function SketchController($scope,$resource){
     $scope.newItemValue = "";
   };    
   
-  $scope.list = function(){
-    $scope.SearchResource = $resource('http://:remote_url/list/sketch/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.User.u_name}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";   
-    $scope.SearchResource.get(function(response) { 
-        $scope.items = response;
-        $scope.waiting = "Ready";
-     });  
-  };
-  
-  $scope.searchlist = function(){
-    $scope.SearchResource = $resource('http://:remote_url/list/sketch/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.search}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";   
-    $scope.SearchResource.get(function(response) { 
-        $scope.searchitems = response;
-        $scope.waiting = "Ready";
-    });
-  };
-  
-  $scope.get_sketch = function(id) {
+  $scope.get_sketch = function() {
     $scope.getSketch = $resource('http://:remote_url/get/sketch/:id', 
              {"remote_url":$scope.remote_url,"id":$scope.test}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
@@ -193,5 +161,4 @@ function SketchController($scope,$resource){
   }
   
   $scope.getuser();
-  $scope.list();
 }
