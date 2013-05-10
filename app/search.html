@@ -153,7 +153,7 @@
           </script>		  
           <table class="table table-bordered table-striped" ui-if="!!searchitems.entities.length"  ng-cloak>
             <thead>
-              <th>
+              <!--th>
                 <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">Sketch ID
                 </a>
               </th>
@@ -178,10 +178,11 @@
             </thead>
             <tbody>
               <tr ng-repeat="files in searchitems.entities | orderBy:predicate_users:reverse">
-                <td>{{files.data.sketchId}}</td>
+                <!--td>{{files.data.sketchId}}</td>
                 <td>{{files.data.version}}</td>
                 <!--td>{{files.data.original}}</td-->
-                <td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td>
+                <!--td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td-->
+                <td><a href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}">{{files.data.fileName}}</a></td>                
                 <td>{{files.data.changeDescription}}</td>
                 <td>{{files.data.owner}}</td>
                 <td>{{files.created}}</td>
@@ -194,7 +195,7 @@
       <hr>
       
       <footer>
-        <p>&copy; Richard C. Davis 2013</p>
+        <p>This page requires JavaScript and Adobe Flash Player, and is optimized for Mozilla Firefox and Google Chrome. &copy; Richard C. Davis 2013</p>
       </footer>
       
     </div><!--/.fluid-container-->

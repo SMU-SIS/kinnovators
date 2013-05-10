@@ -5,7 +5,7 @@
 //angular.module('app', ['ngResource']);
 function GroupsController($scope,$resource){
     
-	$scope.User = {"id": 0, "u_name" :"Anonymous User", "u_login": false, "u_email": ""}
+	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
     
   $scope.search = "";
   $scope.derp = "derp";
@@ -51,7 +51,7 @@ function GroupsController($scope,$resource){
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
           } else {
-            $scope.User = {"id": 0, "u_name" :"Anonymous User", "u_login": false, "u_email": ""}
+            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
             {
               var referLink = document.createElement("a");

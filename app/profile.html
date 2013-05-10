@@ -146,17 +146,17 @@
               <div class="row-fluid">
                 <h2>About Me</h2>
                 <div class="row-fluid">
-                  <div class="span4">
-                    <div class="well">
-                      *insert image here*
+                  <div class="span3">
+                    <div class="well well-small">
+                      <img id="profile_img" src="https://secure.gravatar.com/avatar/{{User.g_hash}}?s=200&r=pg&d=mm" />
                     </div>
                   </div>
-                  <div class="span7 offset1">
-                    <div class="well">
-                    Name: {{User.u_name}}<br>
-                    E-mail: {{User.u_email}}<br>
-                    <!-- This will be removed later! -->
-                    <!--Description: <p>HERP DERP DURR </p--> 
+                  <div class="span8 offset1">
+                    <div>
+                      <span style="font-weight:bold">Display Name:</span> {{User.u_name}}<br>
+                      <span style="font-weight:bold">Full Name:</span> {{User.u_realname}}<br>
+                      <span style="font-weight:bold">E-mail:</span> {{User.u_email}}<br>
+                      <span style="font-weight:bold">Date Created:</span> {{User.u_created}}<br>
                     </div>
                   </div>
                 </div>
@@ -179,7 +179,7 @@
                       
                       <table class="table table-bordered table-striped" ui-if="!!items.entities.length"  ng-cloak>
                         <thead>
-                          <th>
+                          <!--th>
                             <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">Sketch ID
                             </a>
                           </th>
@@ -187,7 +187,7 @@
                             <a href="" ng-click="predicate_users = 'data.version'; reverse=!reverse">Sketch Version
                             </a>
                           </th>
-                          <!--th>Parent Sketch</th-->
+                          <th>Parent Sketch</th-->
                           <th>
                             <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
                             </a>
@@ -200,10 +200,11 @@
                         </thead>
                         <tbody>
                           <tr ng-repeat="files in items.entities | orderBy:predicate_users:reverse">
-                            <td>{{files.data.sketchId}}</td>
+                            <!--td>{{files.data.sketchId}}</td>
                             <td>{{files.data.version}}</td>
-                            <!--td>{{files.data.original}}</td-->
-                            <td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td>
+                            <td>{{files.data.original}}</td-->
+                            <!--td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td-->
+                            <td><a href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}">{{files.data.fileName}}</a></td>  
                             <td>{{files.data.changeDescription}}</td>
                             <td>{{files.created}}</td>
                           </tr>
@@ -272,7 +273,7 @@
       <hr>
       
       <footer>
-        <p>&copy; Richard C. Davis 2013</p>
+        <p>This page requires JavaScript and Adobe Flash Player, and is optimized for Mozilla Firefox and Google Chrome. &copy; Richard C. Davis 2013</p>
       </footer>
       
     </div><!--/.fluid-container-->

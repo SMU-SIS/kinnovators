@@ -26,6 +26,14 @@
       min-height:480px;
     }
     
+
+    #profile_img {
+      position: relative;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+    }    
+    
     /*LoadingDiv*/
     #LoadingDiv{
         position: fixed;
@@ -36,7 +44,7 @@
         width: 100%;
         height: 100%;
         _height: expression(document.body.offsetHeight + "px");
-        background-color: rgba(216, 216, 216, 0.2);
+        background-color: rgba(216, 216, 216, 0.5);
       }
       
     #Loading {
@@ -45,6 +53,10 @@
       text-align: center;
       margin-left: auto;
       margin-right: auto;
+    }
+    
+    #Message {
+      top: 50%;
     }
     /*IE will need an 'adjustment'*/
     * html #LoadingDiv{
@@ -115,7 +127,7 @@
 	      }
         #mainbody{
           min-height:360px;
-        }        
+        }
 	  }	
 	  @media (max-width: 979px) {
 	      .sidebar-nav-fixed {
@@ -137,7 +149,7 @@
 		  }
       #mainbody{
         min-height:420px;
-      }     	      
+      }
 	  }
 	  
 	  textarea {

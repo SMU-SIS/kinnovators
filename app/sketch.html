@@ -108,12 +108,26 @@
         } 
         e = document.getElementById('testdiv');
         scope = angular.element(e).scope();
+        //if (query_string.id !== undefined) {
+        //  scope.$apply(function() {
+        //      scope.setTest(query_string.id);
+        //      scope.get_sketch();
+        //  });
+        //}
         if (query_string.id !== undefined) {
           scope.$apply(function() {
               scope.setTest(query_string.id);
+          });
+          if (query_string.version !== undefined) {
+            scope.$apply(function() {
+                scope.setVersion(query_string.version);
+            });
+          }
+          scope.$apply(function() {
               scope.get_sketch();
           });
-        }
+        }        
+      
       }
       
       
@@ -142,20 +156,6 @@
         });	
       }
       
-      //Don't care about this, it just allows this example to load a file from
-      //The text area
-      function initLoad() {
-        var textAreaObject = document.getElementById('visibleTextData');
-        if(typeof textAreaObject !='undefined'){
-          //alert(fileData);
-          //loadKSketchFile(fileData);
-          loadKSketchFile(textAreaObject.value);
-        }
-        else
-        {
-          alert('no text area!');
-        }	
-      }
       
       //Clears the K-Sketch app to create a new file.
       function initNew() {
@@ -163,35 +163,12 @@
         e = document.getElementById('SaveAsSketch');
         scope = angular.element(e).scope();
         scope.$apply(function() {
-          scope.setMeta("", "", "", "");
+          scope.setMeta("", "", "", "", "");
+          scope.fileData = "";
         });	
-        var textAreaObject = document.getElementById('visibleTextData');
-        textAreaObject.value = "";
-        if(typeof textAreaObject !='undefined'){
-          //alert(fileData);
-          //loadKSketchFile(fileData);
-          loadKSketchFile(textAreaObject.value);
-        }
-        else
-        {
-          alert('no text area!');
-        }	
-      }
-      
-      //Loads the selected file from Search Sketch
-      function fileLoad(sketchId, version, owner, fileName, fileData) {
-        
-        var textAreaObject = document.getElementById('visibleTextData');
-        textAreaObject.value = fileData;
-        
-        e = document.getElementById('SaveAsSketch');
-        scope = angular.element(e).scope();
-        scope.$apply(function() {
-          scope.setMeta(sketchId, version, owner, fileName);
-        });	
-        
-        //loadKSketchFile(fileData);
-        loadKSketchFile(textAreaObject.value);
+
+        loadKSketchFile("");
+
       }
       
       //Function receives an xml string from anywhere
@@ -277,11 +254,30 @@
       <!-- Loading -->
       
       <div id="LoadingDiv" ng-hide="waiting=='Ready'"></div>
-      <div class="modal" id="Loading" ng-hide="waiting=='Ready'">
+      <div class="modal" id="Loading" ng-show="waiting=='Loading'">
         <div class="modal-body">
           <span>Loading........</span>
         </div>
-      </div>      
+      </div>
+      <div class="modal" id="Message" ng-show="waiting=='Error'" ng-cloak>
+        <div class="modal-body">
+          <div class="modal-header">
+            <input type="submit" class="close" value="x" data-dismiss="modal"/>
+            <h3 id="myUploadItems">{{heading}}</h3>
+          </div>
+          <div class="control-group">
+            <div class="control-label">
+              <span>{{message}}</span>
+              <br/>
+              <span>{{submessage}}</span>
+              <br/>
+            </div>
+            <div class="controls">
+              <button class="btn btn-inverse btn-small" title="Ok" ng-click="acknowledge()">Ok</button>
+            </div>
+          </div>
+        </div>
+      </div>        
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
@@ -294,6 +290,10 @@
               <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
               <li id="cs" class="active"><a>Create a Sketch</a></li>
               <li id="vs"><a href="search.html">Search for Sketch</a></li>
+              <li class="nav-header"></li>
+              <li>
+                <span style="font-weight:bold">Note: To save your file, please use the black buttons on the top-right corner of the editor. The save/load icons within the editor do not work.</span>
+              </li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -312,10 +312,11 @@
                   </span>
                 </div>				
                 <div class="span6">
-                  <button class="btn btn-inverse btn-small" onclick="initNew()">New</button>															
-                  <button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''">Save</button> 
-                  <button class="btn btn-inverse btn-small" onclick="initSave()" data-toggle="modal" href="#SaveAsSketch">Save As</button>
-                  <button class="btn btn-inverse btn-small" ng-click="reload_sketch()">Revert</button>
+                  <button class="btn btn-inverse btn-small" title="Clears editor to create new sketch" onclick="initNew()">New</button>
+                  <button class="btn btn-inverse btn-small" ng-show="fileName==''" disabled ng-cloak>Save</button> 
+                  <button class="btn btn-inverse btn-small" title="Saves a new version of current sketch" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''"  ng-cloak>Save</button> 
+                  <button class="btn btn-inverse btn-small" title="Saves current sketch as a new sketch" onclick="initSave()" data-toggle="modal" href="#SaveAsSketch">Save As</button>
+                  <button class="btn btn-inverse btn-small" title="Reverts to saved version of sketch" ng-click="reload_sketch()">Revert</button>
                   <input type="text" id="visibleTextData">
                 </div>				        	        	
               </div>
@@ -369,7 +370,7 @@
               
               <div class="modal hide fade in" id="SaveAsSketch" style="display:none">
                 <div class="modal-header">
-                  <a class="close" data-dismiss="modal">x</a>
+                  <input type="submit" class="close" value="x" data-dismiss="modal"/>
                   <h3 id="myUploadItems">Save As New Sketch</h3>
                 </div>
                 <div class="modal-body">
@@ -383,9 +384,9 @@
                         <div class="controls">
                           <textarea style="width: 200px; height: 112px; resize: none;" disabled>*thumbnail goes here*</textarea>
                         </div>
-                        <label class="control-label" for="sketchDesc">Enter a description for this change (optional)</label>
+                        <label class="control-label" for="sketchDesc">Enter a description for this change (optional; max 255 characters)</label>
                         <div class="controls">
-                          <textarea ng-model="changeDescription" id="sketchDescription"></textarea>
+                          <textarea ng-model="changeDescription" id="sketchDescription" maxlength="255"></textarea>
                         </div>
                       </div>
                     </div>
@@ -429,7 +430,7 @@
               
               <div class="modal hide fade in" id="SaveSketch" style="display:none">
                 <div class="modal-header">
-                  <a class="close" data-dismiss="modal">x</a>
+                  <input type="submit" class="close" value="x" data-dismiss="modal"/>
                   <h3 id="myUploadItems">Save Current Sketch</h3>
                 </div>
                 <div class="modal-body">
@@ -443,9 +444,9 @@
                         <div class="controls">
                           <textarea style="width: 200px; height: 112px; resize: none;" disabled>*thumbnail goes here*</textarea>
                         </div>
-                        <label class="control-label" for="sketchDesc">Enter a description for this change (optional)</label>
+                        <label class="control-label" for="sketchDesc">Enter a description for this change (optional; max 255 characters)</label>
                         <div class="controls">
-                          <textarea ng-model="changeDescription" id="sketchDescription"></textarea>
+                          <textarea ng-model="changeDescription" id="sketchDescription" maxlength="255"></textarea>
                         </div>
                       </div>
                     </div>
@@ -491,7 +492,7 @@
       <hr>
       
       <footer>
-        <p>&copy; Richard C. Davis 2013</p>
+        <p>This page requires JavaScript and Adobe Flash Player, and is optimized for Mozilla Firefox and Google Chrome. &copy; Richard C. Davis 2013</p>
       </footer>
       
     </div><!--/.fluid-container-->

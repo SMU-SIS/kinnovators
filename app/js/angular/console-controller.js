@@ -3,7 +3,7 @@
 /* Controller for profile.html */
 
 //angular.module('app', ['ngResource']);
-function ProfileController($scope,$resource){
+function ConsoleController($scope,$resource){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': ""};
     
@@ -49,7 +49,7 @@ function ProfileController($scope,$resource){
         });
   };*/
   
-  $scope.getuser = function(){
+  $scope.retrieveuser = function(){
     $scope.UserResource = $resource('http://:remote_url/getuser',
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}

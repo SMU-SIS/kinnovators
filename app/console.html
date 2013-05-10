@@ -82,51 +82,10 @@
         s.parentNode.insertBefore(e, s);
       })();
     </script>
-    
-    <script type="text/javascript">
-      function QueryString() {
-        // This function is anonymous, is executed immediately and 
-        // the return value is assigned to QueryString!
-        var query_string = {};
-        var query = window.location.search.substring(1);
-        var vars = query.split("&");
-        for (var i=0;i<vars.length;i++) {
-          var pair = vars[i].split("=");
-            // If first entry with this name
-          if (typeof query_string[pair[0]] === "undefined") {
-            query_string[pair[0]] = pair[1];
-            // If second entry with this name
-          } else if (typeof query_string[pair[0]] === "string") {
-            var arr = [ query_string[pair[0]], pair[1] ];
-            query_string[pair[0]] = arr;
-            // If third or later entry with this name
-          } else {
-            query_string[pair[0]].push(pair[1]);
-          }
-        }
-        e = document.getElementById('testdiv');
-        scope = angular.element(e).scope();
-        if (query_string.id !== undefined) {
-          scope.$apply(function() {
-              scope.setTest(query_string.id);
-              scope.get_group();
-          });
-        } else {
-            if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
-            {
-              var referLink = document.createElement("a");
-              referLink.href = "index.html";
-              document.body.appendChild(referLink);
-              referLink.click();
-            }
-            else { window.location.replace("index.html");}        
-        }        
-      }
-    </script>
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
-  <body ng-controller="GroupsController" id="ksketchapp"  scrolling="no" onload="QueryString()">
+  <body ng-controller="ConsoleController" id="ksketchapp"  scrolling="no">  
     <!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
@@ -137,7 +96,7 @@
             <span class="icon-bar"></span>
           </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
-          <a class="brand" id="logo" href="index.html">K-Sketch</a>
+          <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -157,7 +116,7 @@
         <div class="modal-body">
           <span>Loading........</span>
         </div>
-      </div>    
+      </div>      
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
@@ -167,67 +126,49 @@
               <!--This changes depending on current logged-in status.-->
               
               
-              <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
-              <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a href="search.html">Search for Sketch</a></li>
+              <li id="sc" ng-show="User.u_login" ng-cloak><a href="#ManageVersions" data-toggle="tab" >Manage Versions</a></li>
+              <li id="cs" ng-show="User.u_login" ng-cloak><a href="#ManageGroups" data-toggle="tab" >Manage Groups</a></li>
+              <li id="vs" ng-show="User.u_login" ng-cloak><a href="#ManageUsers" data-toggle="tab" >Manage Users</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
         
         <!-- Main Body -->
-        <div class="span9">   
-          <!-- Stuff goes here. -->
-          <!-- We have to think of a better name for this! -->
-          <div class="row-fluid">
-            <div class="row-fluid">
-              <span id="testdiv" ng-model="test"></span>
-              <h2 ng-cloak>{{group_name}}</h2>
-              <div class="row-fluid">
+        <div class="span9">
+            
+            <!-- Panes -->
+            <div class="tab-content">
+              
+              <!-- Manage Versions Pane -->
+              <div class="tab-pane active" id="ManageVersions" ng-cloak>
+                <div class="container-fluid">
+                  <div class="row-fluid" id="mainbody">
+                    <h3 id="Login">Admin Console - Manage Versions</h3>
+                    <h3>Under Construction.</h3>
+                  </div>
+                </div>
               </div>
               
-            </div>
-            
-            <div class="tabbable">
-              <ul class="nav nav-tabs">
-                <li class="active">
-                  <a href="#GroupMembers" data-toggle="tab">Group Members</a>
-                </li>
-                <li>
-                  <a href="#GroupSketches" data-toggle="tab">Group Sketches</a>
-                </li>
-              </ul>
-              <div class="tab-content" id="main">
-                <div class="tab-pane active" id="GroupMembers">
-                  <div class="row-fluid">
-                    <h2>Group Members</h2>
-                    <table class="table table-bordered table-striped" ui-if="!!u_groups.length"  ng-cloak>
-                      <thead>
-                        <th>
-                          User
-                        </th>
-                        <th>
-                          Role
-                        </th>
-                      </thead>
-                      <tbody>
-                        <tr ng-repeat="users in u_groups">
-                          <td>{{users.user}}</td>
-                          <td>{{users.role}}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>                
+              <!-- Manage Groups Pane -->
+              <div class="tab-pane" id="ManageGroups" ng-cloak>
+                <div class="container-fluid">
+                  <div class="row-fluid" id="mainbody">
+                    <h3 id="Login">Admin Console - Manage Groups</h3>
+                    <h3>Under Construction.</h3>
+                  </div>
                 </div>
-                <div class="tab-pane" id="GroupSketches">
-                  <div class="row-fluid">
-                    <h2>Group Sketches</h2>
-                  </div>                
-                </div>                
+              </div>
+              
+              <!-- Manage Users Pane -->
+              <div class="tab-pane" id="ManageUsers" ng-cloak>
+                <div class="container-fluid">
+                  <div class="row-fluid" id="mainbody">
+                    <h3 id="Login">Admin Console - Manage Users</h3>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div><!--/span-->
-      </div><!--/row-->
+        </div>
       
       <hr>
       
@@ -245,7 +186,7 @@
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
-    <script src="js/angular/groups-controller.js"></script>
+    <script src="js/angular/console-controller.js"></script>
     <script src="js/app.js"></script>
     <script src="js/bootstrap-transition.js"></script>
     <script src="js/bootstrap-alert.js"></script>

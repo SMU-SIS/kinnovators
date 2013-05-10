@@ -9,7 +9,7 @@ function SearchController($scope,$resource){
 		Sketch
 	*/
 	//User
-	$scope.User = {"id": 0, "u_name" :"Anonymous User", "u_login": false, "u_email": ""}
+	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
   $scope.backend_locations = [
     {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
     {url : 'localhost:8080', urlName : 'localhost' } ];
@@ -17,7 +17,7 @@ function SearchController($scope,$resource){
   $scope.showdetails = false;
   
   $scope.search = "";
-  $scope.predicate_users = '-data.fileName';
+  $scope.predicate_users = '-created';
   
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
@@ -43,7 +43,7 @@ function SearchController($scope,$resource){
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;            
           } else {
-            $scope.User = {"id": 0, "u_name" :"Anonymous User", "u_login": false, "u_email": ""}
+            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
           }
           $scope.waiting = "Ready";
     });

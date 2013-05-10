@@ -18,18 +18,8 @@ from google.appengine.ext import db
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 import json
+from rpx import User
 
-"""
-Attributes and functions for User entity (incl. Janrain login)
-"""
-    
-#class User(db.Model):
-  #user_name = db.StringProperty(required=True)
-  #full_name = db.StringProperty()
-  #email = db.StringProperty()
-  #pass_word = db.StringProperty()
-  #google_id = db.TextProperty()
-  #created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
 
 """
 Attributes and functions for Sketch entity
@@ -51,7 +41,8 @@ class Sketch(db.Model):
   version = db.IntegerProperty(required=True)
   changeDescription = db.StringProperty()
   fileName = db.StringProperty(required=True)
-  owner = db.StringProperty(required=True) #might be changed
+  #owner = db.StringProperty(required=True) #might be changed
+  owner = db.IntegerProperty(required=True)
   fileData = db.TextProperty(required=True)
   original = db.StringProperty(required=True) #might be changed
   created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created    
@@ -97,7 +88,7 @@ class Sketch(db.Model):
                     version=long(jsonData['version']),
                     changeDescription=jsonData['changeDescription'],
                     fileName=jsonData['fileName'],
-                    owner=jsonData['owner'],
+                    owner=long(jsonData['owner_id']),
                     fileData=jsonData['fileData'],
                     original=jsonData['original'])
     
@@ -109,38 +100,39 @@ class Sketch(db.Model):
     return result
   
   @staticmethod
-  def get_entities(offset=0, limit=50, criteria=""):
+  def get_entities(criteria=""):
     utc = UTC()
     #update ModelCount when adding
     theQuery = Sketch.all()
     #if model:
       #theQuery = theQuery.filter('model', model)
 
-    objects = theQuery.fetch(limit=limit, offset=offset)
+    objects = theQuery.run()
 
     entities = []
+    possible_users = User.search_users_by_name(criteria)
     for object in objects:
       include = True
       if criteria != "":
-        #Change this soon!
+        include = False
         if criteria.lower() in object.fileName.lower():
           include = True
-        elif criteria.lower() in object.owner.lower():
+        if object.owner in possible_users:
           include = True
-        else:
-          include = False
-          
+        
       if include:
+        user_name = User.get_name(object.owner)
         data = {'sketchId': object.sketchId,
               'version': object.version,
               'changeDescription': object.changeDescription,
               'fileName': object.fileName,
-              'owner': object.owner,
+              'owner': user_name,
+              'owner_id': object.owner,
               'fileData': object.fileData,
               'original': object.original}
         entity = {'id': object.key().id(),
-              'created': object.created.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"),
-              'modified': object.modified.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"), 
+              'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+              'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
               'data': data}
         entities.append(entity)
     
@@ -151,8 +143,42 @@ class Sketch(db.Model):
     result = {'method':'get_entities',
               'en_type': 'Sketch',
               'count': count,
-              'offset': offset,
-              'limit':limit,
+              'entities': entities}
+    return result
+
+  @staticmethod
+  def get_entities_by_id(criteria=""):
+    utc = UTC()
+    #update ModelCount when adding
+    theQuery = Sketch.all()
+    #if model:
+      #theQuery = theQuery.filter('model', model)
+
+    objects = theQuery.run()
+
+    entities = []
+    for object in objects:
+      if long(criteria) == object.owner:
+        data = {'sketchId': object.sketchId,
+              'version': object.version,
+              'changeDescription': object.changeDescription,
+              'fileName': object.fileName,
+              'owner': object.owner,
+              'fileData': object.fileData,
+              'original': object.original}
+        entity = {'id': object.key().id(),
+              'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+              'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+              'data': data}
+        entities.append(entity)
+          
+    count = 0
+    modelCount = ModelCount.all().filter('en_type','Sketch').get()
+    if modelCount:
+      count = modelCount.count
+    result = {'method':'get_entities_by_id',
+              'en_type': 'Sketch',
+              'count': count,
               'entities': entities}
     return result
     
@@ -161,22 +187,79 @@ class Sketch(db.Model):
     utc = UTC()
     theobject = Sketch.get_by_id(long(model_id))
     
+    user_name = User.get_name(theobject.owner)
     data = {'sketchId': theobject.sketchId,
               'version': theobject.version,
               'changeDescription': theobject.changeDescription,
               'fileName': theobject.fileName,
-              'owner': theobject.owner,
+              'owner': user_name,
+              'owner_id': theobject.owner,
               'fileData': theobject.fileData,
               'original': theobject.original}
     
     result = {'method':'get_model',
                   'id': model_id,
-                  'created': theobject.created.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"),
-                  'modified': theobject.modified.replace(tzinfo=utc).strftime("%Y-%m-%d %H:%M:%S"), 
+                  'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                  'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
                   'data': data
                   }
     return result
-  
+
+  @staticmethod
+  def get_entity_by_versioning(sketchId=-1,version=-1):
+    utc = UTC()
+    versionmatch = True
+    result = {'method':'get_entity_by_versioning',
+                  'success':"no",
+                  'id': 0,
+                  'created': datetime.datetime.now().replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                  'modified': datetime.datetime.now().replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                  'data': ""
+                  }
+    
+    try:
+      query = Sketch.all()
+      query.filter('sketchId =', long(sketchId)).filter('version =', long(version))
+      
+      theobject = query.get()
+      
+      if theobject is None:
+        versionCount = VersionCount.all().filter('sketchId', long(sketchId)).get()
+        versionmatch = False
+        
+        if versionCount:
+          query = Sketch.all()
+          query.filter('sketchId =', long(sketchId)).filter('version =', long(versionCount.lastVersion))
+          theobject = query.get()
+        else:
+          result['data'] = "durr"
+      
+      if theobject:
+      
+        user_name = User.get_name(theobject.owner)
+        data = {'sketchId': theobject.sketchId,
+                  'version': theobject.version,
+                  'changeDescription': theobject.changeDescription,
+                  'fileName': theobject.fileName,
+                  'owner': user_name,
+                  'owner_id': theobject.owner,
+                  'fileData': theobject.fileData,
+                  'original': theobject.original}
+        
+        result = {'method':'get_entity_by_versioning',
+                      'success':"yes",
+                      'id': theobject.key().id(),
+                      'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                      'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+                      'data': data
+                      }
+        if not versionmatch:
+          result['success'] = "version"
+    except (RuntimeError, ValueError):
+      result['data'] = "value"
+      
+    return result
+    
   @staticmethod
   def clear():
     #update model count when clearing model on api
@@ -228,7 +311,7 @@ class Sketch(db.Model):
     if jsonData['fileName']!='':
       entity.fileName=jsonData['fileName']
     if jsonData['owner']!='':
-      entity.owner=jsonData['owner']
+      entity.owner=long(jsonData['owner'])
     if jsonData['fileData']!='':
       entity.fileData=jsonData['fileData']
     if jsonData['original']!='':
@@ -351,7 +434,9 @@ class Group(db.Model):
     
     if user_groups_query:
       for u_g in user_groups_query:
-        u_entity = {'user': u_g.user_id, #placeholder
+        user_name = User.get_name(u_g.user_id)
+        u_entity = {'user': user_name,
+              'user_id': u_g.user_id,#placeholder
               'role': u_g.role}
         u_groups.append(u_entity)    
     
@@ -464,6 +549,15 @@ class ActionHandler(webapp2.RequestHandler):
               result = Sketch.get_entity(model_id)
           return self.respond(result) 
           
+    def user_sketch(self, criteria):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        result = Sketch.get_entities_by_id(criteria=criteria)
+        return self.respond(result)    
+        
     def search_sketch(self, criteria):
         #Check for GET parameter == model to see if this is a get or an edit
         logging.info("**********************")
@@ -475,7 +569,7 @@ class ActionHandler(webapp2.RequestHandler):
         if new_offset:
           offset = int(new_offset)
 
-        result = Sketch.get_entities(offset=offset, criteria=criteria)
+        result = Sketch.get_entities(criteria=criteria)
         return self.respond(result)
       
     def list_sketch(self):
@@ -489,7 +583,7 @@ class ActionHandler(webapp2.RequestHandler):
         if new_offset:
           offset = int(new_offset)
 
-        result = Sketch.get_entities(offset=offset)
+        result = Sketch.get_entities()
         return self.respond(result)
       
     def get_sketch(self, model_id):
@@ -503,6 +597,20 @@ class ActionHandler(webapp2.RequestHandler):
           result = Sketch.edit_entity(model_id,data)
         else:
           result = Sketch.get_entity(model_id)
+        return self.respond(result) 
+
+      
+    def get_sketch_by_version(self, sketchId, version):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        data = self.request.get("obj")
+        if data:
+          result = Sketch.edit_entity(model_id,data)
+        else:
+          result = Sketch.get_entity_by_versioning(sketchId, version)
         return self.respond(result) 
         
     def add_group(self):
@@ -556,7 +664,9 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'), 
     webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), 
     webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'),
+    webapp2.Route('/list/sketch/user/<criteria>', handler=ActionHandler, handler_method='user_sketch'),
     webapp2.Route('/get/sketch/<model_id>', handler=ActionHandler, handler_method='get_sketch'),
+    webapp2.Route('/get/sketch/version/<sketchId>/<version>', handler=ActionHandler, handler_method='get_sketch_by_version'),
     webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), 
     webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'),
     webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group')
