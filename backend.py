@@ -41,12 +41,12 @@ class Sketch(db.Model):
   version = db.IntegerProperty(required=True)
   changeDescription = db.StringProperty()
   fileName = db.StringProperty(required=True)
-  #owner = db.StringProperty(required=True) #might be changed
   owner = db.IntegerProperty(required=True)
   fileData = db.TextProperty(required=True)
   original = db.StringProperty(required=True) #might be changed
   created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created    
   modified = db.DateTimeProperty(auto_now=True)
+  appver = db.FloatProperty()
   
   def to_dict(self):
        d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
@@ -69,8 +69,8 @@ class Sketch(db.Model):
         modelCount = ModelCount(en_type='Sketch', count=1)
         modelCount.put()
       jsonData['sketchId'] = str(modelCount.count)
-    #For sketch files saved through "Save As" that were not derived from another file  
-    if jsonData['original'] == ':':
+    #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
+    if (jsonData['original'] == ':') or (jsonData['original'] == ':-1'):
       jsonData['original'] = 'original'
     
     #update VersionCount when adding  
@@ -90,12 +90,18 @@ class Sketch(db.Model):
                     fileName=jsonData['fileName'],
                     owner=long(jsonData['owner_id']),
                     fileData=jsonData['fileData'],
-                    original=jsonData['original'])
+                    original=jsonData['original'],
+                    appver=float(jsonData['appver']))
     
-    entity.put()
+    verify = entity.put()
     
-    result = {'id': entity.key().id(), 
-              'data': jsonData} #this would also check if the json submitted was valid
+    if (verify):
+      result = {'id': entity.key().id(), 
+                'status': "success",
+                'data': jsonData} #this would also check if the json submitted was valid
+    else:
+      result = {'status': "error",
+                'message': "Save unsuccessful. Please try again."}
         
     return result
   
@@ -110,7 +116,7 @@ class Sketch(db.Model):
     objects = theQuery.run()
 
     entities = []
-    possible_users = User.search_users_by_name(criteria)
+    possible_users = User.get_matching_ids(criteria)
     for object in objects:
       include = True
       if criteria != "":
@@ -128,8 +134,8 @@ class Sketch(db.Model):
               'fileName': object.fileName,
               'owner': user_name,
               'owner_id': object.owner,
-              'fileData': object.fileData,
-              'original': object.original}
+              'original': object.original,
+              'appver': object.appver}
         entity = {'id': object.key().id(),
               'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
               'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
@@ -164,8 +170,8 @@ class Sketch(db.Model):
               'changeDescription': object.changeDescription,
               'fileName': object.fileName,
               'owner': object.owner,
-              'fileData': object.fileData,
-              'original': object.original}
+              'original': object.original,
+              'appver': object.appver}
         entity = {'id': object.key().id(),
               'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
               'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
@@ -195,7 +201,8 @@ class Sketch(db.Model):
               'owner': user_name,
               'owner_id': theobject.owner,
               'fileData': theobject.fileData,
-              'original': theobject.original}
+              'original': theobject.original,
+              'appver': theobject.appver}
     
     result = {'method':'get_model',
                   'id': model_id,
@@ -225,7 +232,8 @@ class Sketch(db.Model):
       
       if theobject is None:
         versionCount = VersionCount.all().filter('sketchId', long(sketchId)).get()
-        versionmatch = False
+        if long(version) != -1:
+          versionmatch = False
         
         if versionCount:
           query = Sketch.all()
@@ -244,7 +252,8 @@ class Sketch(db.Model):
                   'owner': user_name,
                   'owner_id': theobject.owner,
                   'fileData': theobject.fileData,
-                  'original': theobject.original}
+                  'original': theobject.original,
+                  'appver': theobject.appver}
         
         result = {'method':'get_entity_by_versioning',
                       'success':"yes",
@@ -316,6 +325,8 @@ class Sketch(db.Model):
       entity.fileData=jsonData['fileData']
     if jsonData['original']!='':
       entity.original=jsonData['original']
+    if jsonData['appver']!='':
+      entity.original=float(jsonData['original'])
     entity.put()
     
     result = {'id': entity.key().id(), 

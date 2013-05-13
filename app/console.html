@@ -59,7 +59,7 @@
         if (typeof window.janrain !== 'object') window.janrain = {};
         if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
         
-        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/janrain';
+        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/user/janrain';
         
         function isReady() { janrain.ready = true; };
         if (document.addEventListener) {
@@ -82,6 +82,13 @@
         s.parentNode.insertBefore(e, s);
       })();
     </script>
+    <script type="text/javascript">
+      
+      function open_sketch(id, version){
+        sg_upload = window.open("/app/sketch.html?id=" + id + "&version=" + version, "_blank"); 
+        sg_upload.focus();
+      }    
+    </script>
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
@@ -90,11 +97,6 @@
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
@@ -102,11 +104,15 @@
               <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
-              <a ng-show="User.u_login" ng-cloak href="/logout">Logout</a>
+              <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
+          </p>
+          <p class="navbar-text pull-right">
+            <a href="/app/console.html"><span style="font-weight:bold">Administrator Console</span></a>
           </p>
         </div>
       </div>
     </div>
+    
     
     <!-- Main Body -->
     <div class="container-fluid">
@@ -120,7 +126,7 @@
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
-        <div class="span3">
+        <div class="span2">
           <div class="well sidebar-nav sidebar-nav-fixed">
             <ul class="nav nav-list">
               <!--This changes depending on current logged-in status.-->
@@ -134,7 +140,7 @@
         </div><!--/span-->
         
         <!-- Main Body -->
-        <div class="span9">
+        <div class="span10">
             
             <!-- Panes -->
             <div class="tab-content">
@@ -144,7 +150,12 @@
                 <div class="container-fluid">
                   <div class="row-fluid" id="mainbody">
                     <h3 id="Login">Admin Console - Manage Versions</h3>
-                    <h3>Under Construction.</h3>
+                    <div class="row-fluid">
+                      <div class="span6">
+                      </div>
+                      <div class="span6">
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -164,6 +175,178 @@
                 <div class="container-fluid">
                   <div class="row-fluid" id="mainbody">
                     <h3 id="Login">Admin Console - Manage Users</h3>
+                    <table class="table table-bordered table-striped">
+                      <tr>
+                        <td>
+                          Search by Username: <input ng-model="searchUser"/>
+                          <input type="submit" class="button btn-inverse" ng-click="userlist()" value="Search"/>
+                        </td>
+                        <td>
+                          
+                            Found User: <select ng-model="selecteduser" ng-options="userfound.id as userfound.u_name for userfound in usersfound.entities" ng-cloak></select>
+                            <input type="submit" class="button btn-inverse" ng-click="retrieveuser()" value="Confirm"/>
+                          
+                        </td>
+                      </tr>
+                    </table>
+                    <div ui-if="!!selecteduserdata" ng-cloak>
+                      <table>
+                        <tr>
+                          <td>
+                            <h4>{{selecteduserdata.u_name}}'s Data</h4>
+                          </td>
+                          <td>
+                            <span class="label label-important" ui-if="!!selecteduserdata.u_isadmin" ng-cloak>Type: Administrator</span>
+                            <span class="label label-success" ui-if="!selecteduserdata.u_isadmin" ng-cloak>Type: Ordinary Account</span>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <table class="table table-bordered table-striped">
+                        <thead>
+                          <th>
+                            User ID
+                          </th>
+                          <th>
+                            Display Name
+                          </th>
+                          <th>
+                            Real Name
+                          </th>
+                          <th>
+                            Email
+                          </th>
+                          <th>
+                            Date Created
+                          </th>
+                          <th>
+                            Date of Last Login
+                          </th>
+                          <th>
+                            Login Count
+                          </th>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>
+                              {{selecteduserdata.id}}
+                            </td>
+                            <td>
+                              {{selecteduserdata.u_name}}
+                            </td>
+                            <td>
+                              {{selecteduserdata.u_realname}}
+                            </td>
+                            <td>
+                              {{selecteduserdata.u_email}}
+                            </td>
+                            <td>
+                              {{selecteduserdata.u_created}}
+                            </td>
+                            <td>
+                              {{selecteduserdata.u_lastlogin}}
+                            </td>
+                            <td>
+                              {{selecteduserdata.u_logincount}}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <table class="table table-bordered table-striped">
+                        <thead>
+                          <th>
+                            Assigned Version
+                          </th>
+                          <th>
+                            Total Sketches Created
+                          </th>
+                          <th>
+                            Original Sketches
+                          </th>
+                          <th>
+                            Non-Original (Edited) Sketches
+                          </th>
+                          <th>
+                            User Status
+                          </th>
+                          <th>
+                            Ban User
+                          </th>
+                          <th>
+                            Delete Sketches
+                          </th>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>
+                              {{selecteduserdata.u_version.toFixed(1)}}
+                            </td>
+                            <td>
+                              {{items.entities.length}}
+                            </td>
+                            <td>
+                              {{(items.entities|filter:isoriginal).length}}
+                            </td>
+                            <td>
+                              {{(items.entities|filter:isnotoriginal).length}}
+                            </td>
+                            <td>
+                              <span class="label label-success" ui-if="!!selecteduserdata.u_isactive" ng-cloak>Active</span>
+                              <span class="label label-important" ui-if="!selecteduserdata.u_isactive" ng-cloak>Inactive</span>                              
+                            </td>
+                            <td>
+                              -
+                            </td>
+                            <td>
+                              -
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <table>
+                        <tr>
+                          <td>
+                            <h4>{{selecteduserdata.u_name}}'s Sketches</h4>
+                          </td>
+                        </tr>
+                      </table>
+                      <table class="table table-bordered table-striped" ui-if="!!items.entities.length"  ng-cloak>
+                      <thead>
+                          <th>
+                            <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">Sketch ID
+                            </a>
+                          </th>
+                          <th>
+                            <a href="" ng-click="predicate_users = 'data.version'; reverse=!reverse">Sketch Version
+                            </a>
+                          </th>
+                          <th>Parent Sketch</th>
+                          <th>
+                            <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
+                            </a>
+                          </th>
+                          <th>Sketch Description</th>
+                          <th>
+                            <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">SketchDate
+                            </a>
+                          </th>
+                          <th>
+                            Editor Version
+                          </th>
+                        </thead>
+                        <tbody>
+                          <tr ng-repeat="files in items.entities | orderBy:predicate_users:reverse">
+                            <td>{{files.data.sketchId}}</td>
+                            <td>{{files.data.version}}</td>
+                            <td>{{files.data.original}}</td>
+                            <td><a onclick="open_sketch({{files.data.sketchId}},{{files.data.version}})">{{files.data.fileName}}</a></td>    
+                            <td>{{files.data.changeDescription}}</td>
+                            <td>{{tzformat(files.created)}}</td>
+                            <td>{{files.data.appver.toFixed(1)}}</td>
+                          </tr>
+                        </tbody>
+                    </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -183,6 +366,7 @@
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/jquery.js"></script>
+    <script src="js/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>

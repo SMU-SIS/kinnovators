@@ -5,16 +5,20 @@
 //angular.module('app', ['ngResource']);
 function SearchController($scope,$resource){
     
-	/*
-		Sketch
-	*/
-	//User
-	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
+	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+  
   $scope.backend_locations = [
     {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
     {url : 'localhost:8080', urlName : 'localhost' } ];
 
   $scope.showdetails = false;
+  
+  //Date (Time Zone) Format
+  $scope.tzformat = function(utc_date) {
+  
+    var d = moment(utc_date, "DD MMM YYYY HH:mm:ss");
+    return d.format("dddd, Do MMM YYYY, hh:mm:ss");
+  };
   
   $scope.search = "";
   $scope.predicate_users = '-created';
@@ -23,6 +27,7 @@ function SearchController($scope,$resource){
   //$scope.remote_url = "localhost:8080";
   $scope.remote_url = "k-sketch-test.appspot.com";
   $scope.waiting = "Ready";
+  $scope.test = "-";
   
   //resource calls are defined here
 
@@ -32,7 +37,7 @@ function SearchController($scope,$resource){
                       );
                           
   $scope.getuser = function(){
-    $scope.UserResource = $resource('http://:remote_url/getuser',
+    $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
@@ -43,13 +48,15 @@ function SearchController($scope,$resource){
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;            
           } else {
-            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
+            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
           }
           $scope.waiting = "Ready";
     });
   }
 
-
+  $scope.setTest = function(test) {
+    $scope.search = test;
+  }
   
   $scope.searchlist = function(){
     $scope.SearchResource = $resource('http://:remote_url/list/sketch/:criteria',

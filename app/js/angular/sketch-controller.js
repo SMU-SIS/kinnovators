@@ -5,7 +5,21 @@
 //angular.module('app', ['ngResource']);
 function SketchController($scope,$resource){
 
-	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': ""};
+	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+
+  $scope.backend_locations = [
+    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
+    {url : 'localhost:8080', urlName : 'localhost' } ];
+
+  $scope.search = "";
+  $scope.showdetails = false;
+  
+  //Date (Time Zone) Format
+  $scope.tzformat = function(utc_date) {
+  
+    var d = moment(utc_date, "DD MMM YYYY HH:mm:ss");
+    return d.format("dddd, Do MMM YYYY, hh:mm:ss");
+  };
   //Sketch
   $scope.sketchId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
   $scope.version = "";  //Placeholder value for version (identifies version of sketch - starts at "1" unless existing sketch is loaded).
@@ -24,12 +38,6 @@ function SketchController($scope,$resource){
       return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
   };
 
-  $scope.backend_locations = [
-    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
-    {url : 'localhost:8080', urlName : 'localhost' } ];
-
-  $scope.showdetails = false;
-
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
   $scope.remote_url = "k-sketch-test.appspot.com";
@@ -43,7 +51,7 @@ function SketchController($scope,$resource){
                       );
                           
   $scope.getuser = function(){
-    $scope.UserResource = $resource('http://:remote_url/getuser',
+    $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
@@ -54,21 +62,21 @@ function SketchController($scope,$resource){
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;            
           } else {
-            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
+            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
           }
           $scope.waiting = "Ready";
     });
   }
   
   $scope.item = {};
-	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":""};    
+	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":""};    
            	
 	$scope.saveAs = function() { //Saving new file
 	   	
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		document.getElementById('visibleTextData').value = "";
 		
-		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":""};
+		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":""};
 		$scope.item.data.sketchId = "";			
 		
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
@@ -78,6 +86,7 @@ function SketchController($scope,$resource){
 		$scope.item.data.fileName = $scope.tempFileName;
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
+    $scope.item.data.appver = $scope.User.u_version;
 		
 	  $scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.owner_id, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
@@ -89,14 +98,17 @@ function SketchController($scope,$resource){
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		document.getElementById('visibleTextData').value = "";
 		
-		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":""};
+		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":""};
 		$scope.item.data.sketchId = $scope.sketchId;
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
-		$scope.item.data.owner = $scope.owner;
-    $scope.item.data.owner_id = $scope.owner_id;
+		//$scope.item.data.owner = $scope.owner;
+    //$scope.item.data.owner_id = $scope.owner_id;
+		$scope.item.data.owner = $scope.User.u_name;
+    $scope.item.data.owner_id = $scope.User.id;
 		$scope.item.data.fileName = $scope.fileName;
 		$scope.item.data.fileData = $scope.fileData;
 		$scope.item.data.changeDescription = $scope.changeDescription;
+    $scope.item.data.appver = $scope.User.u_version;
 		
 	  $scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.owner_id, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
@@ -141,10 +153,20 @@ function SketchController($scope,$resource){
     var item = new $scope.SaveResource($scope.item.data);
     item.$save(function(response) { 
             var result = response;
-            $scope.sketchId = result.data.sketchId;
-            $scope.version = result.data.version;
-            $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":""};               
-            $scope.waiting = "Ready";
+            if (result.status === "success") {
+              $scope.waiting = "Error";
+              $scope.heading = "Success!";
+              $scope.message = "You have successfully saved '" + $scope.fileName + "' (version " + result.data.version + ").";
+              $scope.sketchId = result.data.sketchId;
+              $scope.version = result.data.version;
+              $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":""};
+            } else {
+              $scope.setMeta("","","","","");
+              $scope.waiting = "Error";
+              $scope.heading = "Oops...!";
+              $scope.message = "We're sorry, but we were unable to save your file.";
+              $scope.submessage = "Please check your network connection and try again later.";
+            }
           }); 
   };
   
@@ -193,7 +215,22 @@ function SketchController($scope,$resource){
   }
   
   $scope.reload_sketch = function() {
-    loadKSketchFile($scope.fileData);
+    var reloadAlert = confirm("Do you wish to abandon your changes and revert to the saved sketch?");
+    if (reloadAlert === true) {
+      loadKSketchFile($scope.fileData);
+    }
+  }
+  
+  $scope.simpleSearch = function() {
+    if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
+      //var searchAlert = confirm("Warning - Navigating away from this page will remove all your unsaved progress.\n\nDo you wish to continue?");
+      //if (searchAlert === true) {
+        var searchUrl = "search.html?query=" + $scope.search.replace(/^\s+|\s+$/g,'');
+        window.location.href=searchUrl;
+      } else {
+        $scope.search = "";
+      }
+    //}
   }
   
   $scope.getuser();

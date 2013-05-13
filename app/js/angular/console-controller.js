@@ -5,9 +5,25 @@
 //angular.module('app', ['ngResource']);
 function ConsoleController($scope,$resource){
     
-	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': ""};
-    
+	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+
+  $scope.backend_locations = [
+    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
+    {url : 'localhost:8080', urlName : 'localhost' } ];
+
+  $scope.showdetails = false;
+  //Date (Time Zone) Format
+  $scope.tzformat = function(utc_date) {
+  
+    var d = moment(utc_date, "DD MMM YYYY HH:mm:ss");
+    return d.format("dddd, Do MMM YYYY, hh:mm:ss");
+  };
+  
   $scope.search = "";
+  $scope.searchUser = "";
+  $scope.selecteduser = "";
+  $scope.usersfound = "";
+  
   $scope.derp = "derp";
   $scope.newgroup = {};
   $scope.newgroup.data = {"group_name":"", "user_id":""};
@@ -18,12 +34,13 @@ function ConsoleController($scope,$resource){
       return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
   };
 
-  $scope.backend_locations = [
-    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
-    {url : 'localhost:8080', urlName : 'localhost' } ];
-
-  $scope.showdetails = false;
-  $scope.predicate_users = '-data.fileName';
+  //Original Sketch Filter
+  $scope.isoriginal = function(files) {
+    return (files.data.original === 'original');
+  }
+  $scope.isnotoriginal = function(files) {
+    return (files.data.original !== 'original');
+  }
 
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
@@ -49,21 +66,18 @@ function ConsoleController($scope,$resource){
         });
   };*/
   
-  $scope.retrieveuser = function(){
-    $scope.UserResource = $resource('http://:remote_url/getuser',
+  $scope.getuser = function(){
+    $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
     $scope.waiting = "Updating";       
     $scope.UserResource.get(function(response) {
           var result = response;
-          $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
-            $scope.list();
-            $scope.grouplist();
           } else {
-            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
+            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
             {
               var referLink = document.createElement("a");
@@ -75,6 +89,28 @@ function ConsoleController($scope,$resource){
           }
           $scope.waiting = "Ready";
     });
+  }	
+  
+  $scope.retrieveuser = function(){
+    if ($scope.selecteduser !== "" && typeof $scope.selecteduser !== 'undefined') {
+      $scope.RetrieveUserResource = $resource('http://:remote_url/user/getuser/:id',
+                          {'remote_url':$scope.remote_url, 'id':$scope.selecteduser},
+                          {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
+                             });  
+      $scope.waiting = "Updating";       
+      $scope.RetrieveUserResource.get(function(response) {
+            var result = response;
+            if (result.status === "success") {
+              $scope.selecteduserdata = result;
+              $scope.selecteduserdata.u_created = $scope.tzformat($scope.selecteduserdata.u_created);
+              if ($scope.selecteduserdata.u_lastlogin !== "") {
+                $scope.selecteduserdata.u_lastlogin = $scope.tzformat($scope.selecteduserdata.u_lastlogin);
+              }
+              $scope.list();
+            }
+            $scope.waiting = "Ready";
+      });
+    }    
   };	
   
   $scope.addgroup = function(){
@@ -99,6 +135,23 @@ function ConsoleController($scope,$resource){
     $scope.newItemKey = "";
     $scope.newItemValue = "";
   };    
+
+  $scope.userlist = function() {
+    $scope.selecteduser = "";
+    $scope.selecteduserdata = "";
+    $scope.items = "";
+    $scope.UserListResource = $resource('http://:remote_url/user/listuser/:criteria',
+    {"remote_url":$scope.remote_url,"criteria":$scope.searchUser}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Updating";
+    $scope.UserListResource.get(function(response) { 
+        var result = response;
+        if (result.status === "success") {
+          $scope.usersfound = result;
+        }
+        $scope.waiting = "Ready";
+     });  
+  }
   
   $scope.grouplist = function() {
     $scope.GroupListResource = $resource('http://:remote_url/list/group/:criteria',
@@ -114,7 +167,7 @@ function ConsoleController($scope,$resource){
   
   $scope.list = function(){
     $scope.ListResource = $resource('http://:remote_url/list/sketch/user/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.User.id}, 
+    {"remote_url":$scope.remote_url,"criteria":$scope.selecteduserdata.id}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
     $scope.waiting = "Updating";
     $scope.ListResource.get(function(response) { 
@@ -122,7 +175,6 @@ function ConsoleController($scope,$resource){
         $scope.waiting = "Ready";
      });  
   };
-  
   
   $scope.getuser();
 }

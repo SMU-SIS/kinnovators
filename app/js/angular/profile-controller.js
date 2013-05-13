@@ -5,8 +5,21 @@
 //angular.module('app', ['ngResource']);
 function ProfileController($scope,$resource){
     
-	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': ""};
+	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
     
+  $scope.backend_locations = [
+    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
+    {url : 'localhost:8080', urlName : 'localhost' } ];
+
+  $scope.showdetails = false;
+  
+  //Date (Time Zone) Format
+  $scope.tzformat = function(utc_date) {
+  
+    var d = moment(utc_date, "DD MMM YYYY HH:mm:ss");
+    return d.format("dddd, Do MMM YYYY, hh:mm:ss");
+  };
+  
   $scope.search = "";
   $scope.derp = "derp";
   $scope.newgroup = {};
@@ -18,12 +31,8 @@ function ProfileController($scope,$resource){
       return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
   };
 
-  $scope.backend_locations = [
-    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
-    {url : 'localhost:8080', urlName : 'localhost' } ];
-
-  $scope.showdetails = false;
   $scope.predicate_users = '-data.fileName';
+  
 
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
@@ -38,7 +47,7 @@ function ProfileController($scope,$resource){
                       );
   
   /*$scope.edituser = function() {
-    $scope.EditUserResource = $resource('http://:remote_url/edituser',
+    $scope.EditUserResource = $resource('http://:remote_url/user/edituser',
                               {'remote_url':$scope.remote_url}, 
                               {'update': { method: 'PUT', params: {} }});
     var edit_user = new $scope.EditUserResource($scope.User);
@@ -50,7 +59,7 @@ function ProfileController($scope,$resource){
   };*/
   
   $scope.getuser = function(){
-    $scope.UserResource = $resource('http://:remote_url/getuser',
+    $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
@@ -60,10 +69,15 @@ function ProfileController($scope,$resource){
           $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
+            $scope.User.u_created = $scope.tzformat($scope.User.u_created);
+            
+            if ($scope.User.u_lastlogin !== "") {
+              $scope.User.u_lastlogin = $scope.tzformat($scope.User.u_lastlogin);
+            }
             $scope.list();
             $scope.grouplist();
           } else {
-            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': ""};
+            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
             {
               var referLink = document.createElement("a");
@@ -123,6 +137,13 @@ function ProfileController($scope,$resource){
      });  
   };
   
+  
+  $scope.simpleSearch = function() {
+    if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
+      var searchUrl = "search.html?query=" + $scope.search.replace(/^\s+|\s+$/g,'');
+      window.location.href=searchUrl;
+    }
+  }
   
   $scope.getuser();
 }

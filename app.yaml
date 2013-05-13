@@ -4,7 +4,15 @@ runtime: python27
 api_version: 1
 threadsafe: false
 
+builtins:
+#- deferred: on
+
 handlers:
+#- url: /update_schema
+#  script: update_schema_handler.app  # path to webapp2 application definition.
+#  login: admin
+#  secure: always  
+  
 - url: /
   static_files: index.html
   upload: index.html
@@ -21,18 +29,12 @@ handlers:
   static_dir: test
   expiration: 1m
 
-- url: /getuser
-  script: rpx.application
-  
-- url: /logout
-  script: rpx.application
-  
-- url: /janrain
+- url: /user/.*
   script: rpx.application
 
 - url: /.*
   script: backend.application
-
+  
 libraries:
 - name: webapp2
   version: "2.5.1"

@@ -59,7 +59,7 @@
         if (typeof window.janrain !== 'object') window.janrain = {};
         if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
         
-        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/janrain';
+        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/user/janrain';
         
         function isReady() { janrain.ready = true; };
         if (document.addEventListener) {
@@ -131,23 +131,35 @@
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
-          <a class="brand" id="logo" href="index.html">K-Sketch</a>
+          <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
-              <a ng-show="User.u_login" ng-cloak href="/logout">Logout</a>
+              <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
+          </p>
+          <p class="navbar-search pull-right">
+            <input type="text" ng-model="search" onkeypress="searchKeyPress(event);" class="search-query" placeholder="Search by sketch name or owner">
+            <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="simpleSearch()" value=">>">
+            <script>
+              function searchKeyPress(e)
+              {
+                  // look for window.event in case event isn't passed in
+                  if (typeof e == 'undefined' && window.event) { e = window.event; }
+                  if (e.keyCode == 13)
+                  {
+                      document.getElementById('searchbutton').click();
+                  }
+              }
+            </script>
           </p>
         </div>
       </div>
     </div>
+    
+    
     
     <!-- Main Body -->
     <div class="container-fluid">
@@ -161,7 +173,7 @@
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
-        <div class="span3">
+        <div class="span2">
           <div class="well sidebar-nav sidebar-nav-fixed">
             <ul class="nav nav-list">
               <!--This changes depending on current logged-in status.-->
@@ -175,7 +187,7 @@
         </div><!--/span-->
         
         <!-- Main Body -->
-        <div class="span9">   
+        <div class="span10">   
           <!-- Stuff goes here. -->
           <!-- We have to think of a better name for this! -->
           <div class="row-fluid">
@@ -242,6 +254,7 @@
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/jquery.js"></script>
+    <script src="js/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>

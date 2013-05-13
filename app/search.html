@@ -59,7 +59,7 @@
         if (typeof window.janrain !== 'object') window.janrain = {};
         if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
         
-        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/janrain';
+        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/user/janrain';
         
         function isReady() { janrain.ready = true; };
         if (document.addEventListener) {
@@ -82,19 +82,46 @@
         s.parentNode.insertBefore(e, s);
       })();
     </script>
+    
+    <script type="text/javascript">
+      function QueryString() {
+        // This function is anonymous, is executed immediately and 
+        // the return value is assigned to QueryString!
+        var query_string = {};
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+          var pair = vars[i].split("=");
+            // If first entry with this name
+          if (typeof query_string[pair[0]] === "undefined") {
+            query_string[pair[0]] = pair[1];
+            // If second entry with this name
+          } else if (typeof query_string[pair[0]] === "string") {
+            var arr = [ query_string[pair[0]], pair[1] ];
+            query_string[pair[0]] = arr;
+            // If third or later entry with this name
+          } else {
+            query_string[pair[0]].push(pair[1]);
+          }
+        }
+        e = document.getElementById('testdiv');
+        scope = angular.element(e).scope();
+        if (query_string.query !== undefined) {
+          scope.$apply(function() {
+              scope.setTest(query_string.query);
+              scope.searchlist();
+          });
+        }
+      }
+    </script>    
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
-  <body ng-controller="SearchController" id="ksketchapp"  scrolling="no">  
+  <body ng-controller="SearchController" id="ksketchapp"  scrolling="no" onload="QueryString()">  
     <!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
@@ -102,11 +129,17 @@
               <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
-              <a ng-show="User.u_login" ng-cloak href="/logout">Logout</a>
+              <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
+          </p>
+          <p class="navbar-search pull-right">
+            <input type="text" ng-model="search" onkeypress="searchKeyPress(event);" class="search-query" placeholder="Search by sketch name or owner">
+            <button id="searchbutton" class="btn btn-inverse btn-small" ng-click="searchlist()">>></button>
           </p>
         </div>
       </div>
     </div>
+    
+    
     
     <!-- Main Body -->
     <div class="container-fluid">
@@ -120,7 +153,7 @@
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
-        <div class="span3">
+        <div class="span2">
           <div class="well sidebar-nav sidebar-nav-fixed">
             <ul class="nav nav-list">
               <!--This changes depending on current logged-in status.-->
@@ -134,12 +167,13 @@
         </div><!--/span-->
         
         <!-- Main Body -->
-        <div class="span9">
+        <div class="span10">
           <!-- Stuff goes here. -->
           <div class="span6">
             <input type="text" id="search" onkeypress="searchKeyPress(event);" ng-model="search" placeholder="Search by sketch name or owner">
-            <button class="btn btn-inverse" ng-click="searchlist()">>></button>
+            <button id="searchbutton" class="btn btn-inverse" ng-click="searchlist()">>></button>
           </div>
+          <span id="testdiv" ng-model="test" hidden></span>
           <script>
             function searchKeyPress(e)
             {
@@ -147,7 +181,7 @@
                 if (typeof e == 'undefined' && window.event) { e = window.event; }
                 if (e.keyCode == 13)
                 {
-                    document.getElementsByClassName('btn btn-inverse')[0].click();
+                    document.getElementById('searchbutton').click();
                 }
             }
           </script>		  
@@ -185,7 +219,7 @@
                 <td><a href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}">{{files.data.fileName}}</a></td>                
                 <td>{{files.data.changeDescription}}</td>
                 <td>{{files.data.owner}}</td>
-                <td>{{files.created}}</td>
+                <td>{{tzformat(files.created)}}</td>
               </tr>
             </tbody>
           </table>
@@ -205,6 +239,7 @@
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/jquery.js"></script>
+    <script src="js/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>

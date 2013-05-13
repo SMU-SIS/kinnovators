@@ -59,7 +59,7 @@
         if (typeof window.janrain !== 'object') window.janrain = {};
         if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
         
-        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/janrain';
+        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/user/janrain';
         
         function isReady() { janrain.ready = true; };
         if (document.addEventListener) {
@@ -81,6 +81,12 @@
         var s = document.getElementsByTagName('script')[0];
         s.parentNode.insertBefore(e, s);
       })();
+    </script>
+    
+    <script type="text/javascript">
+      window.onbeforeunload = function(){
+        return "Warning - Navigating away from this page will remove all your unsaved progress.";
+      };
     </script>
     
     <script type="text/javascript">
@@ -130,7 +136,6 @@
       
       }
       
-      
       function initSave() {
         var swfObject = document.getElementById('KSketch2_Web');
         if(typeof swfObject !='undefined'){
@@ -160,15 +165,17 @@
       //Clears the K-Sketch app to create a new file.
       function initNew() {
         
-        e = document.getElementById('SaveAsSketch');
-        scope = angular.element(e).scope();
-        scope.$apply(function() {
-          scope.setMeta("", "", "", "", "");
-          scope.fileData = "";
-        });	
+        var newAlert = confirm("Do you wish to clear the canvas and create a new sketch?");
+        if (newAlert === true) {
+          e = document.getElementById('SaveAsSketch');
+          scope = angular.element(e).scope();
+          scope.$apply(function() {
+            scope.setMeta("", "", "", "", "");
+            scope.fileData = "";
+          });	
 
-        loadKSketchFile("");
-
+          loadKSketchFile("");
+        }
       }
       
       //Function receives an xml string from anywhere
@@ -231,23 +238,35 @@
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </a>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
-          <a class="brand" id="logo" href="index.html">K-Sketch</a>
+          <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
-              <a ng-show="User.u_login" ng-cloak href="/logout">Logout</a>
+              <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
+          </p>
+          <p class="navbar-search pull-right">
+            <input type="text" ng-model="search" onkeypress="searchKeyPress(event);" class="search-query" placeholder="Search by sketch name or owner">
+            <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="simpleSearch()" value=">>">
+            <script>
+              function searchKeyPress(e)
+              {
+                  // look for window.event in case event isn't passed in
+                  if (typeof e == 'undefined' && window.event) { e = window.event; }
+                  if (e.keyCode == 13)
+                  {
+                      document.getElementById('searchbutton').click();
+                  }
+              }
+            </script>
           </p>
         </div>
       </div>
     </div>
+    
+    
     
     <!-- Main Body -->
     <div class="container-fluid">
@@ -262,18 +281,21 @@
       <div class="modal" id="Message" ng-show="waiting=='Error'" ng-cloak>
         <div class="modal-body">
           <div class="modal-header">
-            <input type="submit" class="close" value="x" data-dismiss="modal"/>
+            <input type="submit" class="close" value="x" data-dismiss="modal" ng-click="acknowledge()"/>
             <h3 id="myUploadItems">{{heading}}</h3>
           </div>
+          <br/>
           <div class="control-group">
             <div class="control-label">
-              <span>{{message}}</span>
+              <span style="text-align:center">{{message}}</span>
               <br/>
-              <span>{{submessage}}</span>
+              <br/>
+              <span style="text-align:center">{{submessage}}</span>
+              <br/>
               <br/>
             </div>
             <div class="controls">
-              <button class="btn btn-inverse btn-small" title="Ok" ng-click="acknowledge()">Ok</button>
+              <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
             </div>
           </div>
         </div>
@@ -281,7 +303,7 @@
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
-        <div class="span3">
+        <div class="span2">
           <div class="well sidebar-nav sidebar-nav-fixed">
             <ul class="nav nav-list">
               <!--This changes depending on current logged-in status.-->
@@ -299,7 +321,7 @@
         </div><!--/span-->
         
         <!-- Main Body -->
-        <div class="span9">
+        <div class="span10">
           <!-- Stuff goes here. -->
             <div class="row-fluid">
               <div class="row-fluid">
@@ -317,7 +339,9 @@
                   <button class="btn btn-inverse btn-small" title="Saves a new version of current sketch" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''"  ng-cloak>Save</button> 
                   <button class="btn btn-inverse btn-small" title="Saves current sketch as a new sketch" onclick="initSave()" data-toggle="modal" href="#SaveAsSketch">Save As</button>
                   <button class="btn btn-inverse btn-small" title="Reverts to saved version of sketch" ng-click="reload_sketch()">Revert</button>
+                  <button class="btn btn-info btn-small" title="How to use the K-Sketch editor" data-toggle="modal" href="#HelpSketch">Help</button>
                   <input type="text" id="visibleTextData">
+                  <span class="label" style="float:right" ng-cloak>Editor v.{{User.u_version.toFixed(1)}}</span>
                 </div>				        	        	
               </div>
               <span id="testdiv" ng-model="test"></span>
@@ -485,7 +509,148 @@
                   </div>
                 </div>       			       
               </div>
-            </div>				
+            
+              <!-- Dialog Box for K-Sketch Help. -->
+              
+              <div class="modal hide fade in" id="HelpSketch" style="display:none">
+                <div class="modal-header">
+                  <input type="submit" class="close" value="x" data-dismiss="modal"/>
+                  <h3 id="myUploadItems">Help</h3>
+                </div>
+                <div class="modal-body">
+                  <div class="row-fluid">
+                    <div class="tabbable"> 
+                      <div class="tab-content" id="helpTab">
+                        <ul class="nav nav-tabs">
+                          <li class="active">
+                            <a href="#help1" data-toggle="tab">Drawing</a>
+                          </li>
+                          <li>
+                            <a href="#help2" data-toggle="tab">Manipulation/Grouping</a>
+                          </li>
+                          <li>
+                            <a href="#help3" data-toggle="tab">Timing</a>
+                          </li>
+                        </ul>
+                        <div class="tab-pane active" id="help1">
+                          <div class="control-group">
+                            <table class="table table-hover">
+                              <tr>
+                                <td style="width: 80px">
+                                  <img src="img/guide/pen-black.jpg">
+                                  <img src="img/guide/pen-blue.jpg">
+                                  <img src="img/guide/pen-green.jpg">
+                                  <img src="img/guide/pen-red.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">Click a pen to draw shapes of that color.</label>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <img src="img/guide/eraser.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">Click the eraser to erase drawn shapes.</label>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <img src="img/guide/undo-redo.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">Click the undo/redo buttons to undo/redo past changes.</label>
+                                </td>
+                              </tr>                    
+                            </table>
+                          </div>
+                        </div>
+                        <div class="tab-pane" id="help2">
+                          <div class="control-group">
+                            <table class="table table-hover">
+                              <tr>
+                                <td style="width: 80px">
+                                  <img src="img/guide/select.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">Click "Select", and draw around an existing shape to allow it to be manipulated (moved/rotated/resized).</label>
+                                  <img style="width:33%" src="img/guide/select-during.jpg">
+                                  <img style="width:33%" src="img/guide/select-after.jpg">
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <img src="img/guide/group.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">If multiple shapes are "Select"ed, you may group them together to be manipulated as one shape.</label>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <img src="img/guide/ungroup.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">You can ungroup groups into their component shapes by "Select"ing them and clicking this button.</label>
+                                </td>
+                              </tr>  
+                            </table>
+                          </div>
+                        </div>
+                        <div class="tab-pane" id="help3">
+                          <div class="control-group">
+                            <table class="table table-hover">
+                              <tr>
+                                <td style="width: 160px">
+                                  <img src="img/guide/slider.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">Click and drag the slider to move to a particular time in your animation.</label>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <img src="img/guide/back.jpg">
+                                  <img src="img/guide/forward.jpg">
+                                  <img src="img/guide/rewind.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">Click the backward/forward buttons for fine control of animation timing. Click the rewind button to return to the start of the animation.</label>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <img src="img/guide/play.jpg">
+                                  <img  src="img/guide/pause.jpg">
+                                </td>
+                                <td></td>
+                                <td>
+                                  <label class="control-label">Click the Play button to start your animation! (Click the Pause button to stop it.)</label>
+                                </td>
+                              </tr> 
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="control-group">
+                      <div class="controls">
+                        <input type="submit" value="Close" data-dismiss="modal"/>
+                      </div>
+                    </div>                  
+                  </div>
+                </div>
+              </div>
+                          
+            </div>
         </div><!--/span-->
       </div><!--/row-->
       
@@ -502,6 +667,7 @@
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/jquery.js"></script>
+    <script src="js/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
