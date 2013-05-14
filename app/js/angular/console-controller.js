@@ -153,6 +153,53 @@ function ConsoleController($scope,$resource){
      });  
   }
   
+  $scope.alluserlist = function() {
+    $scope.AllUserListResource = $resource('http://:remote_url/user/listuser',
+    {"remote_url":$scope.remote_url}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Updating";
+    $scope.AllUserListResource.get(function(response) { 
+        var result = response;
+        if (result.status === "success") {
+          $scope.allusersfound = result;
+        }
+        $scope.waiting = "Ready";
+     });  
+  }  
+  
+  $scope.groupedusers = [];
+  $scope.group_leader = "";
+  
+  $scope.verify = function() {
+    return ($scope.group_leader === "");
+  }
+  
+  $scope.adduser = function(user) {
+    $scope.groupedusers.push(user);
+    var index=$scope.allusersfound.entities.indexOf(user);
+    $scope.allusersfound.entities.splice(index,1);     
+  }
+  
+  $scope.removeuser = function(user) {
+    $scope.allusersfound.entities.push(user);
+    var index=$scope.groupedusers.indexOf(user);
+    $scope.groupedusers.splice(index,1);     
+  }
+  
+  $scope.versionlist = function() {
+    $scope.VersionResource = $resource('http://:remote_url/list/version',
+    {"remote_url":$scope.remote_url}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Updating";
+    $scope.VersionResource.get(function(response) { 
+        var result = response;
+        if (result.status === "success") {
+          $scope.versionsfound = result;
+        }
+        $scope.waiting = "Ready";
+     });  
+  }
+  
   $scope.grouplist = function() {
     $scope.GroupListResource = $resource('http://:remote_url/list/group/:criteria',
     {"remote_url":$scope.remote_url,"criteria":$scope.User.id}, 
@@ -177,4 +224,6 @@ function ConsoleController($scope,$resource){
   };
   
   $scope.getuser();
+  $scope.alluserlist();
+  $scope.versionlist();
 }

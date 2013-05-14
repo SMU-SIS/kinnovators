@@ -84,7 +84,12 @@
     </script>
     <script type="text/javascript">
       
-      function open_sketch(id, version){
+      function view_sketch(id, version){
+        sg_upload = window.open("/app/view.html?id=" + id + "&version=" + version, "_blank"); 
+        sg_upload.focus();
+      }
+      
+      function edit_sketch(id, version){
         sg_upload = window.open("/app/sketch.html?id=" + id + "&version=" + version, "_blank"); 
         sg_upload.focus();
       }    
@@ -132,7 +137,7 @@
               <!--This changes depending on current logged-in status.-->
               
               
-              <li id="sc" ng-show="User.u_login" ng-cloak><a href="#ManageVersions" data-toggle="tab" >Manage Versions</a></li>
+              <li class="active" id="sc" ng-show="User.u_login" ng-cloak><a href="#ManageVersions" data-toggle="tab" >Manage Versions</a></li>
               <li id="cs" ng-show="User.u_login" ng-cloak><a href="#ManageGroups" data-toggle="tab" >Manage Groups</a></li>
               <li id="vs" ng-show="User.u_login" ng-cloak><a href="#ManageUsers" data-toggle="tab" >Manage Users</a></li>
             </ul>
@@ -143,19 +148,147 @@
         <div class="span10">
             
             <!-- Panes -->
-            <div class="tab-content">
+            <div class="tab-content" id="main-tabs">
               
               <!-- Manage Versions Pane -->
               <div class="tab-pane active" id="ManageVersions" ng-cloak>
                 <div class="container-fluid">
                   <div class="row-fluid" id="mainbody">
-                    <h3 id="Login">Admin Console - Manage Versions</h3>
-                    <div class="row-fluid">
-                      <div class="span6">
-                      </div>
-                      <div class="span6">
+                    <table class="table">
+                      <tr>
+                        <td>
+                          <h3 id="Login">Admin Console - Manage Versions</h3>
+                        </td>
+                        <td>
+                          <ul class="nav nav-pills">
+                            <li class="disabled">
+                              <a>Graph</a>
+                            </li>
+                            <li class="active">
+                              <a href="#Statistics" data-toggle="tab">Statistics</a>
+                            </li>
+                          </ul>
+                        </td>
+                      </tr>
+                    </table>
+                    <div class="tabbable">
+                      
+                      <div class="tab-content" id="version-tabs">
+                        <!-- Graph Sub-Pane -->
+                        <div class="tab-pane" id="Graph">
+                          <div class="row-fluid">
+                            <div class="span6">
+                              <!-- Chart -->
+                              <div id="chart">
+                                
+                              </div>
+                              <script type="text/javascript">
+                                
+                              </script>
+                            </div>
+                            <div class="span6">
+                            </div>
+                          </div>                          
+                        </div>
+                        <!-- Statistics Sub-Pane -->
+                        <div class="tab-pane active" id="Statistics">
+                          <div class="row-fluid">
+                            <div class="row-fluid">
+                              <div class="span10">
+                              <table class="table table-bordered table-striped"ng-cloak>
+                                <thead>
+                                  <th>
+                                    Version
+                                  </th>
+                                  <th>
+                                    No. of Users
+                                  </th>
+                                  <th>
+                                    No. of Original Sketches
+                                  </th>
+                                  <th>
+                                    No. of Non-Original (Edited) Sketches
+                                  </th>
+                                </thead>
+                                <tbody ui-if="versionsfound.entities.length" ng-cloak>
+                                  <tr ng-repeat="versions in versionsfound.entities">
+                                    <td>
+                                      {{versions.app_version.toFixed(1)}}
+                                    </td>
+                                    <td>
+                                      {{versions.user_count}}
+                                    </td>
+                                    <td>
+                                      {{versions.original_count}}
+                                    </td>
+                                    <td>
+                                      {{(versions.sketch_count - versions.original_count)}}
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.app_version}}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.user_count}}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.original_count}}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.sketch_count - versionsfound.total.original_count}}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                              </div>
+                              <div class="span2">
+                                <button class="btn btn-success btn-large" title="Refreshes version information" ng-click="versionlist()">Refresh</button> 
+                              </div>
+                            </div>
+                            <br>
+                            <div class="row-fluid">
+                              <h4>Assign Version to Group</h4>
+                              <div class="span4">
+                                <table class="table">
+                                  <tr>
+                                    <td>
+                                      <span style="font-weight:bold">
+                                    Version:</span>
+                                    </td>
+                                    <td>
+                                      <select ng-model="selectedversion" ng-options="versionfound.app_version as versionfound.app_version.toFixed(1) for versionfound in versionsfound.entities" ng-cloak></select>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </div>
+                              <div class="span7">
+                                <table class="table">
+                                  <tr>
+                                    <td>
+                                <span style="font-weight:bold">
+                                Group of Users:
+                                </span>
+                                    </td>
+                                    <td>
+                                <textarea  style="width: 200px; height: 112px;" disabled></textarea>
+                                    </td>
+                                    <td>
+                                <button class="btn btn-success btn-large disabled" title="">Confirm</button>
+                                    </td>
+                                  </tr>
+                                </table> 
+                              </div>
+                            </div>
+                          </div>
+                        </div>                          
                       </div>
                     </div>
+                  
                   </div>
                 </div>
               </div>
@@ -164,8 +297,188 @@
               <div class="tab-pane" id="ManageGroups" ng-cloak>
                 <div class="container-fluid">
                   <div class="row-fluid" id="mainbody">
-                    <h3 id="Login">Admin Console - Manage Groups</h3>
-                    <h3>Under Construction.</h3>
+                    <table class="table">
+                      <tr>
+                        <td>
+                          <h3 id="Login">Admin Console - Manage Groups</h3>
+                        </td>
+                        <td>
+                          <ul class="nav nav-pills">
+                            <li class="active">
+                              <a href="#CreateGroups" data-toggle="tab">Create New Group</a>
+                            </li>
+                            <li>
+                              <a href="#ManageGroups" data-toggle="tab">Manage Existing Groups</a>
+                            </li>
+                          </ul>
+                        </td>
+                      </tr>
+                    </table>
+                    <div class="tabbable">
+                      
+                      <div class="tab-content" id="group-tabs">
+                        <!-- Create Groups Sub-Pane -->
+                        <div class="tab-pane" id="CreateGroups">
+                          <div class="row-fluid">
+                            <table class="table">
+                              <tr>
+                                <td>
+                                  <span style="font-weight:bold"> 
+                                    Create New Group:
+                                  </span>
+                                </td>
+                                <td>
+                                  <input ng-model="new_group"/>
+                                </td>
+                                <td>
+                                </td>
+                                <td>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <span style="font-weight:bold"> 
+                                    Add Member
+                                  </span>
+                                </td>
+                                <td>
+                                  <select ng-model="ungroupeduser" ng-options="alluserfound as alluserfound.u_name for alluserfound in allusersfound.entities" ng-cloak></select>
+                                </td>
+                                <td>
+                                  <input type="submit" class="button btn-success btn-small" ng-click="adduser(ungroupeduser)" value="Add >"/>
+                                  <br>
+                                </td>
+                                <td style="width:30%">
+                                  <ul ng-repeat="groupeduserfound in groupedusers">
+                                    <li>
+                                      {{groupeduserfound.u_name}}
+                                      <input type="submit" class="button btn-danger btn-small" ng-click="removeuser(groupeduserfound)" value="X"/>
+                                    </li>
+                                  </ul>
+                                </td>
+                              </tr>
+                              <tr ui-if="!!groupedusers.length">
+                                <td>
+                                  <span style="font-weight:bold"> 
+                                    Assign Group Leader
+                                  </span>
+                                </td>
+                                <td>
+                                  <select ng-model="group_leader" ng-options="groupeduserfound as groupeduserfound.u_name for groupeduserfound in groupedusers" ng-cloak></select>
+                                  {{group_leader}}
+                                </td>
+                                <td>
+                                </td>
+                              </tr>
+                              <tr ui-if="!verify()">
+                                <td>
+                                  <input type="submit" class="button btn-success btn-large" value="Submit"/>
+                                  <input type="submit" class="button btn-inverse btn-large"  value="Cancel"/>
+                                </td>
+                              </tr>
+                            </table>
+                          </div>                          
+                        </div>
+                        <!-- Manage Groups Sub-Pane -->
+                        <div class="tab-pane" id="ManageGroups">
+                          <div class="row-fluid">
+                            <div class="row-fluid">
+                              <div class="span10">
+                              <table class="table table-bordered table-striped"ng-cloak>
+                                <thead>
+                                  <th>
+                                    Version
+                                  </th>
+                                  <th>
+                                    No. of Users
+                                  </th>
+                                  <th>
+                                    No. of Original Sketches
+                                  </th>
+                                  <th>
+                                    No. of Non-Original (Edited) Sketches
+                                  </th>
+                                </thead>
+                                <tbody ui-if="versionsfound.entities.length" ng-cloak>
+                                  <tr ng-repeat="versions in versionsfound.entities">
+                                    <td>
+                                      {{versions.app_version.toFixed(1)}}
+                                    </td>
+                                    <td>
+                                      {{versions.user_count}}
+                                    </td>
+                                    <td>
+                                      {{versions.original_count}}
+                                    </td>
+                                    <td>
+                                      {{(versions.sketch_count - versions.original_count)}}
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.app_version}}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.user_count}}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.original_count}}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span style="font-weight:bold">{{versionsfound.total.sketch_count - versionsfound.total.original_count}}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                              </div>
+                              <div class="span2">
+                                <button class="btn btn-success btn-large" title="Refreshes version information" ng-click="versionlist()">Refresh</button> 
+                              </div>
+                            </div>
+                            <br>
+                            <div class="row-fluid">
+                              <h4>Assign Version to Group</h4>
+                              <div class="span4">
+                                <table class="table">
+                                  <tr>
+                                    <td>
+                                      <span style="font-weight:bold">
+                                    Version:</span>
+                                    </td>
+                                    <td>
+                                      <select ng-model="selectedversion" ng-options="versionfound.app_version as versionfound.app_version.toFixed(1) for versionfound in versionsfound.entities" ng-cloak></select>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </div>
+                              <div class="span7">
+                                <table class="table">
+                                  <tr>
+                                    <td>
+                                <span style="font-weight:bold">
+                                Group of Users:
+                                </span>
+                                    </td>
+                                    <td>
+                                <textarea  style="width: 200px; height: 112px;" disabled></textarea>
+                                    </td>
+                                    <td>
+                                <button class="btn btn-success btn-large disabled" title="">Confirm</button>
+                                    </td>
+                                  </tr>
+                                </table> 
+                              </div>
+                            </div>
+                          </div>
+                        </div>                          
+                      </div>
+                    </div>
+                  
+
                   </div>
                 </div>
               </div>
@@ -313,11 +626,11 @@
                       <table class="table table-bordered table-striped" ui-if="!!items.entities.length"  ng-cloak>
                       <thead>
                           <th>
-                            <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">Sketch ID
+                            <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">ID
                             </a>
                           </th>
                           <th>
-                            <a href="" ng-click="predicate_users = 'data.version'; reverse=!reverse">Sketch Version
+                            <a href="" ng-click="predicate_users = 'data.version'; reverse=!reverse">Version
                             </a>
                           </th>
                           <th>Parent Sketch</th>
@@ -325,13 +638,16 @@
                             <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
                             </a>
                           </th>
-                          <th>Sketch Description</th>
+                          <th>Description</th>
                           <th>
-                            <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">SketchDate
+                            <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">Created
                             </a>
                           </th>
                           <th>
                             Editor Version
+                          </th>
+                          <th>
+                            Action
                           </th>
                         </thead>
                         <tbody>
@@ -339,10 +655,15 @@
                             <td>{{files.data.sketchId}}</td>
                             <td>{{files.data.version}}</td>
                             <td>{{files.data.original}}</td>
-                            <td><a onclick="open_sketch({{files.data.sketchId}},{{files.data.version}})">{{files.data.fileName}}</a></td>    
+                            <td>{{files.data.fileName}}</td>    
                             <td>{{files.data.changeDescription}}</td>
                             <td>{{tzformat(files.created)}}</td>
                             <td>{{files.data.appver.toFixed(1)}}</td>
+                            <td>
+                              <a class="btn btn-info btn-small" onclick="view_sketch({{files.data.sketchId}},{{files.data.version}})">View</a>
+                              <a class="btn btn-success btn-small" onclick="edit_sketch({{files.data.sketchId}},{{files.data.version}})">Edit</a>
+                              <a class="btn btn-danger btn-small disabled"><del>Delete</del></a>
+                            </td>
                           </tr>
                         </tbody>
                     </table>
@@ -365,6 +686,7 @@
     <!-- Le javascript
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+    <script src="js/d3/d3.v2.js"></script>
     <script src="js/jquery.js"></script>
     <script src="js/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>

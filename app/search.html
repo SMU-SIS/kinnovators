@@ -170,8 +170,16 @@
         <div class="span10">
           <!-- Stuff goes here. -->
           <div class="span6">
-            <input type="text" id="search" onkeypress="searchKeyPress(event);" ng-model="search" placeholder="Search by sketch name or owner">
-            <button id="searchbutton" class="btn btn-inverse" ng-click="searchlist()">>></button>
+            <table class="table">
+              <tr>
+                <td>
+                  <input type="text" id="search" onkeypress="searchKeyPress(event);" ng-model="search" placeholder="Search by sketch name or owner">
+                </td>
+                <td>
+                  <button id="searchbutton" class="btn btn-inverse" ng-click="searchlist()">Go</button>
+                </td>
+              </tr>
+            </table>
           </div>
           <span id="testdiv" ng-model="test" hidden></span>
           <script>
@@ -187,17 +195,12 @@
           </script>		  
           <table class="table table-bordered table-striped" ui-if="!!searchitems.entities.length"  ng-cloak>
             <thead>
-              <!--th>
-                <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">Sketch ID
+              <th>
+                <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
                 </a>
               </th>
               <th>
                 <a href="" ng-click="predicate_users = 'data.version'; reverse=!reverse">Sketch Version
-                </a>
-              </th>
-              <!--th>Parent Sketch</th-->
-              <th>
-                <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
                 </a>
               </th>
               <th>Sketch Description</th>
@@ -209,17 +212,21 @@
                 <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">SketchDate
                 </a>
               </th>
+              <th>
+                Action
+              </th>
             </thead>
             <tbody>
               <tr ng-repeat="files in searchitems.entities | orderBy:predicate_users:reverse">
-                <!--td>{{files.data.sketchId}}</td>
-                <td>{{files.data.version}}</td>
-                <!--td>{{files.data.original}}</td-->
-                <!--td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td-->
-                <td><a href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}">{{files.data.fileName}}</a></td>                
+                <td>{{files.data.fileName}}</td>
+                <td>{{files.data.version}}</td>                
                 <td>{{files.data.changeDescription}}</td>
                 <td>{{files.data.owner}}</td>
                 <td>{{tzformat(files.created)}}</td>
+                <td>
+                  <a class="btn btn-info btn-small"  href="view.html?id={{files.data.sketchId}}&version={{files.data.version}}">View</a>
+                  <a class="btn btn-success btn-small"  href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}">Edit</a>                     
+                </td>
               </tr>
             </tbody>
           </table>

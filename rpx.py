@@ -18,6 +18,7 @@ from google.appengine.ext import db, webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 
+
 # configure the RPX iframe to work with the server were on (dev or real)
 ON_LOCALHOST = ('Development' == os.environ['SERVER_SOFTWARE'][:11])
 if ON_LOCALHOST:
@@ -39,7 +40,6 @@ class UTC(datetime.tzinfo):
     
   def tzname(self, dt):
     return "UTC"
-
 # create our own simple users model to track our user's data
 class User(db.Model):
   email              = db.EmailProperty()
@@ -114,7 +114,14 @@ class User(db.Model):
                   'u_name': object.display_name,
                   'u_realname': object.real_name}
           entities.append(data)
-          
+    else:
+      for object in objects:
+      
+        data = {'id': object.key().id(),
+                'u_name': object.display_name,
+                'u_realname': object.real_name}
+        entities.append(data)  
+            
     return entities
     
     @staticmethod
@@ -176,6 +183,17 @@ class User(db.Model):
               'success':True}
               
     return result
+    
+class AppUserCount(db.Model):
+  app_version = db.FloatProperty()
+  user_count = db.IntegerProperty()
+  
+
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d  
+        
     
 class BaseHandler(webapp2.RequestHandler):
     """
@@ -245,8 +263,20 @@ class RPXTokenHandler(BaseHandler):
           # check if there is a user present with that auth_id
           user = self.auth.store.user_model.get_by_auth_id(oid)
           if not user:
-            success, user = self.auth.store.user_model.create_user(oid, email=email, display_name=display_name, real_name=display_name, logincount=0, assigned_version=1.0, is_admin=False, is_active=True)
-            logging.info('New user created in the DS')            
+            #Version currently hardcoded as 1.0 - to import code for this later.
+            appver = 1.0
+            
+            success, user = self.auth.store.user_model.create_user(oid, email=email, display_name=display_name, real_name=display_name, logincount=0, assigned_version=appver, is_admin=False, is_active=True)
+            logging.info('New user created in the DS')
+            
+            #update AppUserCount when adding
+            appUserCount = AppUserCount.all().filter('app_version', appver).get()
+            if appUserCount:
+              appUserCount.user_count += 1
+              appUserCount.put()
+            else:
+              appUserCount = AppUserCount(app_version=appver,user_count = 1)
+              appUserCount.put()   
           
           userid = user.get_id()
           if not user.logincount:
@@ -255,6 +285,7 @@ class RPXTokenHandler(BaseHandler):
             user.logincount += 1 
           user.lastlogin = datetime.datetime.now()
           user.put()
+                 
           
           token = self.auth.store.user_model.create_auth_token(userid)
           self.auth.get_user_by_token(userid, token)
@@ -392,7 +423,7 @@ class GetUser(webapp2.RequestHandler):
       if auser:
         entities = User.search_users_by_name()
         result = {'status':'success',
-                  'method':'search_user',
+                  'method':'list_user',
                   'en_type': 'User',
                   'entities': entities}
       else:

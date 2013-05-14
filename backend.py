@@ -19,7 +19,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 import json
 from rpx import User
-
+from rpx import AppUserCount
 
 """
 Attributes and functions for Sketch entity
@@ -81,6 +81,20 @@ class Sketch(db.Model):
     else:
       versionCount = VersionCount(sketchId=long(jsonData['sketchId']), lastVersion=1)
       versionCount.put()
+      
+    #update AppVersionCount when adding
+    appVersionCount = AppVersionCount.all().filter('app_version', float(jsonData['appver'])).get()
+    if appVersionCount:
+      appVersionCount.sketch_count += 1
+      if jsonData['original'] == 'original':
+        appVersionCount.original_count += 1
+      appVersionCount.put()
+    else:
+      if jsonData['original'] == 'original':
+        appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 1)
+      else:
+        appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 0)
+      appVersionCount.put()
     
     jsonData['version'] = str(versionCount.lastVersion)
      
@@ -268,6 +282,8 @@ class Sketch(db.Model):
       result['data'] = "value"
       
     return result
+  
+
     
   @staticmethod
   def clear():
@@ -342,6 +358,56 @@ class ModelCount(db.Model):
 class VersionCount(db.Model):
   sketchId = db.IntegerProperty(required=True, default=0)
   lastVersion = db.IntegerProperty(required=True, default=0)
+  
+class AppVersionCount(db.Model):
+  app_version = db.FloatProperty()
+  sketch_count = db.IntegerProperty()
+  original_count = db.IntegerProperty()
+  
+
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+       
+  
+  @staticmethod
+  def retrieve_by_version():
+    utc = UTC()
+    appver_query = AppVersionCount.all()
+
+    objects = appver_query.run()
+    entities = []
+    total_user_count = 0
+    total_sketch_count = 0
+    total_original_count = 0
+    for object in objects:
+
+      entity = {'app_version': object.app_version,
+            'user_count': 0,
+            'sketch_count': object.sketch_count,
+            'original_count': object.original_count}
+            
+      appuser_query = AppUserCount.all().filter('app_version', float(object.app_version)).get()
+      if appuser_query:
+        entity['user_count'] = int(appuser_query.user_count)
+      total_user_count += appuser_query.user_count
+      total_sketch_count += object.sketch_count
+      total_original_count += object.original_count
+      entities.append(entity)    
+    
+    total = {'app_version': 'Total',
+            'user_count': total_user_count,
+            'sketch_count': total_sketch_count,
+            'original_count': total_original_count}
+    
+            
+    
+    result = {'method':'retrieve_by_version',
+              'status':'success',
+              'entities': entities,
+              'total': total}  
+    return result
   
 class Comment(db.Model):
   sketch_id = db.IntegerProperty(required=True)
@@ -668,6 +734,20 @@ class ActionHandler(webapp2.RequestHandler):
         result = Group.get_entities(criteria=criteria)
         return self.respond(result)
         
+    def get_versions(self):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        offset = 0
+        new_offset = self.request.get("offset")
+        if new_offset:
+          offset = int(new_offset)
+
+        result = AppVersionCount.retrieve_by_version()
+        return self.respond(result)
+        
 application = webapp2.WSGIApplication([
     webapp2.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
     webapp2.Route('/sketch/<model_id>/delete', handler=ActionHandler, handler_method='delete_sketch'), 
@@ -680,6 +760,7 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/get/sketch/version/<sketchId>/<version>', handler=ActionHandler, handler_method='get_sketch_by_version'),
     webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), 
     webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'),
-    webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group')
+    webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group'),
+    webapp2.Route('/list/version', handler=ActionHandler, handler_method='get_versions')
     ],
     debug=True)

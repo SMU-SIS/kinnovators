@@ -230,6 +230,8 @@
     <!-- JS code for SWF plugin. DO NOT REMOVE. -->
     
     <script src="https://apis.google.com/js/client.js?onload=OnLoadCallback"></script>
+    
+    
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
@@ -325,15 +327,17 @@
           <!-- Stuff goes here. -->
             <div class="row-fluid">
               <div class="row-fluid">
-                <div class="span6">
-                  <span style="font-weight:bold" ng-hide="fileName==''" ng-cloak>
-                  {{fileName}} (version {{version}}) by {{owner}}
-                  </span>
-                  <span style="font-weight:bold" ng-show="fileName==''" ng-cloak>
-                  Untitled Sketch by {{User.u_name}}
-                  </span>
+                <div class="span5">
+                  <div>
+                    <span style="font-weight:bold" ng-hide="fileName==''" ng-cloak>
+                    {{fileName}} (version {{version}}) by {{owner}}
+                    </span>
+                    <span style="font-weight:bold" ng-show="fileName==''" ng-cloak>
+                    Untitled Sketch by {{User.u_name}}
+                    </span>
+                  </div>
                 </div>				
-                <div class="span6">
+                <div class="span5">
                   <button class="btn btn-inverse btn-small" title="Clears editor to create new sketch" onclick="initNew()">New</button>
                   <button class="btn btn-inverse btn-small" ng-show="fileName==''" disabled ng-cloak>Save</button> 
                   <button class="btn btn-inverse btn-small" title="Saves a new version of current sketch" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''"  ng-cloak>Save</button> 
@@ -341,10 +345,15 @@
                   <button class="btn btn-inverse btn-small" title="Reverts to saved version of sketch" ng-click="reload_sketch()">Revert</button>
                   <button class="btn btn-info btn-small" title="How to use the K-Sketch editor" data-toggle="modal" href="#HelpSketch">Help</button>
                   <input type="text" id="visibleTextData">
-                  <span class="label" style="float:right" ng-cloak>Editor v.{{User.u_version.toFixed(1)}}</span>
-                </div>				        	        	
+                </div>
+                <div class="span2" >
+                  <a class="btn btn-info btn-small" style="float:right" title="Back to View" href="view.html?id={{loaded_id}}&version={{loaded_version}}">Back to View Mode</a>                
+                </div>
               </div>
               <span id="testdiv" ng-model="test"></span>
+              
+              <!-- Temporary Div to prevent clicking until proper editor is provided -->
+              <div id="SketchCoverBarDiv"></div>
               
               <!-- Container for SWF Plugin - DO NOT REMOVE! -->
               
@@ -388,7 +397,9 @@
                     <!--<![endif]-->
                   </object>
                 </noscript>
-              </div>		
+              </div>
+              <br>
+              <span class="label" style="float:right" ng-cloak>Editor v.{{User.u_version.toFixed(1)}}</span>
               
               <!-- Dialog Box for Save As functionality (saving as different file). -->
               
