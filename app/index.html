@@ -47,7 +47,7 @@
     <script type="text/javascript" src="history/history.js"></script>
     <!-- END Browser History required section -->  
     
-    <script type="text/javascript" src="swfobject.js"></script>
+    <script type="text/javascript" src="swf/swfobject.js"></script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
     
@@ -97,7 +97,7 @@
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
               <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
@@ -140,9 +140,9 @@
               <!--This changes depending on current logged-in status.-->
               
               
-              <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
-              <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a href="search.html">Search for Sketch</a></li>
+              <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
+              <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
+              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -159,31 +159,33 @@
                       <br/>
                       <div class="row-fluid">
                         <div class="span6">
-                          <object width="100%" height="250" type="movie" data="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US">
-                            <param name="movie" value="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US"></param>
-                            <param name="allowFullScreen" value="true"></param>
-                            <param name="allowscriptaccess" value="always"></param>
-                            <embed src="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US" type="application/x-shockwave-flash" width="100%" height="250" allowscriptaccess="always" allowfullscreen="true"></embed>
-                          </object>
+                          <div class="well well-small">
+                            <object width="100%" height="250" type="movie" data="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US">
+                              <param name="movie" value="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US"></param>
+                              <param name="allowFullScreen" value="true"></param>
+                              <param name="allowscriptaccess" value="always"></param>
+                              <embed src="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US" type="application/x-shockwave-flash" width="100%" height="250" allowscriptaccess="always" allowfullscreen="true"></embed>
+                            </object>
+                          </div>
                         </div>
                         <div class="span6">
                           <p>Animations made easy.</p>
-                          <p><a class="btn btn-primary btn-large" href="sketch.html">Start Now! &raquo;</a></p>
+                          <p><a title="Create a sketch now!" class="btn btn-primary btn-large" href="sketch.html">Start Now! &raquo;</a></p>
                         </div>
                       </div>
                     </div>
                   </div> 
-                  <!--div class="item">
+                  <div class="item">
                     <div class="container-fluid">
-                      <h1 id="title1">What is K-Sketch?</h1>
-                      <div class="span6">
-                      </div>
-                      <div class="span6">
-                        <p>K-Sketch allows ordinary computer users to create informal animations from sketches. The system has been highly tuned to allow a wide variety of animations to be made quickly and with little learning. A prototype of the system (for Windows only) and videos describing its use can be found on the <a href="www.k-sketch.org">K-Sketch website</a>. A new version of the system that runs on many platforms through a web browser will soon be released. This new version is being built to run in Adobe's Flash player and Adobe AIR.</p>          
+                      <h1 id="title1">Most Popular Sketches</h1>
+                      <div class="row-fluid">
+                        <div class="span12">
+                          <p>Coming Soon.........</p>          
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div class="item">
+                  <!--div class="item">
                     <div class="container-fluid">
                       <h1 id="title1">K-Sketch Developers</h1>
                       <p><a href="https://sourceforge.net/projects/k-sketch">Sourceforge</a></p>
@@ -207,11 +209,6 @@
               <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>              
             </div>
           </div>
-
-          <h2>Most Popular Sketches</h2>
-          <div class="row-fluid">
-            Coming Soon........
-          </div><!--/row-->
         </div><!--/span-->
       </div><!--/row-->
       

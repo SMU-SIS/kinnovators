@@ -46,7 +46,7 @@
     <script type="text/javascript" src="history/history.js"></script>
     <!-- END Browser History required section -->  
     
-    <script type="text/javascript" src="swfobject.js"></script>
+    <script type="text/javascript" src="swf/swfobject.js"></script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
     
@@ -82,10 +82,44 @@
         s.parentNode.insertBefore(e, s);
       })();
     </script>
+    
+    <script type="text/javascript">
+      function QueryString() {
+        // This function is anonymous, is executed immediately and 
+        // the return value is assigned to QueryString!
+        var query_string = {};
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+          var pair = vars[i].split("=");
+            // If first entry with this name
+          if (typeof query_string[pair[0]] === "undefined") {
+            query_string[pair[0]] = pair[1];
+            // If second entry with this name
+          } else if (typeof query_string[pair[0]] === "string") {
+            var arr = [ query_string[pair[0]], pair[1] ];
+            query_string[pair[0]] = arr;
+            // If third or later entry with this name
+          } else {
+            query_string[pair[0]].push(pair[1]);
+          }
+        }
+        e = document.getElementById('testdiv');
+        scope = angular.element(e).scope();
+        if (query_string.id !== undefined) {
+          scope.$apply(function() {
+              scope.setTest(query_string.id);
+          });
+        }
+        scope.$apply(function() {
+          scope.get_profile();
+        });        
+      }
+    </script>    
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
-  <body ng-controller="ProfileController" id="ksketchapp"  scrolling="no">
+  <body ng-controller="ProfileController" id="ksketchapp"  scrolling="no" onload="QueryString()">
     <!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
@@ -94,7 +128,7 @@
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
               <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
@@ -138,9 +172,10 @@
               <!--This changes depending on current logged-in status.-->
               
               
-              <li id="sc" class="active" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
-              <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a href="search.html">Search for Sketch</a></li>
+              <li id="sc" class="active" ng-show="User.u_login" ui-if="belong" ng-cloak><a>My Sketchbook</a></li>
+              <li id="sc" ng-show="User.u_login" ui-if="!belong" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
+              <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
+              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -150,45 +185,52 @@
           <!-- Stuff goes here. -->
           <!-- We have to think of a better name for this! -->
           <div class="row-fluid">
-            <!--div class="container-fluid" ng-hide="User.u_login" ng-cloak id="guestSketchbook">
+            <span id="testdiv" ng-model="test"></span>
+            <!--div class="container-fluid" ng-hide="profile_user.u_login" ng-cloak id="guestSketchbook">
               <h3>You are not logged in!</h3>
               <h3>Please Login to K-Sketch in order to access this function!</h3>
             </div-->
-            <div class="container-fluid" ng-show="User.u_login" ng-cloak id="userSketchbook">
+            <div class="container-fluid" ng-show="profile_user.id" ng-cloak id="userSketchbook">
               <div class="row-fluid">
-                <h2>About Me</h2>
-                                
+                <h2 ui-if="belong">About Me</h2>
+                <h2 ui-if="!belong">About {{profile_user.u_name}}</h2>
               </div>
               <div class="tabbable">
                 <ul class="nav nav-tabs">
                   <li class="active">
-                    <a href="#Profile" data-toggle="tab">Profile</a>
+                    <a title="View personal profile" href="#Profile" data-toggle="tab">Profile</a>
                   </li>
                   <li>
-                    <a href="#Sketches" data-toggle="tab">Sketches</a>
+                    <a title="View own sketches" href="#Sketches" data-toggle="tab">Sketches</a>
                   </li>
                   <li>
-                    <a href="#Groups" data-toggle="tab">Groups</a>
+                    <a title="View group memberships" href="#Groups" data-toggle="tab">Groups</a>
                   </li>
                 </ul>
                 <div class="tab-content" id="main">
                   <!-- Profile Pane -->
                   <div class="tab-pane active" id="Profile">
                     <div class="row-fluid">
-                      <h2>My Profile</h2>
+                      <h2 ui-if="belong">My Profile</h2>
+                      <h2 ui-if="!belong">{{profile_user.u_name}}'s Profile</h2>
                       <div class="span3">
                         <div class="well well-small">
-                          <a href="http://gravatar.com/emails/" title="Change your avatar at gravatar.com"><img id="profile_img" src="https://secure.gravatar.com/avatar/{{User.g_hash}}?s=200&r=pg&d=mm" /></a>
+                          <a href="http://gravatar.com/emails/" title="Change your avatar at gravatar.com" ui-if="belong"><img id="profile_img" src="https://secure.gravatar.com/avatar/{{profile_user.g_hash}}?s=200&r=pg&d=mm" /></a>                          
+                          <img ui-if="!belong" id="profile_img" src="https://secure.gravatar.com/avatar/{{profile_user.g_hash}}?s=200&r=pg&d=mm" />
                         </div>
                       </div>
                       <div class="span8">
                         <div class="well well-small">
-                          <span style="font-weight:bold">Display Name:</span> {{User.u_name}}<br>
-                          <span style="font-weight:bold">Full Name:</span> {{User.u_realname}}<br>
-                          <span style="font-weight:bold">E-mail:</span> {{User.u_email}}<br>
-                          <span style="font-weight:bold">Date Created:</span> {{User.u_created}}<br>
-                          <span style="font-weight:bold">Last Login:</span> {{User.u_lastlogin}}<br>
-                          <span style="font-weight:bold">No. of Logins:</span> {{User.u_logincount}}<br>
+                          <span style="font-weight:bold">Display Name:</span> {{profile_user.u_name}}<br>
+                          <span style="font-weight:bold">Full Name:</span> {{profile_user.u_realname}}<br>
+                          <hr ui-if="belong">
+                          <span ui-if="belong" style="font-weight:bold">E-mail:</span> {{profile_user.u_email}}<br>
+                          <span ui-if="belong" style="font-weight:bold">Date Created:</span> {{profile_user.u_created}}<br>
+                          <span ui-if="belong" style="font-weight:bold">Last Login:</span> {{profile_user.u_lastlogin}}<br>
+                          <span ui-if="belong" style="font-weight:bold">No. of Logins:</span> {{profile_user.u_logincount}}<br>
+                          <hr>
+                          <span style="font-weight:bold">Account Type:</span> <span class="label label-important" ui-if="!!profile_user.u_isadmin" ng-cloak>Administrator</span>
+                          <span class="label label-success" ui-if="!profile_user.u_isadmin" ng-cloak>Ordinary User</span>
                         </div>
                       </div>
                     </div>                  
@@ -196,7 +238,8 @@
                   <!-- Sketches Pane -->
                   <div class="tab-pane" id="Sketches">
                     <div class="row-fluid">
-                      <h2>My Sketches</h2>
+                      <h2 ui-if="belong">My Sketches</h2>
+                      <h2 ui-if="!belong">{{profile_user.u_name}}'s Sketches</h2>
                       
                       <table class="table table-bordered table-striped" ui-if="!!items.entities.length"  ng-cloak>
                         <thead>
@@ -210,13 +253,18 @@
                           </th>
                           <th>Parent Sketch</th-->
                           <th>
+                          </th>
+                          <th>
                             <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
                             </a>
                           </th>
                           <th>Sketch Description</th>
                           <th>
-                            <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">SketchDate
+                            <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">Sketch Date
                             </a>
+                          </th>
+                          <th>
+                            Action
                           </th>
                         </thead>
                         <tbody>
@@ -224,10 +272,20 @@
                             <!--td>{{files.data.sketchId}}</td>
                             <td>{{files.data.version}}</td>
                             <td>{{files.data.original}}</td-->
-                            <!--td><a href="sketch.html?id={{files.id}}">{{files.data.fileName}}</a></td-->
-                            <td><a href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}">{{files.data.fileName}}</a></td>  
+                            <td>
+                              <img src="data:image/png;base64,{{files.data.thumbnailData}}" alt="Red dot" ui-if="!!files.data.thumbnailData">
+                              <div class="well well-small" ui-if="!files.data.thumbnailData">
+                                <span>No preview available</span>
+                              </div>
+                            </td>
+                            <td>{{files.data.fileName}}</td>  
                             <td>{{files.data.changeDescription}}</td>
                             <td>{{tzformat(files.created)}}</td>
+                            <td>
+                              <a class="btn btn-info btn-small" href="view.html?id={{files.data.sketchId}}&version={{files.data.version}}">View</a>
+                              <a class="btn btn-success btn-small" href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}">Edit</a>
+                              <a class="btn btn-danger btn-small disabled"><del>Delete</del></a>
+                            </td>
                           </tr>
                         </tbody>
                       </table>
@@ -237,10 +295,11 @@
                   <div class="tab-pane" id="Groups">
                     <div class="row-fluid">
                       <div class="span6">
-                        <h2>My Groups</h2>
+                        <h2 ui-if="belong">My Groups</h2>
+                        <h2 ui-if="!belong">{{profile_user.u_name}}'s Groups</h2>
                       </div>
                       <div class="span6">
-                        <button class="btn btn-inverse btn-small" data-toggle="modal" href="#NewGroup">Create New Group</button> 
+                        <button class="btn btn-inverse btn-small" data-toggle="modal" href="#NewGroup" ui-if="belong">Create New Group</button> 
                       </div>
                       <table class="table table-bordered table-striped"  ng-cloak>
                         <thead>
@@ -262,7 +321,7 @@
                       </table>
                       
                       <!--New Group Modal-->
-                      <div class="modal hide fade" id="NewGroup" style="display:none">
+                      <div class="modal hide fade" id="NewGroup" style="display:none" ui-if="belong">
                         <div class="modal-header">
                           <a class="close" data-dismiss="modal">x</a>
                           <h3 id="Login">Create New Group</h3>

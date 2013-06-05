@@ -46,7 +46,7 @@
     <script type="text/javascript" src="history/history.js"></script>
     <!-- END Browser History required section -->  
     
-    <script type="text/javascript" src="swfobject.js"></script>
+    <script type="text/javascript" src="swf/swfobject.js"></script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
     
@@ -106,7 +106,7 @@
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
               <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
@@ -148,7 +148,7 @@
         <div class="span10">
             
             <!-- Panes -->
-            <div class="tab-content" id="main-tabs">
+            <div class="tab-content" id="main-tabs" ng-cloak ng-show="User.u_isadmin">
               
               <!-- Manage Versions Pane -->
               <div class="tab-pane active" id="ManageVersions" ng-cloak>
@@ -342,7 +342,9 @@
                                   </span>
                                 </td>
                                 <td>
-                                  <select ng-model="ungroupeduser" ng-options="alluserfound as alluserfound.u_name for alluserfound in allusersfound.entities" ng-cloak></select>
+                                  <select ng-model="ungroupeduser" ng-options="alluserfound as alluserfound.u_name for alluserfound in allusersfound.entities" ng-cloak>
+                                    <option value="{'id': -1}">*Select a user to add*</option>
+                                  </select>
                                 </td>
                                 <td>
                                   <input type="submit" class="button btn-success btn-small" ng-click="adduser(ungroupeduser)" value="Add >"/>
@@ -364,13 +366,14 @@
                                   </span>
                                 </td>
                                 <td>
-                                  <select ng-model="group_leader" ng-options="groupeduserfound as groupeduserfound.u_name for groupeduserfound in groupedusers" ng-cloak></select>
-                                  {{group_leader}}
+                                  <select ng-model="group_leader" ng-options="groupeduserfound as groupeduserfound.u_name for groupeduserfound in groupedusers" ng-cloak>
+                                    <option value="{'id': -1}">*Select the group leader*</option>
+                                  </select>
                                 </td>
                                 <td>
                                 </td>
                               </tr>
-                              <tr ui-if="!verify()">
+                              <tr ui-if="!!verify">
                                 <td>
                                   <input type="submit" class="button btn-success btn-large" value="Submit"/>
                                   <input type="submit" class="button btn-inverse btn-large"  value="Cancel"/>
@@ -626,6 +629,8 @@
                       <table class="table table-bordered table-striped" ui-if="!!items.entities.length"  ng-cloak>
                       <thead>
                           <th>
+                          </th>
+                          <th>
                             <a href="" ng-click="predicate_users = 'data.sketchId'; reverse=!reverse">ID
                             </a>
                           </th>
@@ -652,6 +657,12 @@
                         </thead>
                         <tbody>
                           <tr ng-repeat="files in items.entities | orderBy:predicate_users:reverse">
+                            <td>
+                              <img src="data:image/png;base64,{{files.data.thumbnailData}}" alt="Red dot" ui-if="!!files.data.thumbnailData">
+                              <div class="well well-small" ui-if="!files.data.thumbnailData">
+                                <span>No preview available</span>
+                              </div>
+                            </td>                          
                             <td>{{files.data.sketchId}}</td>
                             <td>{{files.data.version}}</td>
                             <td>{{files.data.original}}</td>

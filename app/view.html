@@ -46,11 +46,11 @@
     <script type="text/javascript" src="history/history.js"></script>
     <!-- END Browser History required section -->  
     
-    <script type="text/javascript" src="swfobject.js"></script>
+    <script type="text/javascript" src="swf/swfobject.js"></script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
     
-    <!-- script type="text/javascript" src="KSketchCallBacks.js"></script -->
+    <!-- script type="text/javascript" src="swf/KSketchCallBacks.js"></script -->
     <script type="text/javascript">
       
       //Function to trigger Janrain login plugin
@@ -141,7 +141,7 @@
       //Function receives an xml string from anywhere
       //and asks the flash object to load it	
       function loadKSketchFile(fileData) {
-        var swfObject = swfobject.getObjectById('KSketch2_Web');
+        var swfObject = swfobject.getObjectById('KSketch_Player');
         if(swfObject){
           var loading = true;
           while (loading) {
@@ -167,7 +167,7 @@
       // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
       var swfVersionStr = "10.2.0";
       // To use express install, set to playerProductInstall.swf, otherwise the empty string. 
-      var xiSwfUrlStr = "playerProductInstall.swf";
+      var xiSwfUrlStr = "swf/playerProductInstall.swf";
       var flashvars = {};
       var params = {};
       params.quality = "high";
@@ -175,11 +175,11 @@
       params.allowScriptAccess = "always";
       params.allowfullscreen = "true";
       var attributes = {};
-      attributes.id = "KSketch2_Web";
-      attributes.name = "KSketch2_Web";
+      attributes.id = "KSketch_Player";
+      attributes.name = "KSketch_Player";
       attributes.align = "middle";
       swfobject.embedSWF(
-        "KSketch2_Web.swf", "flashContent", 
+        "swf/v1/KSketch2_Web.swf", "flashContent", 
         "100%", "406", 
         swfVersionStr, xiSwfUrlStr, 
         flashvars, params, attributes);
@@ -208,7 +208,7 @@
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
               <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
@@ -275,9 +275,9 @@
               <!--This changes depending on current logged-in status.-->
               
               
-              <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
-              <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a href="search.html">Search for Sketch</a></li>
+              <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
+              <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
+              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -318,14 +318,14 @@
                       </script> 
                     </div>
                     <noscript>
-                      <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="406" id="KSketch2_Web">
-                        <param name="movie" value="KSketch2_Web.swf" />
+                      <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="406" id="KSketch_Player">
+                        <param name="movie" value="swf/v1/KSketch2_Web.swf" />
                         <param name="quality" value="high" />
                         <param name="bgcolor" value="#ffffff" />
                         <param name="allowScriptAccess" value="always" />
                         <param name="allowFullScreen" value="true" />
                         <!--[if !IE]>-->
-                        <object type="application/x-shockwave-flash" width="100%" height="406" data="KSketch2_Web.swf">
+                        <object type="application/x-shockwave-flash" width="100%" height="406" data="swf/v1/KSketch2_Web.swf">
                           <param name="quality" value="high" />
                           <param name="bgcolor" value="#ffffff" />
                           <param name="allowScriptAccess" value="always" />
@@ -364,11 +364,16 @@
                     <span style="font-weight:bold">Created From:</span> {{item.data.original}}
                     <br>
                     <span style="font-weight:bold">Edited On:</span> {{item.modified}}
+                    <hr/>
+                    <span style="font-weight:bold">View Permissions:</span> {{item.data.p_view}}
+                    <br>
+                    <span style="font-weight:bold">Edit Permissions:</span> {{item.data.p_edit}}
+                    <br>
+                    <span style="font-weight:bold">Comment Permissions:</span> {{item.data.p_comment}}
                   </div>
                   <div>
                     <span class='st_facebook_hcount' displayText='Facebook'></span>
                     <span class='st_fblike_hcount' displayText='Facebook Like'></span>
-                    <input type="text" id="visibleTextData">
                   </div>
                 </div>
               </div>          

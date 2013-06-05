@@ -96,7 +96,7 @@
     
     #sketchDescription {
       width: 300px;
-      height: 125px;
+      height: 100px;
       resize: none;
     }
 
@@ -160,7 +160,7 @@
       position: absolute;
       z-index: 98;
       margin-top: 3px;
-      width: 52.8%;
+      width: 53.0%;
       height: 47px;
       _height: expression(document.body.offsetHeight + "px");
       background-color: rgba(238, 238, 238, 0.8);
@@ -170,14 +170,14 @@
       position: absolute;
       z-index: 99;
       margin-top: 3px;
-      width: 52.8%;
+      width: 53.0%;
       height: 340px;
       _height: expression(document.body.offsetHeight + "px");
       background-color: rgba(255, 255, 255, 0.01);
     }
     
     #visibleTextData { 
-      display: none;
+      /*display: none;*/
     }
 
     /*Responsive*/
@@ -221,11 +221,11 @@
       }
       
       #ViewCoverBarDiv {
-        width: 93%
+        width: 93.3%
       }
       
       #ViewCoverDiv {
-        width: 93%
+        width: 93.3%
       }
 	  }	    
     

@@ -112,10 +112,16 @@ function ViewController($scope,$resource){
           }
         }
         else {
-          $scope.waiting = "Error";
-          $scope.heading = "Oops...!";
-          $scope.message = "We're sorry, but the sketch you wanted does not exist.";
-          $scope.submessage = "Perhaps the URL that you entered was broken?";
+          if (response.id === "Forbidden") {
+            $scope.waiting = "Error";
+            $scope.heading = "Access Denied";
+            $scope.message = "You have not been granted permission to view this sketch.";
+          } else {
+            $scope.waiting = "Error";
+            $scope.heading = "Oops...!";
+            $scope.message = "We're sorry, but the sketch you wanted does not exist.";
+            $scope.submessage = "Perhaps the URL that you entered was broken?";
+          }
         }
       });  
   }

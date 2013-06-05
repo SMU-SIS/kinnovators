@@ -73,6 +73,22 @@ class User(db.Model):
           return "N/A"
       except ValueError:
         return "N/A"    
+        
+  @staticmethod
+  def check_if_admin(model_id):
+    #Checks admin status
+    try:
+      if int(model_id) == 0:
+        return False
+      else:
+        entity = User.get_by_id(int(model_id))
+        
+        if entity:
+          return entity.is_admin
+        else:
+          return False
+    except ValueError:
+      return False    
 
   @staticmethod
   def get_matching_ids(criteria=""):
@@ -377,10 +393,37 @@ class GetUser(webapp2.RequestHandler):
         else:
           result['message'] = "Unable to retrieve selected user."
       else:
-        result['message'] = "Not authenticated."                        
+        result['message'] = "Not authenticated."     
       
       return self.respond(result) 
-     
+
+    def profile_user(self, id, **kwargs):
+      utc = UTC()
+      result = {'status':'error',
+                'message':''}
+      auser = self.auth.get_user_by_session()
+      if auser:
+        user = User.get_by_id(long(id))
+        if user:
+          email_hasher = hashlib.md5()
+          email_hasher.update(user.email.lower())
+          g_hash = email_hasher.hexdigest()
+          if (not user.real_name):
+            user.real_name = user.display_name #default to display name
+            user.put()
+          result = {'status':'success',
+                    'id': id,
+                      'u_name': user.display_name,
+                      'u_realname': user.real_name,
+                      'g_hash': g_hash,
+                      'u_isadmin': user.is_admin}
+        else:
+          result['message'] = "Unable to retrieve selected user."
+      else:
+        result['message'] = "Not authenticated."
+      
+      return self.respond(result) 
+      
     def get_user_by_id(self, id, **kwargs):
       utc = UTC()
       result = {'status':'error',
@@ -463,6 +506,7 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/user/getuser/<id>', handler=GetUser, handler_method='get_user_by_id'),
     webapp2.Route('/user/listuser', handler=GetUser, handler_method='list_user'),
     webapp2.Route('/user/listuser/<criteria>', handler=GetUser, handler_method='search_user'),
+    webapp2.Route('/user/profileuser/<id>', handler=GetUser, handler_method='profile_user'),
     webapp2.Route('/user/edituser', handler=GetUser, handler_method='edit_user'),
     webapp2.Route('/user/logout', handler=LogoutPage),
     webapp2.Route('/user/janrain', handler=RPXTokenHandler)],

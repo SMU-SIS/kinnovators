@@ -74,8 +74,11 @@ function ConsoleController($scope,$resource){
     $scope.waiting = "Updating";       
     $scope.UserResource.get(function(response) {
           var result = response;
-          if (result.u_login === "True" || result.u_login === true) {
+          if ((result.u_login === "True" || result.u_login === true)
+              && (result.u_isadmin === "True" || result.u_isadmin === true)) {
             $scope.User = result;
+            $scope.alluserlist();
+            $scope.versionlist();
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
@@ -168,22 +171,26 @@ function ConsoleController($scope,$resource){
   }  
   
   $scope.groupedusers = [];
-  $scope.group_leader = "";
+  //$scope.group_leader = "";
   
   $scope.verify = function() {
-    return ($scope.group_leader === "");
+    return ($scope.group_leader.id > 0);
   }
   
   $scope.adduser = function(user) {
-    $scope.groupedusers.push(user);
-    var index=$scope.allusersfound.entities.indexOf(user);
-    $scope.allusersfound.entities.splice(index,1);     
+    if (user.id !== -1) {
+      $scope.groupedusers.push(user);
+      var index=$scope.allusersfound.entities.indexOf(user);
+      $scope.allusersfound.entities.splice(index,1);     
+    }
   }
   
   $scope.removeuser = function(user) {
-    $scope.allusersfound.entities.push(user);
-    var index=$scope.groupedusers.indexOf(user);
-    $scope.groupedusers.splice(index,1);     
+    if (user.id !== -1) {
+      $scope.allusersfound.entities.push(user);
+      var index=$scope.groupedusers.indexOf(user);
+      $scope.groupedusers.splice(index,1); 
+    }
   }
   
   $scope.versionlist = function() {
@@ -224,6 +231,4 @@ function ConsoleController($scope,$resource){
   };
   
   $scope.getuser();
-  $scope.alluserlist();
-  $scope.versionlist();
 }

@@ -6,6 +6,8 @@
 function ProfileController($scope,$resource){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+  
+  $scope.profile_user = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "g_hash": "", 'u_isadmin': false, 'u_isactive': false};
     
   $scope.backend_locations = [
     {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
@@ -24,6 +26,7 @@ function ProfileController($scope,$resource){
   $scope.derp = "derp";
   $scope.newgroup = {};
   $scope.newgroup.data = {"group_name":"", "user_id":""};
+  $scope.test = "-";
   
   
   //Search Query Filter
@@ -74,8 +77,6 @@ function ProfileController($scope,$resource){
             if ($scope.User.u_lastlogin !== "") {
               $scope.User.u_lastlogin = $scope.tzformat($scope.User.u_lastlogin);
             }
-            $scope.list();
-            $scope.grouplist();
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
@@ -90,6 +91,50 @@ function ProfileController($scope,$resource){
           $scope.waiting = "Ready";
     });
   };	
+  
+  $scope.setTest = function(test) {
+    $scope.test = test;
+  }
+  
+  $scope.get_profile = function() {
+    if ($scope.test === "-") {
+      $scope.profile_user = $scope.User;
+      $scope.list();
+      $scope.grouplist();
+      $scope.belong = true;
+    } else if (parseInt($scope.test, 10) === parseInt($scope.User.id, 10)) {
+      $scope.profile_user = $scope.User;
+      $scope.list();
+      $scope.grouplist();
+      $scope.belong = true;
+    
+    } else {
+      $scope.belong = false;
+      $scope.ProfileUserResource = $resource('http://:remote_url/user/profileuser/:id',
+                          {'remote_url':$scope.remote_url, 'id':$scope.test},
+                          {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
+                             });  
+      $scope.waiting = "Updating";       
+      $scope.ProfileUserResource.get(function(response) {
+            var result = response;
+            if (result.status === "success") {
+              $scope.profile_user = result;
+              $scope.list();
+              $scope.grouplist();
+            } else {
+              if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
+              {
+                var referLink = document.createElement("a");
+                referLink.href = "index.html";
+                document.body.appendChild(referLink);
+                referLink.click();
+              }
+              else { window.location.replace("index.html");}
+            }            
+            $scope.waiting = "Ready";
+      });
+    }
+  }
   
   $scope.addgroup = function(){
     $scope.newgroup.data.user_id = $scope.User.id;
@@ -116,7 +161,7 @@ function ProfileController($scope,$resource){
   
   $scope.grouplist = function() {
     $scope.GroupListResource = $resource('http://:remote_url/list/group/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.User.id}, 
+    {"remote_url":$scope.remote_url,"criteria":$scope.profile_user.id}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
     $scope.waiting = "Updating";
     $scope.GroupListResource.get(function(response) { 
@@ -128,7 +173,7 @@ function ProfileController($scope,$resource){
   
   $scope.list = function(){
     $scope.ListResource = $resource('http://:remote_url/list/sketch/user/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.User.id}, 
+    {"remote_url":$scope.remote_url,"criteria":$scope.profile_user.id}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
     $scope.waiting = "Updating";
     $scope.ListResource.get(function(response) { 

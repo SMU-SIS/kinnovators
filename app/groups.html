@@ -46,7 +46,7 @@
     <script type="text/javascript" src="history/history.js"></script>
     <!-- END Browser History required section -->  
     
-    <script type="text/javascript" src="swfobject.js"></script>
+    <script type="text/javascript" src="swf/swfobject.js"></script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
     
@@ -135,7 +135,7 @@
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
               <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
               <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
               <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
@@ -179,9 +179,9 @@
               <!--This changes depending on current logged-in status.-->
               
               
-              <li id="sc" ng-show="User.u_login" ng-cloak><a href="profile.html">My Sketchbook</a></li>
-              <li id="cs"><a href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a href="search.html">Search for Sketch</a></li>
+              <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
+              <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
+              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
