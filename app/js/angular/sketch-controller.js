@@ -82,7 +82,7 @@ function SketchController($scope,$resource){
 	   	
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		
-		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "thumbnailData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
+		//$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "thumbnailData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
 		$scope.item.data.sketchId = "";			
 		
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
@@ -111,7 +111,7 @@ function SketchController($scope,$resource){
 	$scope.save = function() { //Save new version of existing file
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		
-		$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "thumbnailData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
+		//$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "thumbnailData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
 		$scope.item.data.sketchId = $scope.sketchId;
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
 		$scope.item.data.owner = $scope.User.u_name;
@@ -190,16 +190,14 @@ function SketchController($scope,$resource){
               $scope.heading = "Success!";
               $scope.message = "You have successfully saved '" + $scope.fileName + "' (version " + result.data.version + ").";
               $scope.sketchId = result.data.sketchId;
-              //$scope.version = result.data.version;
               $scope.setTest(result.data.sketchId);
               $scope.setVersion(result.data.version);
-              $scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
+              //$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
             } else {
-              $scope.setMeta("","","","","");
+              //$scope.setMeta("","","","","");
               $scope.waiting = "Error";
               $scope.heading = "Oops...!";
-              $scope.message = "We're sorry, but we were unable to save your file.";
-              $scope.submessage = "Please check your network connection and try again later.";
+              $scope.message = result.message;
             }
           }); 
   };

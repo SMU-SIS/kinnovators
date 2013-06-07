@@ -156,13 +156,42 @@
     
     <!-- Main Body -->
     <div class="container-fluid">
-      <!-- Loading -->      
-      <div id="LoadingDiv" ng-hide="waiting=='Ready'"></div>      
-      <div class="modal" id="Loading" ng-hide="waiting=='Ready'">
+
+      <!-- Loading -->
+      
+      <div id="LoadingDiv" ng-hide="waiting=='Ready'"></div>
+      <div class="modal" id="Loading" ng-show="waiting=='Loading'">
         <div class="modal-body">
           <span>Loading........</span>
         </div>
-      </div>    
+      </div>
+      <div class="modal" id="Loading" ng-show="waiting=='Saving'">
+        <div class="modal-body">
+          <span>Saving........</span>
+        </div>
+      </div>
+      <div class="modal" id="Message" ng-show="waiting=='Error'" ng-cloak>
+        <div class="modal-body">
+          <div class="modal-header">
+            <input type="submit" class="close" value="x" data-dismiss="modal" ng-click="acknowledge()"/>
+            <h3 id="myUploadItems">{{heading}}</h3>
+          </div>
+          <br/>
+          <div class="control-group">
+            <div class="control-label">
+              <span style="text-align:center">{{message}}</span>
+              <br/>
+              <br/>
+              <span style="text-align:center">{{submessage}}</span>
+              <br/>
+              <br/>
+            </div>
+            <div class="controls">
+              <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
+            </div>
+          </div>
+        </div>
+      </div>      
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->

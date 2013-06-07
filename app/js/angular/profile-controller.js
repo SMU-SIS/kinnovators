@@ -27,6 +27,9 @@ function ProfileController($scope,$resource){
   $scope.newgroup = {};
   $scope.newgroup.data = {"group_name":"", "user_id":""};
   $scope.test = "-";
+  $scope.heading = "";
+  $scope.message = "";
+  $scope.submessage = "";
   
   
   //Search Query Filter
@@ -99,13 +102,13 @@ function ProfileController($scope,$resource){
   $scope.get_profile = function() {
     if ($scope.test === "-") {
       $scope.profile_user = $scope.User;
-      $scope.list();
       $scope.grouplist();
+      $scope.list();
       $scope.belong = true;
     } else if (parseInt($scope.test, 10) === parseInt($scope.User.id, 10)) {
       $scope.profile_user = $scope.User;
-      $scope.list();
       $scope.grouplist();
+      $scope.list();
       $scope.belong = true;
     
     } else {
@@ -142,13 +145,22 @@ function ProfileController($scope,$resource){
                   {"remote_url":$scope.remote_url}, 
                   {'save': { method: 'POST',    params: {} }});
  
-    $scope.waiting = "Loading";
+    $scope.waiting = "Saving";
     var newgroup = new $scope.GroupResource($scope.newgroup.data);
     newgroup.$save(function(response) { 
             var result = response;
             $scope.newgroup.data = {"group_name":"", "user_id":""};
             $scope.grouplist();
-            $scope.waiting = "Ready";
+            if (result.status === 'success') {
+              $scope.waiting = "Error";
+              $scope.heading = "Success!";
+              $scope.message = "You have successfully founded the group '" + result.g_name + "'!";
+            } else {
+              $scope.waiting = "Error";
+              $scope.heading = "Oops...!"
+              $scope.message = result.message;
+              $scope.submessage = result.submessage;
+            }
           }); 
   };
   
@@ -166,11 +178,15 @@ function ProfileController($scope,$resource){
     $scope.waiting = "Updating";
     $scope.GroupListResource.get(function(response) { 
         $scope.groups = response;
-        $scope.waiting = "Ready";
      });  
   }
 
-  
+  $scope.acknowledge = function() {
+    $scope.waiting = "Ready";
+    $scope.heading = "";
+    $scope.message = "";
+    $scope.submessage = "";
+  }
   $scope.list = function(){
     $scope.ListResource = $resource('http://:remote_url/list/sketch/user/:criteria',
     {"remote_url":$scope.remote_url,"criteria":$scope.profile_user.id}, 

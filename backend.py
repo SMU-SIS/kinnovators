@@ -62,81 +62,86 @@ class Sketch(db.Model):
       
   @staticmethod
   def add(data):
-    #update ModelCount when adding
-    jsonData = json.loads(data)
-    modelCount = ModelCount.all().filter('en_type','Sketch').get()
-    
-    #For sketch files saved through "Save As"
-    if jsonData['sketchId'] == '':
-      if modelCount:
-        modelCount.count += 1
-        modelCount.put()
+    result = {}
+    try:
+      #update ModelCount when adding
+      jsonData = json.loads(data)
+      modelCount = ModelCount.all().filter('en_type','Sketch').get()
+      
+      #For sketch files saved through "Save As"
+      if jsonData['sketchId'] == '':
+        if modelCount:
+          modelCount.count += 1
+          modelCount.put()
+        else:
+          modelCount = ModelCount(en_type='Sketch', count=1)
+          modelCount.put()
+        jsonData['sketchId'] = str(modelCount.count)
+      #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
+      if (jsonData['original'] == ':') or (jsonData['original'] == ':-1'):
+        jsonData['original'] = 'original'
+      
+      #update VersionCount when adding  
+      versionCount = VersionCount.all().filter('sketchId', long(jsonData['sketchId'])).get()
+      if versionCount:
+        versionCount.lastVersion += 1
+        versionCount.put()
       else:
-        modelCount = ModelCount(en_type='Sketch', count=1)
-        modelCount.put()
-      jsonData['sketchId'] = str(modelCount.count)
-    #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
-    if (jsonData['original'] == ':') or (jsonData['original'] == ':-1'):
-      jsonData['original'] = 'original'
-    
-    #update VersionCount when adding  
-    versionCount = VersionCount.all().filter('sketchId', long(jsonData['sketchId'])).get()
-    if versionCount:
-      versionCount.lastVersion += 1
-      versionCount.put()
-    else:
-      versionCount = VersionCount(sketchId=long(jsonData['sketchId']), lastVersion=1)
-      versionCount.put()
-      
-    #update AppVersionCount when adding
-    appVersionCount = AppVersionCount.all().filter('app_version', float(jsonData['appver'])).get()
-    if appVersionCount:
-      appVersionCount.sketch_count += 1
-      if jsonData['original'] == 'original':
-        appVersionCount.original_count += 1
-      appVersionCount.put()
-    else:
-      if jsonData['original'] == 'original':
-        appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 1)
+        versionCount = VersionCount(sketchId=long(jsonData['sketchId']), lastVersion=1)
+        versionCount.put()
+        
+      #update AppVersionCount when adding
+      appVersionCount = AppVersionCount.all().filter('app_version', float(jsonData['appver'])).get()
+      if appVersionCount:
+        appVersionCount.sketch_count += 1
+        if jsonData['original'] == 'original':
+          appVersionCount.original_count += 1
+        appVersionCount.put()
       else:
-        appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 0)
-      appVersionCount.put()
-    
-    jsonData['version'] = str(versionCount.lastVersion)
-    file = jsonData['fileData']
-    thumbnail = jsonData['thumbnailData']
-    change = jsonData['changeDescription']
-    change = change[:255]
+        if jsonData['original'] == 'original':
+          appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 1)
+        else:
+          appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 0)
+        appVersionCount.put()
       
-    entity = Sketch(sketchId=long(jsonData['sketchId']),
-                    version=long(jsonData['version']),
-                    changeDescription=change,
-                    fileName=jsonData['fileName'],
-                    owner=long(jsonData['owner_id']),
-                    fileData=file,
-                    thumbnailData=thumbnail,
-                    original=jsonData['original'],
-                    appver=float(jsonData['appver']))
-    
-    verify = entity.put()
-    
-    if (verify):
-    
-      #Update permissions when adding
-      permissions = Permissions(sketch_id = entity.key().id(),
-                                   view = jsonData['p_view'],
-                                   edit = jsonData['p_edit'],
-                                   comment = jsonData['p_comment'])
-      permissions.put()
-      #Placeholder for group permissions.
+      jsonData['version'] = str(versionCount.lastVersion)
+      file = jsonData['fileData']
+      thumbnail = jsonData['thumbnailData']
+      change = jsonData['changeDescription']
+      change = change[:255]
+        
+      entity = Sketch(sketchId=long(jsonData['sketchId']),
+                      version=long(jsonData['version']),
+                      changeDescription=change,
+                      fileName=jsonData['fileName'],
+                      owner=long(jsonData['owner_id']),
+                      fileData=file,
+                      thumbnailData=thumbnail,
+                      original=jsonData['original'],
+                      appver=float(jsonData['appver']))
       
-      result = {'id': entity.key().id(), 
-                'status': "success",
-                'data': jsonData} #this would also check if the json submitted was valid
-    else:
+      verify = entity.put()
+      
+      if (verify):
+      
+        #Update permissions when adding
+        permissions = Permissions(sketch_id = entity.key().id(),
+                                     view = jsonData['p_view'],
+                                     edit = jsonData['p_edit'],
+                                     comment = jsonData['p_comment'])
+        permissions.put()
+        #Placeholder for group permissions.
+        
+        result = {'id': entity.key().id(), 
+                  'status': "success",
+                  'data': jsonData} #this would also check if the json submitted was valid
+      else:
+        result = {'status': "error",
+                  'message': "Save unsuccessful. Please try again."}
+    except:
       result = {'status': "error",
                 'message': "Save unsuccessful. Please try again."}
-        
+    
     return result
   
   @staticmethod
@@ -566,22 +571,38 @@ class Group(db.Model):
   @staticmethod
   def add(data):
     #update ModelCount when adding
-    jsonData = json.loads(data)       
+    theQuery = Group.all()
+    jsonData = json.loads(data)
+    result = {'status':'error',
+              'message':'There was an error in creating your group.',
+              'submessage':'Please try again later.'}    
     if jsonData['group_name'] != '':
       if jsonData['user_id'] != '':
-    
-        entity = Group(group_name=jsonData['group_name'])
-      
-        entity.put()
         
-        usergroupmgmt = UserGroupMgmt(user_id=int(jsonData['user_id']),
-                                      group_id=entity.key().id(),
-                                      role="Founder")
-        usergroupmgmt.put()
+        objects = theQuery.run()
+        group_exists = False
+        for object in objects:
+          if jsonData['group_name'] == object.group_name:
+            group_exists = True
+            break
+        if not group_exists:
+          entity = Group(group_name=jsonData['group_name'])
         
-    result = {'g_name': jsonData['group_name'],
+          entity.put()
+          
+          usergroupmgmt = UserGroupMgmt(user_id=int(jsonData['user_id']),
+                                        group_id=entity.key().id(),
+                                        role="Founder")
+          usergroupmgmt.put()
+        
+          result = {'status': 'success',
+              'g_name': jsonData['group_name'],
               'u_id': jsonData['user_id'],
               'role': "Founder"}
+        else:
+          result = {'status': 'error',
+                    'message': 'The name you chose is already in use!',
+                    'submessage': 'Please choose a different group name!'}
               
     return result
     
