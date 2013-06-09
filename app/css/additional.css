@@ -8,6 +8,10 @@
       overflow-y: scroll;
     }
     
+    .dropdown-menu {
+      min-width: 270px;
+    }
+    
     .item{
       min-height: 300px;
     }

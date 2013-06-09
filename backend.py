@@ -634,6 +634,9 @@ class Group(db.Model):
         else:
           include = False
           
+        if object.role == "Pending":
+          include = False
+          
       if include:
         group = Group.get_name(object.group_id)
         data = {'group_name': group,
@@ -668,12 +671,160 @@ class Group(db.Model):
                   'group_name': theobject.group_name,
                   'u_groups': u_groups
                   }
-    return result    
+    return result
+    
+  @staticmethod
+  def check_users(model_id):
+    theQuery = User.all()
+    objects = theQuery.run()
+    groupQuery = UserGroupMgmt.all().filter('group_id',int(model_id))
+    groupObjects = groupQuery.run()
+    entities = []
+    for object in objects:
+      include = True
+      for groupObject in groupObjects:
+        if object.key().id() == groupObject.user_id:
+          include = False
+      if include:
+        data = {'id': object.key().id(),
+                'u_name': object.display_name,
+                'u_realname': object.real_name}
+        entities.append(data)
+    return entities
+  
   
 class UserGroupMgmt(db.Model):
   user_id = db.IntegerProperty(required=True)
   group_id = db.IntegerProperty(required=True)
   role = db.StringProperty(required=True)
+  
+  @staticmethod
+  def add(data, other_user):
+    #update ModelCount when adding
+    jsonData = json.loads(data)
+    result = {'status':'error',
+              'message':'There was an error in sending the invite.',
+              'submessage':'Please try again later.'}    
+    if jsonData['user_id'] != 0:
+      theQuery = UserGroupMgmt.all().filter('group_id', int(jsonData['group_id']))
+      objects = theQuery.run()
+      user_group_exists = False
+      for object in objects:
+        if int(jsonData['user_id']) == object.user_id:
+          user_group_exists = True
+          break
+      if not user_group_exists:
+        entity = UserGroupMgmt(user_id=int(jsonData['user_id']),
+                              group_id=int(jsonData['group_id']),
+                              role="Pending")
+      
+        entity.put()
+        
+        notify = Notification(user_id = int(jsonData['user_id']),
+                              notification_type = "GROUPINVITE",
+                              other_user = int(other_user),
+                              relevant_id = entity.key().id())
+                              
+        notify.put()
+        
+        result = {'status': 'success',
+            'user_id': jsonData['user_id'],
+            'group_id': jsonData['group_id'],
+            'role': "Pending"}
+      else:
+        result = {'status':'error',
+                'message':'You cannot invite an existing or pending member!'}   
+        
+    else:
+      result = {'status':'error',
+              'message':'Please select a valid user to invite.'}   
+    return result
+    
+  @staticmethod
+  def accept_reject(data, userid):
+    jsonData = json.loads(data)
+    result = {'status':'error',
+              'message':'There was an error in processing the invitation.',
+              'submessage':'Please try again later.'}
+    status = str(jsonData['status'])
+    u_g = UserGroupMgmt.get_by_id(int(jsonData['u_g']))
+    founder = UserGroupMgmt.all().filter('group_id', u_g.group_id).filter('role', 'Founder').get()
+    new_notify = Notification(user_id = founder.user_id,
+                              notification_type = "",
+                              other_user = int(userid))
+    if status == "accept":
+      u_g.role = "Member"
+      u_g.put()
+      new_notify.notification_type = "GROUPACCEPT"
+      
+    else:
+      u_g.delete()
+      new_notify.notification_type = "GROUPREJECT"
+    
+    old_notify = Notification.get_by_id(int(jsonData['n_id']))
+    old_notify.delete()
+    new_notify.put()
+    result = {'status': 'success',
+              'message': 'You have successfully ' + jsonData['status'] + 'ed the group invitation.'}
+    return result
+      
+
+class Notification(db.Model):
+  user_id = db.IntegerProperty()
+  notification_date = db.DateTimeProperty(auto_now_add=True)
+  notification_type = db.StringProperty()
+  other_user = db.IntegerProperty()
+  relevant_id = db.IntegerProperty()
+
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+       
+  @staticmethod
+  def get_entities(user_id, limit=0):
+    #update ModelCount when adding
+    theQuery = Notification.all()
+    theQuery.order('-notification_date')
+
+    objects = theQuery.run()
+    utc = UTC()
+    entities = []
+    count = 0
+    for object in objects:
+      if object.user_id == int(user_id):
+        n_date = object.notification_date.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S")
+        o_user = User.get_name(object.other_user)
+        if object.notification_type == "GROUPINVITE":
+          u_g = UserGroupMgmt.get_by_id(object.relevant_id)
+          relevant =  Group.get_name(u_g.group_id)
+          entity = {'n_date':n_date,
+                  'id': object.key().id(),
+                  'n_message': o_user + " has invited you to the group " + relevant + ".",
+                  'n_action': []}
+          n_1 = {'u_g' : object.relevant_id,
+                 'n_id' :object.key().id(),
+                 'status' :'accept',
+                 'a_text': "Accept"}
+          n_2 = {'u_g' :object.relevant_id,
+                 'n_id' :object.key().id(),
+                 'status' :'reject',
+                 'a_text': "Reject"}
+          entity['n_action'].append(n_1)
+          entity['n_action'].append(n_2)
+          entities.append(entity)
+        #Placeholder for other notification types
+        count += 1
+        #Cutoff if limit was defined
+        if limit != 0:
+          if count == int(limit):
+            break
+          
+    result = {'method':'get_entities',
+              'en_type': 'Notification',
+              'entities': entities}      
+    return result
+      
   
 class ActionHandler(webapp2.RequestHandler):
     """Class which handles bootstrap procedure and seeds the necessary
@@ -894,6 +1045,16 @@ class ActionHandler(webapp2.RequestHandler):
 
         result = Group.get_entities(criteria=criteria)
         return self.respond(result)
+
+    def check_user_group(self, model_id):
+      result = {'status':'error',
+                'message':''}
+      entities = Group.check_users(model_id)
+      result = {'status':'success',
+                'method':'list_user',
+                'en_type': 'User',
+                'entities': entities}
+      return self.respond(result)
         
     def get_versions(self):
         #Check for GET parameter == model to see if this is a get or an edit
@@ -908,6 +1069,48 @@ class ActionHandler(webapp2.RequestHandler):
 
         result = AppVersionCount.retrieve_by_version()
         return self.respond(result)
+        
+    def add_user_group(self):
+        #Check for GET paramenter == model to see if this is an add or list. 
+        #Call Sketch.add(model, data) or
+        #Fetch all models and return a list. 
+                
+        #Todo - Check for method.
+        auser = self.auth.get_user_by_session()
+        result = {'status':'error',
+              'message':'There was an error in sending the invite.',
+              'submessage':'Please try again later.'}    
+        if auser:
+          userid = auser['user_id']
+          result = UserGroupMgmt.add(self.request.body, userid)
+        return self.respond(result)
+        
+    def accept_reject_group(self):
+        auser = self.auth.get_user_by_session()
+        result = {'status':'error',
+              'message':'Not authenticated.'}
+        if auser:
+          userid = auser['user_id']
+          result = Notification.accept_reject(self.request.body, userid)
+        return self.respond(result)      
+        
+    def get_notification(self, limit):
+        auser = self.auth.get_user_by_session()
+        result = {}
+        if auser:
+          userid = auser['user_id']
+          result = Notification.get_entities(userid, limit)
+        return self.respond(result)
+        
+
+    def get_all_notification(self):
+        auser = self.auth.get_user_by_session()
+        result = {}
+        if auser:
+          userid = auser['user_id']
+          result = Notification.get_entities(userid)
+        return self.respond(result)        
+          
         
 webapp2_config = {}
 webapp2_config['webapp2_extras.sessions'] = {
@@ -927,6 +1130,11 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), 
     webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'),
     webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group'),
+    webapp2.Route('/listuser/group/<model_id>', handler=ActionHandler, handler_method='check_user_group'),
+    webapp2.Route('/adduser/group', handler=ActionHandler, handler_method='add_user_group'),
+    webapp2.Route('/acceptreject/group', handler=ActionHandler, handler_method='accept_reject_group'),
+    webapp2.Route('/get/notification/<limit>', handler=ActionHandler, handler_method='get_notification'),
+    webapp2.Route('/get/notification', handler=ActionHandler, handler_method='get_all_notification'),
     webapp2.Route('/list/version', handler=ActionHandler, handler_method='get_versions')
     ],
     config=webapp2_config,

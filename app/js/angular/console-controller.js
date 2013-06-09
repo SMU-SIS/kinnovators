@@ -3,12 +3,12 @@
 /* Controller for profile.html */
 
 //angular.module('app', ['ngResource']);
-function ConsoleController($scope,$resource){
+function ConsoleController($scope,$resource,sharedProperties){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
 
   $scope.backend_locations = [
-    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
+    {url : sharedProperties.getBackendUrl(), urlName : 'remote backend' },       
     {url : 'localhost:8080', urlName : 'localhost' } ];
 
   $scope.showdetails = false;
@@ -44,7 +44,8 @@ function ConsoleController($scope,$resource){
 
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
-  $scope.remote_url = "k-sketch-test.appspot.com";
+  $scope.remote_url = sharedProperties.getBackendUrl();
+  $scope.janrain_ref = sharedProperties.getJanrainAccount();
   $scope.waiting = "Ready";
   
   //resource calls are defined here

@@ -3,14 +3,14 @@
 /* Controller for profile.html */
 
 //angular.module('app', ['ngResource']);
-function ProfileController($scope,$resource){
+function ProfileController($scope,$resource,sharedProperties){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
   
   $scope.profile_user = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "g_hash": "", 'u_isadmin': false, 'u_isactive': false};
     
   $scope.backend_locations = [
-    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
+    {url : sharedProperties.getBackendUrl(), urlName : 'remote backend' },       
     {url : 'localhost:8080', urlName : 'localhost' } ];
 
   $scope.showdetails = false;
@@ -30,6 +30,7 @@ function ProfileController($scope,$resource){
   $scope.heading = "";
   $scope.message = "";
   $scope.submessage = "";
+  $scope.notify = "You have no new notification(s).";
   
   
   //Search Query Filter
@@ -42,7 +43,8 @@ function ProfileController($scope,$resource){
 
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
-  $scope.remote_url = "k-sketch-test.appspot.com";
+  $scope.remote_url = sharedProperties.getBackendUrl();
+  $scope.janrain_ref = sharedProperties.getJanrainAccount();
   $scope.waiting = "Ready";
   
   //resource calls are defined here
@@ -80,6 +82,7 @@ function ProfileController($scope,$resource){
             if ($scope.User.u_lastlogin !== "") {
               $scope.User.u_lastlogin = $scope.tzformat($scope.User.u_lastlogin);
             }
+            $scope.get_notification();
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
@@ -187,6 +190,21 @@ function ProfileController($scope,$resource){
     $scope.message = "";
     $scope.submessage = "";
   }
+  
+  $scope.get_notification = function() {
+    $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
+    {"remote_url":$scope.remote_url,"limit":3}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Updating";
+    $scope.NotificationResource.get(function(response) { 
+        $scope.smallnotifications = response;
+        if ($scope.smallnotifications.entities.length > 0) {
+          $scope.notify = "You have " + $scope.smallnotifications.entities.length + " new notification(s).";
+        }
+        $scope.waiting = "Ready";
+     });  
+  };
+  
   $scope.list = function(){
     $scope.ListResource = $resource('http://:remote_url/list/sketch/user/:criteria',
     {"remote_url":$scope.remote_url,"criteria":$scope.profile_user.id}, 
@@ -198,6 +216,23 @@ function ProfileController($scope,$resource){
      });  
   };
   
+  
+  $scope.accept = {};
+  $scope.accept.data = {'u_g' : 0, 'n_id': 0, 'status': 'accept'};
+  $scope.notify_accept_group = function(n_a) {
+    $scope.accept.data = n_a;
+    $scope.AcceptResource = $resource('http://:remote_url/acceptreject/group', 
+                  {"remote_url":$scope.remote_url}, 
+                  {'save': { method: 'POST',    params: {} }});
+ 
+    $scope.waiting = "Updating";
+    var acceptgroup = new $scope.AcceptResource($scope.accept.data);
+    acceptgroup.$save(function(response) { 
+            var result = response;
+            $scope.accept.data = {'u_g' : 0, 'n_id': 0, 'status': 'accept'};            
+            $scope.get_notification();
+          }); 
+  };
   
   $scope.simpleSearch = function() {
     if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {

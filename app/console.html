@@ -52,10 +52,7 @@
     
     <!-- script type="text/javascript" src="KSketchCallBacks.js"></script -->
     <script type="text/javascript">
-      
-      //Function to trigger Janrain login plugin
-      
-      (function() {
+      (function() {      //Function to trigger Janrain login plugin
         if (typeof window.janrain !== 'object') window.janrain = {};
         if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
         
@@ -106,11 +103,11 @@
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
-              <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
-              <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
-              <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
-          </p>
+            <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+            <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
+            <span class="label"><a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a></span>
+            <span class="label"><a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a></span>
+          </p>       
           <p class="navbar-text pull-right">
             <a href="/app/console.html"><span style="font-weight:bold">Administrator Console</span></a>
           </p>

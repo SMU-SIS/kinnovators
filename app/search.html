@@ -52,10 +52,7 @@
     
     <!-- script type="text/javascript" src="KSketchCallBacks.js"></script -->
     <script type="text/javascript">
-      
-      //Function to trigger Janrain login plugin
-      
-      (function() {
+      (function() {      //Function to trigger Janrain login plugin  
         if (typeof window.janrain !== 'object') window.janrain = {};
         if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
         
@@ -126,19 +123,56 @@
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <p class="navbar-text pull-left">
             <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
-              <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
-              <a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a>
-              <a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a>
+            <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+            <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
+            <span class="label"><a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a></span>
+            <span class="label"><a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a></span>
           </p>
+          <ul class="nav"  ui-if="User.u_login">
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="{{notify}}">
+                <b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu">
+                <li>
+                  <table>
+                    <tr ng-repeat="notification in smallnotifications.entities">
+                      <td>
+                        <span>{{notification.n_date}}</span>
+                      </td>
+                      <td>
+                        <span>{{notification.n_message}}</span>
+                      </td>
+                      <td>
+                        <ul ng-repeat="n_a in notification.n_action">
+                          <a class="btn btn-small" ng-click="notify_accept_group({{n_a}})">{{n_a.a_text}}</a>
+                        </ul>
+                      </td>
+                    </tr>
+                  </table>
+                </li>
+                <li class="divider"></li>
+              </ul>              
+            </li>
+          </ul>         
           <p class="navbar-search pull-right">
             <input type="text" ng-model="search" onkeypress="searchKeyPress(event);" class="search-query" placeholder="Search by sketch name or owner">
-            <button id="searchbutton" class="btn btn-inverse btn-small" ng-click="searchlist()">>></button>
+            <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="simpleSearch()" value=">>">
+            <script>
+              function searchKeyPress(e)
+              {
+                  // look for window.event in case event isn't passed in
+                  if (typeof e == 'undefined' && window.event) { e = window.event; }
+                  if (e.keyCode == 13)
+                  {
+                      document.getElementById('searchbutton').click();
+                  }
+              }
+            </script>
           </p>
         </div>
       </div>
     </div>
-    
     
     
     <!-- Main Body -->
