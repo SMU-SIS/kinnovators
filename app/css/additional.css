@@ -1,3 +1,5 @@
+/*     .ng-scope { border: 1px solid red; } */
+
     html{
       height: 100%;
     }
@@ -6,6 +8,10 @@
       padding-top: 60px;
       padding-bottom: 40px;
       overflow-y: scroll;
+    }
+
+    #comment_img {
+      width: 50px;
     }
     
     .dropdown-menu {

@@ -40,6 +40,7 @@ class UTC(datetime.tzinfo):
   def tzname(self, dt):
     return "UTC"
 
+#Handles Sketch data, and saving and loading of sketches
 class Sketch(db.Model):
   #Use backend record id as the model id for simplicity
   sketchId = db.IntegerProperty(required=True)
@@ -66,45 +67,23 @@ class Sketch(db.Model):
     try:
       #update ModelCount when adding
       jsonData = json.loads(data)
-      modelCount = ModelCount.all().filter('en_type','Sketch').get()
+      modelCount = ModelCount.get_counter()
       
       #For sketch files saved through "Save As"
       if jsonData['sketchId'] == '':
-        if modelCount:
-          modelCount.count += 1
-          modelCount.put()
-        else:
-          modelCount = ModelCount(en_type='Sketch', count=1)
-          modelCount.put()
+        ModelCount.increment_counter()
         jsonData['sketchId'] = str(modelCount.count)
       #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
       if (jsonData['original'] == ':') or (jsonData['original'] == ':-1'):
         jsonData['original'] = 'original'
       
       #update VersionCount when adding  
-      versionCount = VersionCount.all().filter('sketchId', long(jsonData['sketchId'])).get()
-      if versionCount:
-        versionCount.lastVersion += 1
-        versionCount.put()
-      else:
-        versionCount = VersionCount(sketchId=long(jsonData['sketchId']), lastVersion=1)
-        versionCount.put()
+      versionCount = VersionCount.get_and_increment_counter(long(jsonData['sketchId']))
         
       #update AppVersionCount when adding
-      appVersionCount = AppVersionCount.all().filter('app_version', float(jsonData['appver'])).get()
-      if appVersionCount:
-        appVersionCount.sketch_count += 1
-        if jsonData['original'] == 'original':
-          appVersionCount.original_count += 1
-        appVersionCount.put()
-      else:
-        if jsonData['original'] == 'original':
-          appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 1)
-        else:
-          appVersionCount = AppVersionCount(app_version=float(jsonData['appver']), sketch_count = 1, original_count = 0)
-        appVersionCount.put()
+      AppVersionCount.increment_counter(float(jsonData['appver']), jsonData['original'])
       
-      jsonData['version'] = str(versionCount.lastVersion)
+      jsonData['version'] = str(versionCount)
       file = jsonData['fileData']
       thumbnail = jsonData['thumbnailData']
       change = jsonData['changeDescription']
@@ -124,17 +103,39 @@ class Sketch(db.Model):
       
       if (verify):
       
-        #Update permissions when adding
-        permissions = Permissions(sketch_id = entity.key().id(),
-                                     view = jsonData['p_view'],
-                                     edit = jsonData['p_edit'],
-                                     comment = jsonData['p_comment'])
-        permissions.put()
-        #Placeholder for group permissions.
+        permissions_key = Permissions.add(entity.key().id(),
+                                          bool(long(jsonData['p_view'])),
+                                          bool(jsonData['p_edit']),
+                                          bool(jsonData['p_comment']))
+        #Update group permissions when adding
         
-        result = {'id': entity.key().id(), 
-                  'status': "success",
-                  'data': jsonData} #this would also check if the json submitted was valid
+        group_count = 0
+        try:
+          if jsonData['group_permissions']:
+            group_permissions = jsonData['group_permissions']
+            for g_p in group_permissions:
+              group_key = Sketch_Groups.add(entity.key().id(),
+                                            long(g_p['group_id']),
+                                            bool(g_p['g_edit']),
+                                            bool(g_p['g_comment']))
+              if group_key != -1:
+                group_count += 1
+        except:
+          group_count = 0
+      
+        if (permissions_key != -1):
+          result = {'id': entity.key().id(), 
+                    'status': "success",
+                    'data': jsonData} #this would also check if the json submitted was valid
+        
+        else:
+          #Rollback
+          rollback = Sketch.get_by_id(entity.key.id())
+          if rollback:
+            rollback.delete()
+          result = {'status': "error",
+                   'message': "Save unsuccessful. Please try again."}
+        
       else:
         result = {'status': "error",
                   'message': "Save unsuccessful. Please try again."}
@@ -156,6 +157,7 @@ class Sketch(db.Model):
 
     entities = []
     possible_users = User.get_matching_ids(criteria)
+    count = 0
     for object in objects:
       include = True
       if criteria != "":
@@ -166,48 +168,32 @@ class Sketch(db.Model):
           include = True
         
       if include:
-        user_name = User.get_name(object.owner)
-        data = {'sketchId': object.sketchId,
-              'version': object.version,
-              'changeDescription': object.changeDescription,
-              'fileName': object.fileName,
-              'thumbnailData': object.thumbnailData,
-              'owner': user_name,
-              'owner_id': object.owner,
-              'original': object.original,
-              'appver': object.appver,
-              'p_view': "Public",
-              'p_view_groups': [],
-              'p_edit': "Public",
-              'p_edit_groups': [],
-              'p_comment': "Public",
-              'p_comment_groups': []}
-              
-        #Retrieves permissions data if applicable:
-        permissions = Permissions.all().filter('sketch_id', object.key().id()).get()
-        if permissions:
-          data['p_view'] = permissions.view
-          data['p_edit'] = permissions.edit
-          data['p_comment'] = permissions.comment
-          #Placeholder for permissions groups
+        #Check Permissions
+        permissions = Permissions.user_access_control(object.key().id(),userid)
           
-        entity = {'id': object.key().id(),
-              'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
-              'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
-              'data': data}
-        if userid == object.owner:
+        if bool(permissions['p_view']):
+          user_name = User.get_name(object.owner)
+          data = {'sketchId': object.sketchId,
+                'version': object.version,
+                'changeDescription': object.changeDescription,
+                'fileName': object.fileName,
+                'thumbnailData': object.thumbnailData,
+                'owner': user_name,
+                'owner_id': object.owner,
+                'original': object.original,
+                'appver': object.appver,
+                'p_view': 1,
+                'p_edit': bool(permissions['p_edit']),
+                'p_comment': bool(permissions['p_comment'])}
+          
+          entity = {'id': object.key().id(),
+                'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+                'data': data}
+          
           entities.append(entity)
-        elif User.check_if_admin(userid):
-          entities.append(entity)
-        elif data['p_view'] == "Public":
-          entities.append(entity)
-        #elif data['p_view'] == "Group":
-          #Reserved for group permissions  
+          count += 1
     
-    count = 0
-    modelCount = ModelCount.all().filter('en_type','Sketch').get()
-    if modelCount:
-      count = modelCount.count
     result = {'method':'get_entities',
               'en_type': 'Sketch',
               'count': count,
@@ -225,107 +211,43 @@ class Sketch(db.Model):
     objects = theQuery.run()
 
     entities = []
+    count = 0
     for object in objects:
       if long(criteria) == object.owner:
-        data = {'sketchId': object.sketchId,
-              'version': object.version,
-              'changeDescription': object.changeDescription,
-              'fileName': object.fileName,
-              'thumbnailData': object.thumbnailData,
-              'owner': object.owner,
-              'original': object.original,
-              'appver': object.appver,
-              'p_view': "Public",
-              'p_view_groups': [],
-              'p_edit': "Public",
-              'p_edit_groups': [],
-              'p_comment': "Public",
-              'p_comment_groups': []}
-              
-        #Retrieves permissions data if applicable:
-        permissions = Permissions.all().filter('sketch_id', object.key().id()).get()
-        if permissions:
-          data['p_view'] = permissions.view
-          data['p_edit'] = permissions.edit
-          data['p_comment'] = permissions.comment
-          #Placeholder for permissions groups
+        #Check Permissions
+        permissions = Permissions.user_access_control(object.key().id(),userid)
           
-        entity = {'id': object.key().id(),
-              'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
-              'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
-              'data': data}
-              
-        if userid == object.owner:
-          entities.append(entity)
-        elif User.check_if_admin(userid):
-          entities.append(entity)
-        elif data['p_view'] == "Public":
-          entities.append(entity)
-        #elif data['p_view'] == "Group":
-          #Reserved for group permissions          
+        if bool(permissions['p_view']):
+          user_name = User.get_name(object.owner)
+          data = {'sketchId': object.sketchId,
+                'version': object.version,
+                'changeDescription': object.changeDescription,
+                'fileName': object.fileName,
+                'thumbnailData': object.thumbnailData,
+                'owner': user_name,
+                'owner_id': object.owner,
+                'original': object.original,
+                'appver': object.appver,
+                'p_view': 1,
+                'p_edit': bool(permissions['p_edit']),
+                'p_comment': bool(permissions['p_comment'])}
           
-    count = 0
-    modelCount = ModelCount.all().filter('en_type','Sketch').get()
-    if modelCount:
-      count = modelCount.count
+          entity = {'id': object.key().id(),
+                'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+                'data': data}
+          
+          entities.append(entity)
+          count += 1
+    
     result = {'method':'get_entities_by_id',
               'en_type': 'Sketch',
               'count': count,
               'entities': entities}
     return result
-    
-  @staticmethod
-  def get_entity(model_id):
-    utc = UTC()
-    theobject = Sketch.get_by_id(long(model_id))
-    
-    user_name = User.get_name(theobject.owner)
-    data = {'sketchId': theobject.sketchId,
-              'version': theobject.version,
-              'changeDescription': theobject.changeDescription,
-              'fileName': theobject.fileName,
-              'owner': user_name,
-              'owner_id': theobject.owner,
-              'fileData': theobject.fileData,
-              'thumbnailData': theobject.thumbnailData,
-              'original': theobject.original,
-              'appver': theobject.appver,
-              'p_view': "Public",
-              'p_view_groups': [],
-              'p_edit': "Public",
-              'p_edit_groups': [],
-              'p_comment': "Public",
-              'p_comment_groups': []}
-              
-    #Retrieves permissions data if applicable:
-    permissions = Permissions.all().filter('sketch_id', theobject.key().id()).get()
-    if permissions:
-      data['p_view'] = permissions.view
-      data['p_edit'] = permissions.edit
-      data['p_comment'] = permissions.comment
-      #Placeholder for permissions groups
-    
-    result = {'method':'get_model',
-              'message':'You have not been granted permission for this sketch.'}
-    p_result = {'method':'get_model',
-                  'id': model_id,
-                  'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
-                  'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
-                  'data': data
-                  }
-
-    if userid == theobject.owner:
-      result = p_result
-    elif User.check_if_admin(userid):
-      result = p_result
-    elif data['p_view'] == "Public":
-      result = p_result
-    #elif data['p_view'] == "Group":
-      #Reserved for group permissions                    
-    return result
 
   @staticmethod
-  def get_entity_by_versioning(sketchId=-1,version=-1,userid=""):
+  def get_entity_by_versioning(sketchId=-1,version=-1, purpose="View", userid=""):
     utc = UTC()
     versionmatch = True
     result = {'method':'get_entity_by_versioning',
@@ -337,13 +259,15 @@ class Sketch(db.Model):
                   }
     
     try:
+      #Retrieve Sketch with given Sketch ID and version
       query = Sketch.all()
       query.filter('sketchId =', long(sketchId)).filter('version =', long(version))
       
       theobject = query.get()
       
+      #If unable to find Sketch, attempt to retrieve latest available version.
       if theobject is None:
-        versionCount = VersionCount.all().filter('sketchId', long(sketchId)).get()
+        versionCount = VersionCount.get_counter(long(sketchId))
         if long(version) != -1:
           versionmatch = False
         
@@ -351,67 +275,114 @@ class Sketch(db.Model):
           query = Sketch.all()
           query.filter('sketchId =', long(sketchId)).filter('version =', long(versionCount.lastVersion))
           theobject = query.get()
-        else:
-          result['data'] = "durr"
       
       if theobject:
-      
-        user_name = User.get_name(theobject.owner)
-        data = {'sketchId': theobject.sketchId,
-                  'version': theobject.version,
-                  'changeDescription': theobject.changeDescription,
-                  'fileName': theobject.fileName,
-                  'owner': user_name,
-                  'owner_id': theobject.owner,
-                  'fileData': theobject.fileData,
-                  'thumbnailData': theobject.thumbnailData,
-                  'original': theobject.original,
-                  'appver': theobject.appver,
-                  'p_view': "Public",
-                  'p_view_groups': [],
-                  'p_edit': "Public",
-                  'p_edit_groups': [],
-                  'p_comment': "Public",
-                  'p_comment_groups': []}
-              
-        #Retrieves permissions data if applicable:
-        permissions = Permissions.all().filter('sketch_id', theobject.key().id()).get()
-        if permissions:
-          data['p_view'] = permissions.view
-          data['p_edit'] = permissions.edit
-          data['p_comment'] = permissions.comment
-          #Placeholder for permissions groups
+        #Check Permissions
+        permissions = Permissions.user_access_control(theobject.key().id(),userid)
         
-        p_result = {'method':'get_entity_by_versioning',
+        #Check access type (view/edit):
+        access = False
+        if purpose == "Edit":
+          access = bool(permissions['p_edit'])
+        else:
+          access = bool(permissions['p_view'])
+        
+        if access:
+          user_name = User.get_name(theobject.owner)
+          data = {'sketchId': theobject.sketchId,
+                    'version': theobject.version,
+                    'changeDescription': theobject.changeDescription,
+                    'fileName': theobject.fileName,
+                    'owner': user_name,
+                    'owner_id': theobject.owner,
+                    'fileData': theobject.fileData,
+                    'thumbnailData': theobject.thumbnailData,
+                    'original': theobject.original,
+                    'appver': theobject.appver,
+                    'p_view': 1,
+                    'p_edit': bool(permissions['p_edit']),
+                    'p_comment': bool(permissions['p_comment'])}
+              
+          result = {'method':'get_entity_by_versioning',
                       'success':"yes",
                       'id': theobject.key().id(),
                       'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
                       'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
                       'data': data
                       }
-        if not versionmatch:
-          p_result['success'] = "version"
-          
-        
-        if userid == theobject.owner:
-          result = p_result
-        elif User.check_if_admin(userid):
-          result = p_result
-        elif data['p_view'] == "Public":
-          result = p_result
-        #elif data['p_view'] == "Group":
-          #Reserved for group permissions
+          if not versionmatch:
+            result['success'] = "version"
+
         else:
           result = {'method':'get_entity_by_versioning',
                         'success':"no",
                         'id': "Forbidden"
                         }
     except (RuntimeError, ValueError):
-      result['data'] = "value"
+      result['data'] = ""
       
     return result
-  
 
+  @staticmethod
+  def get_entity_by_group(groupId=-1,userid=""):
+    utc = UTC()
+    result = {'method':'get_entity_by_group',
+                  'success':"no",
+                  'id': 0,
+                  'created': datetime.datetime.now().replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                  'modified': datetime.datetime.now().replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                  'data': ""
+                  }
+    group_sketches = Sketch_Groups.get_sketches_for_group(long(groupId))
+    entities = []
+    count = 0
+    en_type = "Welp"
+    for g_s in group_sketches:
+      en_type = "Sketch"
+      sketch_id = long(g_s['sketch_id'])
+      permissions = Permissions.user_access_control(sketch_id)
+      #if permissions['p_view']:
+      en_type = en_type + "h"
+      theobject = Sketch.get_by_id(sketch_id)
+      user_name = User.get_name(theobject.owner)
+      data = {'sketchId': theobject.sketchId,
+                'version': theobject.version,
+                'changeDescription': theobject.changeDescription,
+                'fileName': theobject.fileName,
+                'owner': user_name,
+                'owner_id': theobject.owner,
+                'thumbnailData': theobject.thumbnailData,
+                'original': theobject.original,
+                'appver': theobject.appver,
+                'p_view': 1,
+                'p_edit': bool(permissions['p_edit']),
+                'p_comment': bool(permissions['p_comment']),
+                'g_edit': bool(g_s['edit']),
+                'g_comment': bool(g_s['comment'])}
+                
+      entity = {'id': theobject.key().id(),
+            'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+            'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+            'data': data}
+      entities.append(entity)
+      count += 1
+    result = {'method':'get_entity_by_group',
+              'en_type': en_type,
+              'count': count,
+              'entities': entities}
+    return result
+    
+  @staticmethod
+  def check_if_owner(id = 0, user_id = 0):
+    is_owner = False
+    try:
+      object = Sketch.get_by_id(long(id))
+      if object:
+        if object.owner == long(user_id):
+          is_owner = True
+    except ValueError:
+      is_owner = False
+    return is_owner
     
   @staticmethod
   def clear():
@@ -485,9 +456,49 @@ class ModelCount(db.Model):
   en_type = db.StringProperty(required=True,default='Default-entype')
   count = db.IntegerProperty(required=True, default=0)
   
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+  
+  @staticmethod
+  def get_counter():
+    return ModelCount.all().filter('en_type','Sketch').get()
+  
+  @staticmethod
+  def increment_counter():
+    modelCount = ModelCount.all().filter('en_type','Sketch').get()
+    if modelCount:
+      modelCount.count += 1
+      modelCount.put()
+    else:
+      modelCount = ModelCount(en_type='Sketch', count=1)
+      modelCount.put()
+  
 class VersionCount(db.Model):
   sketchId = db.IntegerProperty(required=True, default=0)
   lastVersion = db.IntegerProperty(required=True, default=0)
+  
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+  
+  @staticmethod
+  def get_counter(sketchId = -1):
+    return VersionCount.all().filter('sketchId', long(sketchId)).get()
+  
+  @staticmethod
+  def get_and_increment_counter(sketchId = -1):
+    versionCount = VersionCount.all().filter('sketchId', long(sketchId)).get()
+    if versionCount:
+      versionCount.lastVersion += 1
+      versionCount.put()
+    else:
+      versionCount = VersionCount(sketchId=long(sketchId), lastVersion=1)
+      versionCount.put()
+    return versionCount.lastVersion
+  
   
 class AppVersionCount(db.Model):
   app_version = db.FloatProperty()
@@ -499,7 +510,21 @@ class AppVersionCount(db.Model):
        d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
        d["id"] = self.key().id()
        return d
-       
+  
+  @staticmethod  
+  def increment_counter(app_version = -1, original = "original"):
+    appVersionCount = AppVersionCount.all().filter('app_version', float(app_version)).get()
+    if appVersionCount:
+      appVersionCount.sketch_count += 1
+      if original == 'original':
+        appVersionCount.original_count += 1
+      appVersionCount.put()
+    else:
+      if original == 'original':
+        appVersionCount = AppVersionCount(app_version=float(app_version), sketch_count = 1, original_count = 1)
+      else:
+        appVersionCount = AppVersionCount(app_version=float(app_version), sketch_count = 1, original_count = 0)
+      appVersionCount.put()    
   
   @staticmethod
   def retrieve_by_version():
@@ -546,17 +571,219 @@ class Comment(db.Model):
   reply_to_id = db.IntegerProperty()
   created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created
   
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d  
+       
+  @staticmethod
+  def add(data, user_id=-1):
+    result = {}
+    #try:
+    #update ModelCount when adding
+    jsonData = json.loads(data)
+    
+    #For sketch files saved through "Save As"
+    if jsonData['sketchId'] != '' and user_id != -1:
+      #Check Permissions
+      permissions = Permissions.user_access_control(long(jsonData['sketchId']), long(user_id))
+        
+      if bool(permissions['p_comment']):
+        #Placeholder for reply
+      
+        contentData = jsonData['content']
+        contentData = contentData[:255]
+          
+        entity = Comment(sketch_id=long(jsonData['sketchId']),
+                        user_id=long(user_id),
+                        content=contentData,
+                        reply_to_id=long(jsonData['replyToId']))
+          
+        verify = entity.put()
+      else:
+        result = {'status': "error",
+                'message': "Sorry, but you are not authorized to comment."}
+        
+    else:
+      result = {'status': "error",
+                'message': "Error in posting comment. Please try again."}
+    #except:
+    #  result = {'status': "error",
+    #            'message': "Error in posting comment. Please try again."}
+    
+    return result       
+  
+
+  @staticmethod
+  def get_entities_by_id(model_id):
+    utc = UTC()
+    #update ModelCount when adding
+    theQuery = Comment.all()
+    #if model:
+      #theQuery = theQuery.filter('model', model)
+
+    objects = theQuery.run()
+
+    entities = []
+    for object in objects:
+      if long(model_id) == object.sketch_id:
+        data = {'sketchId': object.sketch_id,
+                'user_id': object.user_id,
+                'user_name': User.get_name(long(object.user_id)),
+                'g_hash': User.get_image(long(object.user_id)),
+                'content': object.content,
+                'reply_to_id': object.reply_to_id}
+          
+        entity = {'id': object.key().id(),
+              'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+              'data': data}
+              
+        entities.append(entity)
+       
+    result = {'method':'get_entities_by_id',
+              'en_type': 'Comment',
+              'count': len(entities),
+              'entities': entities}
+    return result
+      
+  
 class Permissions(db.Model):
   sketch_id = db.IntegerProperty(required=True)
-  view = db.StringProperty(required=True)
-  edit = db.StringProperty(required=True)
-  comment = db.StringProperty(required=True)
+  view = db.BooleanProperty(required=True)
+  edit = db.BooleanProperty(required=True)
+  comment = db.BooleanProperty(required=True)
   
-class Permissions_Groups(db.Model):
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+       
+  @staticmethod
+  def add(s_id, p_view, p_edit, p_comment):
+    p_key = -1
+    try:
+      entity = Permissions(sketch_id = long(s_id),
+                          view = bool(p_view),
+                          edit = bool(p_edit),
+                          comment = bool(p_comment))
+      entity.put()
+      p_key = entity.key().id()
+    except:
+      p_key = -1
+    return p_key
+    
+  @staticmethod
+  def check_permissions(sketch_id = 0):
+    result = {'p_view':False,
+              'p_edit':False,
+              'p_comment':False}
+              
+    permissions = Permissions.all().filter('sketch_id', sketch_id).get()
+    if permissions:
+      result = {'p_view':permissions.view,
+                'p_edit':permissions.edit,
+                'p_comment':permissions.comment}
+    return result
+    
+  @staticmethod
+  def user_access_control(sketch_id = 0, user_id = 0):
+    permissions = {'p_view':False,
+                    'p_edit':False,
+                    'p_comment':False}
+    #Check if Admin - if true, grant FULL access
+    if User.check_if_admin(user_id):
+      permissions = {'p_view':True,
+                    'p_edit':True,
+                    'p_comment':True}
+    #Check if Owner - if true, grant FULL access
+    elif Sketch.check_if_owner(long(sketch_id), user_id):
+      permissions = {'p_view':True,
+                    'p_edit':True,
+                    'p_comment':True}
+    else:
+      #Retrieve public permissions
+      permissions = Permissions.check_permissions(long(sketch_id))
+      
+      #Retrieve group permissions
+      group_permissions = Sketch_Groups.get_groups_for_sketch(long(sketch_id))
+      user_groups = UserGroupMgmt.get_memberships(user_id)
+      user_group_permissions = []
+      for u_g in user_groups:
+        group_id = u_g['group_id']
+        for g_p in group_permissions:
+          if long(group_id) == long(g_p['group_id']):
+            user_group_permissions.append(g_p)
+      #Apply group permissions
+      for u_g_p in user_group_permissions:
+        permissions['p_view'] = True
+        if not permissions['p_edit']:
+          permissions['p_edit'] = u_g_p['edit']
+        if not permissions['p_comment']:
+          permissions['p_comment'] = u_g_p['comment']
+        if permissions['p_edit'] and permissions['p_comment']:
+          break
+    return permissions
+  
+class Sketch_Groups(db.Model):
   sketch_id = db.IntegerProperty(required=True)
-  permission_id = db.IntegerProperty(required=True)
-  permission_type = db.StringProperty(required=True)
-  permission_group = db.IntegerProperty(required=True)
+  group_id = db.IntegerProperty(required=True)
+  edit = db.BooleanProperty(required=True)
+  comment = db.BooleanProperty(required=True)
+  #It is assumed that a sketch that belongs to a group
+  #can be viewed by said group - thus, a "view" variable is
+  #unnecessary.
+  
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+       
+  @staticmethod
+  def add(s_id, g_id, g_edit, g_comment):
+    g_key = -1
+    try:
+      entity = Sketch_Groups(sketch_id = long(s_id),
+                          group_id = long(g_id),
+                          edit = bool(g_edit),
+                          comment = bool(g_comment))
+      entity.put()
+      g_key = entity.key().id()
+    except:
+      g_key = -1
+    return g_key
+  
+  @staticmethod
+  def get_groups_for_sketch(sketch_id=0):
+    theQuery = Sketch_Groups.all()
+    objects = theQuery.run()
+    
+    entities = []
+    for object in objects:
+      if object.sketch_id == sketch_id:
+        data = {'id': object.key().id(),
+                'sketch_id': object.sketch_id,
+                'group_id': object.group_id,
+                'edit': object.edit,
+                'comment':object.comment}
+        entities.append(data)
+    return entities    
+  
+  @staticmethod
+  def get_sketches_for_group(group_id=0):
+    theQuery = Sketch_Groups.all()
+    objects = theQuery.run()
+    
+    entities = []
+    for object in objects:
+      if object.group_id == group_id:
+        data = {'id': object.key().id(),
+                'sketch_id': object.sketch_id,
+                'group_id': object.group_id,
+                'edit': object.edit,
+                'comment':object.comment}
+        entities.append(data)
+    return entities
+    
   
 class Group(db.Model):
   group_name = db.StringProperty(required=True)
@@ -691,6 +918,7 @@ class Group(db.Model):
                 'u_realname': object.real_name}
         entities.append(data)
     return entities
+    
   
   
 class UserGroupMgmt(db.Model):
@@ -741,6 +969,22 @@ class UserGroupMgmt(db.Model):
     return result
     
   @staticmethod
+  def get_memberships(userid):
+    entities = []
+    try:
+      theQuery = UserGroupMgmt.all().filter('user_id', long(userid))
+      objects = theQuery.run()
+      for object in objects:
+        if object.role != "Pending":
+          data = {'user_id': object.user_id,
+                  'group_id': object.group_id,
+                  'role': object.role}
+          entities.append(data)
+    except ValueError:
+      entities = []
+    return entities
+    
+  @staticmethod
   def accept_reject(data, userid):
     jsonData = json.loads(data)
     result = {'status':'error',
@@ -751,7 +995,8 @@ class UserGroupMgmt(db.Model):
     founder = UserGroupMgmt.all().filter('group_id', u_g.group_id).filter('role', 'Founder').get()
     new_notify = Notification(user_id = founder.user_id,
                               notification_type = "",
-                              other_user = int(userid))
+                              other_user = int(userid),
+                              relevant_id = u_g.group_id)
     if status == "accept":
       u_g.role = "Member"
       u_g.put()
@@ -770,7 +1015,7 @@ class UserGroupMgmt(db.Model):
       
 
 class Notification(db.Model):
-  user_id = db.IntegerProperty()
+  user_id = db.IntegerProperty(required=True)
   notification_date = db.DateTimeProperty(auto_now_add=True)
   notification_type = db.StringProperty()
   other_user = db.IntegerProperty()
@@ -782,8 +1027,9 @@ class Notification(db.Model):
        return d
        
   @staticmethod
-  def get_entities(user_id, limit=0):
+  def get_entities(user_id=-1, limit=0):
     #update ModelCount when adding
+    u_id = int(user_id)
     theQuery = Notification.all()
     theQuery.order('-notification_date')
 
@@ -795,24 +1041,32 @@ class Notification(db.Model):
       if object.user_id == int(user_id):
         n_date = object.notification_date.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S")
         o_user = User.get_name(object.other_user)
+        
         if object.notification_type == "GROUPINVITE":
           u_g = UserGroupMgmt.get_by_id(object.relevant_id)
           relevant =  Group.get_name(u_g.group_id)
           entity = {'n_date':n_date,
                   'id': object.key().id(),
                   'n_message': o_user + " has invited you to the group " + relevant + ".",
-                  'n_action': []}
-          n_1 = {'u_g' : object.relevant_id,
-                 'n_id' :object.key().id(),
-                 'status' :'accept',
-                 'a_text': "Accept"}
-          n_2 = {'u_g' :object.relevant_id,
-                 'n_id' :object.key().id(),
-                 'status' :'reject',
-                 'a_text': "Reject"}
-          entity['n_action'].append(n_1)
-          entity['n_action'].append(n_2)
+                  'n_type': object.notification_type,
+                  'n_relevant': object.relevant_id}
           entities.append(entity)
+        elif object.notification_type == "GROUPACCEPT":
+          relevant =  Group.get_name(object.relevant_id)
+          entity = {'n_date':n_date,
+                  'id': object.key().id(),
+                  'n_message': o_user + " has accepted your invitation to the group " + relevant + ".",
+                  'n_type': object.notification_type,
+                  'n_relevant': object.relevant_id}
+          entities.append(entity)
+        elif object.notification_type == "GROUPREJECT":
+          relevant =  Group.get_name(object.relevant_id)
+          entity = {'n_date':n_date,
+                  'id': object.key().id(),
+                  'n_message': o_user + " has rejected your invitation to the group " + relevant + ".",
+                  'n_type': object.notification_type,
+                  'n_relevant': object.relevant_id}
+          entities.append(entity)            
         #Placeholder for other notification types
         count += 1
         #Cutoff if limit was defined
@@ -822,7 +1076,8 @@ class Notification(db.Model):
           
     result = {'method':'get_entities',
               'en_type': 'Notification',
-              'entities': entities}      
+              'entities': entities,
+              'retrieved': count}      
     return result
       
   
@@ -910,31 +1165,6 @@ class ActionHandler(webapp2.RequestHandler):
         result = Sketch.remove(model_id)
         
         return self.respond(result)
-      
-    def get_or_edit_sketch(self, model_id):
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
-
-        if self.request.method=="DELETE":
-          logging.info("It was options")
-          result = Sketch.remove(model_id)
-          logging.info(result)
-          return self.respond(result)#(result)
-        
-        elif self.request.method=="PUT":
-          logging.info("It was PUT")
-          logging.info(self.request.body)
-          result = Sketch.edit_entity(model_id,self.request.body)
-          return self.respond(result)#(result)          
-        else:
-          data = self.request.get("obj")
-          if data:
-              result = Sketch.edit_entity(model_id,data)
-          else:
-              result = Sketch.get_entity(model_id)
-          return self.respond(result) 
           
     def user_sketch(self, criteria): #/list/sketch/user/<criteria>
         #Check for GET parameter == model to see if this is a get or an edit
@@ -948,6 +1178,20 @@ class ActionHandler(webapp2.RequestHandler):
           userid = auser['user_id']
           
         result = Sketch.get_entities_by_id(criteria=criteria,userid=userid)
+        return self.respond(result)    
+          
+    def group_sketch(self, criteria): #/list/sketch/group/<criteria>
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        auser = self.auth.get_user_by_session()
+        userid = ""
+        if auser:
+          userid = auser['user_id']
+          
+        result = Sketch.get_entity_by_group(criteria,userid=userid)
         return self.respond(result)    
         
     def search_sketch(self, criteria): #/list/sketch/<criteria>
@@ -988,7 +1232,7 @@ class ActionHandler(webapp2.RequestHandler):
         result = Sketch.get_entities(userid=userid)
         return self.respond(result)
       
-    def get_sketch_by_version(self, sketchId, version): #/get/sketch/version/<sketchId>/<version>
+    def view_sketch(self, sketchId, version): #/get/sketch/view/<sketchId>/<version>
         #Check for GET parameter == model to see if this is a get or an edit
         logging.info("**********************")
         logging.info(self.request.method)
@@ -999,7 +1243,21 @@ class ActionHandler(webapp2.RequestHandler):
         if auser:
           userid = auser['user_id']
         
-        result = Sketch.get_entity_by_versioning(sketchId, version, userid=userid)
+        result = Sketch.get_entity_by_versioning(sketchId, version, "View", userid=userid)
+        return self.respond(result)     
+        
+    def edit_sketch(self, sketchId, version): #/get/sketch/edit/<sketchId>/<version>
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        auser = self.auth.get_user_by_session()
+        userid = ""
+        if auser:
+          userid = auser['user_id']
+        
+        result = Sketch.get_entity_by_versioning(sketchId, version, "Edit", userid=userid)
         return self.respond(result) 
         
     def add_group(self):
@@ -1091,7 +1349,7 @@ class ActionHandler(webapp2.RequestHandler):
               'message':'Not authenticated.'}
         if auser:
           userid = auser['user_id']
-          result = Notification.accept_reject(self.request.body, userid)
+          result = UserGroupMgmt.accept_reject(self.request.body, userid)
         return self.respond(result)      
         
     def get_notification(self, limit):
@@ -1111,6 +1369,34 @@ class ActionHandler(webapp2.RequestHandler):
           result = Notification.get_entities(userid)
         return self.respond(result)        
           
+    def add_comment(self):
+        logging.info(self.request.method)
+        auser = self.auth.get_user_by_session()
+        result = {'status':'error',
+              'message':'There was an error in adding the comment.',
+              'submessage':'Please try again later.'}    
+        if auser:
+          userid = auser['user_id']
+          if self.request.method=="POST":
+            logging.info("in POST")
+            logging.info(self.request.body)
+            result = Comment.add(self.request.body, userid)
+      
+          else:
+            data = self.request.get("obj")
+            if data: 
+              logging.info("Adding new data: "+data)
+              result = Comment.add(data, userid)
+        return self.respond(result)        
+        
+    def get_comment(self, model_id):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        result = Comment.get_entities_by_id(model_id)
+        return self.respond(result) 
         
 webapp2_config = {}
 webapp2_config['webapp2_extras.sessions'] = {
@@ -1120,22 +1406,26 @@ webapp2_config['webapp2_extras.sessions'] = {
 application = webapp2.WSGIApplication([
     webapp2.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
     webapp2.Route('/sketch/<model_id>/delete', handler=ActionHandler, handler_method='delete_sketch'), 
-    webapp2.Route('/sketch/<model_id>', handler=ActionHandler, handler_method='get_or_edit_sketch'), 
-    webapp2.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'), #
-    webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), #
-    webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'), #
-    webapp2.Route('/list/sketch/user/<criteria>', handler=ActionHandler, handler_method='user_sketch'), #
-    #webapp2.Route('/get/sketch/<model_id>', handler=ActionHandler, handler_method='get_sketch'), #
-    webapp2.Route('/get/sketch/version/<sketchId>/<version>', handler=ActionHandler, handler_method='get_sketch_by_version'), #
-    webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), 
-    webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'),
-    webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group'),
-    webapp2.Route('/listuser/group/<model_id>', handler=ActionHandler, handler_method='check_user_group'),
-    webapp2.Route('/adduser/group', handler=ActionHandler, handler_method='add_user_group'),
-    webapp2.Route('/acceptreject/group', handler=ActionHandler, handler_method='accept_reject_group'),
-    webapp2.Route('/get/notification/<limit>', handler=ActionHandler, handler_method='get_notification'),
-    webapp2.Route('/get/notification', handler=ActionHandler, handler_method='get_all_notification'),
-    webapp2.Route('/list/version', handler=ActionHandler, handler_method='get_versions')
+    webapp2.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'), # Add Sketch
+    webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), # List Sketch
+    webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'), # List Sketch That Meets <criteria>
+    webapp2.Route('/list/sketch/user/<criteria>', handler=ActionHandler, handler_method='user_sketch'), # List Sketch By User
+    webapp2.Route('/list/sketch/group/<criteria>', handler=ActionHandler, handler_method='group_sketch'), # List Sketch By Group
+    webapp2.Route('/get/sketch/view/<sketchId>/<version>', handler=ActionHandler, handler_method='view_sketch'), # Get Sketch (View)
+    webapp2.Route('/get/sketch/edit/<sketchId>/<version>', handler=ActionHandler, handler_method='edit_sketch'), # Get Sketch (Edit)
+    webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), # Add Group
+    webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'), # Get Group
+    webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group'), # 
+    webapp2.Route('/listuser/group/<model_id>', handler=ActionHandler, handler_method='check_user_group'), #
+    webapp2.Route('/adduser/group', handler=ActionHandler, handler_method='add_user_group'), # Invite User To Group
+    webapp2.Route('/acceptreject/group', handler=ActionHandler, handler_method='accept_reject_group'), # Accept/Reject Group Invite
+    webapp2.Route('/get/notification/<limit>', handler=ActionHandler, handler_method='get_notification'), # Get Notifications (Menu)
+    webapp2.Route('/get/notification', handler=ActionHandler, handler_method='get_all_notification'), # Get All Notifications
+    
+    webapp2.Route('/add/comment', handler=ActionHandler, handler_method='add_comment'), # Add Comment
+    webapp2.Route('/get/comment/<model_id>', handler=ActionHandler, handler_method='get_comment'), # Get Comment For Sketch
+    
+    webapp2.Route('/list/version', handler=ActionHandler, handler_method='get_versions') # Get Versions
     ],
     config=webapp2_config,
     debug=True)

@@ -29,10 +29,7 @@ function SketchController($scope,$resource,sharedProperties){
   $scope.tempFileName = ""; //Temporary placeholder for fileName during saveAs.
   $scope.changeDescription = ""; //Placeholder value for changeDescription (change description for file edits)
 
-  
-  $scope.permissions = {"p_view": "Public", "p_view_groups": [], "p_edit": "Public", "p_edit_groups": [], "p_comment": "Public", "p_comment_groups": []};
-  
-  $scope.changePermissions = function(value) {};
+
   
   $scope.loaded_id = -1;
   $scope.loaded_version = -1;
@@ -64,12 +61,13 @@ function SketchController($scope,$resource,sharedProperties){
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
-    $scope.waiting = "Updating";       
+    $scope.waiting = "Loading";          
     $scope.UserResource.get(function(response) {
           var result = response;
           $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
+            $scope.grouplist();
             $scope.get_notification();            
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
@@ -79,13 +77,12 @@ function SketchController($scope,$resource,sharedProperties){
   }
   
   $scope.item = {};
-	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"", "p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};    
+	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"", "p_view": true, "p_edit": true, "p_comment": true, "group_permissions": []};    
   
 	$scope.saveAs = function() { //Saving new file
 	   	
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		
-		//$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "thumbnailData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
 		$scope.item.data.sketchId = "";			
 		
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
@@ -99,22 +96,19 @@ function SketchController($scope,$resource,sharedProperties){
     $scope.item.data.appver = $scope.User.u_version;
     
     $scope.item.data.p_view = $scope.permissions.p_view;
-    $scope.item.data.p_view_groups = $scope.permissions.p_view_groups;
     $scope.item.data.p_edit = $scope.permissions.p_edit;
-    $scope.item.data.p_edit_groups = $scope.permissions.p_edit_groups;
     $scope.item.data.p_comment = $scope.permissions.p_comment;
-    $scope.item.data.p_comment_groups = $scope.permissions.p_comment_groups;
+    $scope.item.data.group_permissions = $scope.permissions.group_permissions;
 		
 	  $scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.owner_id, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
-		$scope.add("sketch");
+		$scope.add_sketch();
 	}
 	
 	$scope.save = function() { //Save new version of existing file
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		
-		//$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "thumbnailData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
 		$scope.item.data.sketchId = $scope.sketchId;
 		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
 		$scope.item.data.owner = $scope.User.u_name;
@@ -126,16 +120,14 @@ function SketchController($scope,$resource,sharedProperties){
     $scope.item.data.appver = $scope.User.u_version;
     
     $scope.item.data.p_view = $scope.permissions.p_view;
-    $scope.item.data.p_view_groups = $scope.permissions.p_view_groups;
     $scope.item.data.p_edit = $scope.permissions.p_edit;
-    $scope.item.data.p_edit_groups = $scope.permissions.p_edit_groups;
     $scope.item.data.p_comment = $scope.permissions.p_comment;
-    $scope.item.data.p_comment_groups = $scope.permissions.p_comment_groups;
+    $scope.item.data.group_permissions = $scope.permissions.group_permissions;
 		
 	  $scope.setMeta($scope.item.data.sketchId, $scope.item.data.version, $scope.item.data.owner, $scope.item.data.owner_id, $scope.item.data.fileName);
 		$scope.changeDescription = "" //Clears placeholder before next load.
 		
-		$scope.add("sketch");		
+		$scope.add_sketch();		
 	}
    
 	$scope.setMeta = function(sketchId, version, owner, owner_id, fileName) {
@@ -144,10 +136,35 @@ function SketchController($scope,$resource,sharedProperties){
 		$scope.owner = owner;
     $scope.owner_id = owner_id
 		$scope.fileName = fileName;
+    $scope.grouplist();
+    $scope.waiting = "Ready";
 	}
+
+  $scope.permissions = {"p_view": 1, "p_edit": false, "p_comment": false, "group_permissions": []};
+  $scope.group_data = {"id":-1,"data":""};
+  $scope.group_perm = {"group_id": -1, "group_name": "", "g_edit": false, "g_comment": false};
+  
+  $scope.changePermissions = function(value) {
+    if (value = "changePermissions(1)") {
+      $scope.permissions.p_edit = false;
+      $scope.permissions.p_comment = false;
+    }
+  };
+  $scope.addgroupperm = function() {
+    $scope.group_perm.group_id = $scope.group_data.id;
+    $scope.group_perm.group_name = $scope.group_data.data.group_name;
+    $scope.permissions.group_permissions.push($scope.group_perm);
+    $scope.group_data = {"id":-1,"data":""};
+    $scope.group_perm = {"group_id": -1, "group_name": "", "g_edit": false, "g_comment": false};
+  }
 	
-  $scope.setPermissions = function(view, view_groups, edit, edit_groups, comment, comment_groups) {
-    $scope.permissions = {"p_view": view, "p_view_groups": view_groups, "p_edit": edit, "p_edit_groups": edit_groups, "p_comment": comment, "p_comment_groups": comment_groups};
+  $scope.removegroupperm = function(id) {
+    var index = $scope.permissions.group_permissions.indexOf(id);
+    $scope.permissions.group_permissions.splice(index, 1);
+  }
+  
+  $scope.setPermissions = function(view, edit, comment, group_permissions) {
+    $scope.permissions = {"p_view": view, "p_edit": edit, "p_comment": comment, "group_permissions": group_permissions};
   }
     
   $scope.setTest = function(loaded_id) {
@@ -171,17 +188,27 @@ function SketchController($scope,$resource,sharedProperties){
       $scope.thumbnailData = $scope.thumbnailData.replace(/(\r\n|\n|\r)/gm," ");
       var format = new RegExp('&#xA;', 'g');
       $scope.thumbnailData = $scope.thumbnailData.replace(format,"");
+    } else {
+      $scope.thumbnailData = "";
     }
 	}
 	
 
-/*
-	General Add/List (pass "model" to m_type)
-*/
+  $scope.grouplist = function() {
+    if ($scope.User.id != 0) {
+      $scope.GroupListResource = $resource('http://:remote_url/list/group/:criteria',
+      {"remote_url":$scope.remote_url,"criteria":$scope.User.id}, 
+               {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+      $scope.waiting = "Loading";   
+      $scope.GroupListResource.get(function(response) { 
+          $scope.groups = response;
+       }); 
+    }
+  }
   
-  $scope.add = function(m_type){
-    $scope.SaveResource = $resource('http://:remote_url/:model', 
-                  {"remote_url":$scope.remote_url,"model":m_type}, 
+  $scope.add_sketch = function(){
+    $scope.SaveResource = $resource('http://:remote_url/sketch', 
+                  {"remote_url":$scope.remote_url}, 
                   {'save': { method: 'POST',    params: {} }});
  
     $scope.waiting = "Saving";
@@ -195,9 +222,7 @@ function SketchController($scope,$resource,sharedProperties){
               $scope.sketchId = result.data.sketchId;
               $scope.setTest(result.data.sketchId);
               $scope.setVersion(result.data.version);
-              //$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"","p_view": "Self", "p_view_groups": [], "p_edit": "Self", "p_edit_groups": [], "p_comment": "Self", "p_comment_groups": []};
             } else {
-              //$scope.setMeta("","","","","");
               $scope.waiting = "Error";
               $scope.heading = "Oops...!";
               $scope.message = result.message;
@@ -213,16 +238,16 @@ function SketchController($scope,$resource,sharedProperties){
   };    
   
   $scope.get_sketch = function() {
-    $scope.getSketch = $resource('http://:remote_url/get/sketch/version/:id/:version', 
+    $scope.getSketch = $resource('http://:remote_url/get/sketch/edit/:id/:version', 
              {"remote_url":$scope.remote_url,"id":$scope.loaded_id,"version":$scope.version}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";   
+    $scope.waiting = "Loading";      
     $scope.getSketch.get(function(response) {
         var check = response.success
         if (check !== "no") {
           var rsketch = response.data;
           $scope.setMeta(rsketch.sketchId, rsketch.version, rsketch.owner, rsketch.owner_id, rsketch.fileName);
-          $scope.setPermissions(rsketch.p_view, rsketch.p_view_groups, rsketch.p_edit, rsketch.p_edit_groups, rsketch.p_comment, rsketch.p_comment_groups);
+          $scope.setPermissions(rsketch.p_view, rsketch.p_edit, rsketch.p_comment, rsketch.group_permissions);
           $scope.fileData = rsketch.fileData;
           $scope.thumbnailData = rsketch.thumbnailData;
           loadKSketchFile($scope.fileData);
@@ -236,36 +261,55 @@ function SketchController($scope,$resource,sharedProperties){
           }
         }
         else {
-          $scope.waiting = "Error";
-          $scope.heading = "Oops...!";
-          $scope.message = "We're sorry, but the sketch you wanted does not exist.";
-          $scope.submessage = "Perhaps the URL that you entered was broken?";
+          if (response.id === "Forbidden") {
+            $scope.waiting = "Error";
+            $scope.heading = "Access Denied";
+            $scope.message = "You have not been granted permission to edit this sketch.";
+          } else {
+            $scope.waiting = "Error";
+            $scope.heading = "Oops...!";
+            $scope.message = "We're sorry, but the sketch you wanted does not exist.";
+            $scope.submessage = "Perhaps the URL that you entered was broken?";
+          }
         }
       });  
   }
   
   $scope.acknowledge = function() {
-    $scope.waiting = "Ready";
-    $scope.heading = "";
-    $scope.message = "";
-    $scope.submessage = "";
+    if ($scope.heading === "Access Denied") {
+      if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
+      {
+        var referLink = document.createElement("a");
+        referLink.href = "index.html";
+        document.body.appendChild(referLink);
+        referLink.click();
+      }
+      else { window.location.replace("index.html");} 
+    } else {
+      $scope.waiting = "Ready";
+      $scope.heading = "";
+      $scope.message = "";
+      $scope.submessage = "";
+    }
   }
   
   $scope.reload_sketch = function() {
-    var reloadAlert = confirm("Do you wish to abandon your changes and revert to the saved sketch?");
-    if (reloadAlert === true) {
-      loadKSketchFile($scope.fileData);
+    if ($scope.waiting === "Ready") {
+      var reloadAlert = confirm("Do you wish to abandon your changes and revert to the saved sketch?");
+      if (reloadAlert === true) {
+        loadKSketchFile($scope.fileData);
+      }
     }
   }
   $scope.get_notification = function() {
     $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
     {"remote_url":$scope.remote_url,"limit":3}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
+    $scope.waiting = "Loading";   
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
         if ($scope.smallnotifications.entities.length > 0) {
-          $scope.notify = "You have " + $scope.smallnotifications.entities.length + " new notification(s).";
+          $scope.notify = "You have pending notification(s).";
         }
         $scope.waiting = "Ready";
      });  
@@ -273,21 +317,46 @@ function SketchController($scope,$resource,sharedProperties){
   
   
   $scope.accept = {};
-  $scope.accept.data = {'u_g' : 0, 'n_id': 0, 'status': 'accept'};
-  $scope.notify_accept_group = function(n_a) {
-    $scope.accept.data = n_a;
-    $scope.AcceptResource = $resource('http://:remote_url/acceptreject/group', 
+  $scope.accept.data = {'n_id': -1, 'u_g' : -1, 'status': ''};
+  
+  $scope.notify_accept = function(n_id, u_g) {
+    $scope.accept.data.n_id = n_id;
+    $scope.accept.data.u_g = u_g;
+    $scope.accept.data.status = 'accept';
+    $scope.notify_group_action();
+  };
+  
+  $scope.notify_reject = function(n_id, u_g) {
+    $scope.accept.data.n_id = n_id;
+    $scope.accept.data.u_g = u_g;
+    $scope.accept.data.status = 'reject';
+    $scope.notify_group_action();
+  };
+  
+  $scope.notify_group_action = function() {
+    $scope.NotifyGroupResource = $resource('http://:remote_url/acceptreject/group', 
                   {"remote_url":$scope.remote_url}, 
                   {'save': { method: 'POST',    params: {} }});
  
-    $scope.waiting = "Updating";
-    var acceptgroup = new $scope.AcceptResource($scope.accept.data);
-    acceptgroup.$save(function(response) { 
+    $scope.waiting = "Loading";   
+    var notify_group = new $scope.NotifyGroupResource($scope.accept.data);
+    notify_group.$save(function(response) { 
             var result = response;
-            $scope.accept.data = {'u_g' : 0, 'n_id': 0, 'status': 'accept'};            
+            $scope.accept.data = {'u_g' : -1, 'status': 'accept'}; 
+            if (result.status === 'success') {
+              $scope.waiting = "Error";
+              $scope.heading = "Success!";
+              $scope.message = result.message;
+            } else {
+              $scope.waiting = "Error";
+              $scope.heading = "Oops...!"
+              $scope.message = result.message;
+              $scope.submessage = result.submessage;
+            }                 
             $scope.get_notification();
           }); 
   };
+  
   $scope.simpleSearch = function() {
     if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
       //var searchAlert = confirm("Warning - Navigating away from this page will remove all your unsaved progress.\n\nDo you wish to continue?");
@@ -298,6 +367,18 @@ function SketchController($scope,$resource,sharedProperties){
         $scope.search = "";
       }
     //}
+  }
+  
+  $scope.getStatus = function() {
+    if ($scope.waiting == "Ready") {
+      if ($scope.thumbnailData != "") {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
   }
   
   $scope.getuser();

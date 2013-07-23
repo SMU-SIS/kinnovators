@@ -49,43 +49,26 @@
     
     <script type="text/javascript" src="swf/swfobject.js"></script>
     
-    <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
+    <script type="text/javascript" src="js/janrain/janrain_widget.js"></script>
+    <script type="text/javascript" src="js/common/notification.js"></script>
     
-    <!-- script type="text/javascript" src="swf/KSketchCallBacks.js"></script -->
-    <script type="text/javascript">
-      (function() {      //Function to trigger Janrain login plugin      
-        if (typeof window.janrain !== 'object') window.janrain = {};
-        if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
-        
-        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/user/janrain';
-        
-        function isReady() { janrain.ready = true; };
-        if (document.addEventListener) {
-          document.addEventListener("DOMContentLoaded", isReady, false);
-        } else {
-          window.attachEvent('onload', isReady);
-        }
-        
-        var e = document.createElement('script');
-        e.type = 'text/javascript';
-        e.id = 'janrainAuthWidget';
-        
-        if (document.location.protocol === 'https:') {
-          e.src = 'https://rpxnow.com/js/lib/k-sketch/engage.js';
-        } else {
-          e.src = 'http://widget-cdn.rpxnow.com/js/lib/k-sketch/engage.js';
-        }
-        
-        var s = document.getElementsByTagName('script')[0];
-        s.parentNode.insertBefore(e, s);
-      })();
-    </script>    
     <script type="text/javascript">
       window.onbeforeunload = function(){
-        return "Warning - Navigating away from this page will remove all your unsaved progress.";
+        initSave();
+        var status = false;
+        e = document.getElementById('testdiv');
+        scope = angular.element(e).scope();
+        scope.$apply(function(){
+          status = scope.getStatus();
+        })
+        if (status) {
+          return "Warning - Navigating away from this page will remove all your unsaved progress.";
+        }
       };
     </script>
     
+    <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
+        
     <script type="text/javascript">
       //Function to trigger a save procedure in the flash object
       //The flash object will call saveKSketchFile in return to pass the data from itself to javascript
@@ -166,7 +149,7 @@
           scope = angular.element(e).scope();
           scope.$apply(function() {
             scope.setMeta("", "", "", "", "");
-            scope.fileData = "";
+            scope.setData("");
           });	
 
           loadKSketchFile("");
@@ -231,27 +214,68 @@
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
   <body ng-controller="SketchController" id="ksketchapp"  scrolling="no" onload="QueryString()">
+    <!-- Loading -->
+    
+    <div id="LoadingDiv" ui-if="waiting!='Ready'"></div>
+    <div class="modal" id="Loading" ui-if="waiting=='Loading'">
+      <div class="modal-body">
+        <span>Loading........</span>
+      </div>
+    </div>
+    <div class="modal" id="Loading" ui-if="waiting=='Saving'" ng-cloak>
+      <div class="modal-body">
+        <span>Saving........</span>
+      </div>
+    </div>
+    <div class="modal" id="Message" ui-if="waiting=='Error'" ng-cloak>
+      <div class="modal-body">
+        <div class="modal-header">
+          <input type="submit" class="close" value="x" data-dismiss="modal" ng-click="acknowledge()"/>
+          <h3 id="myUploadItems">{{heading}}</h3>
+        </div>
+        <br/>
+        <div class="control-group">
+          <div class="control-label">
+            <span style="text-align:center">{{message}}</span>
+            <br/>
+            <br/>
+            <span style="text-align:center">{{submessage}}</span>
+            <br/>
+            <br/>
+          </div>
+          <div class="controls">
+            <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
+          </div>
+        </div>
+      </div>
+    </div>        
+  
     <!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
-        <div class="container-fluid">
+        <div class="container-fluid" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
-          <p class="navbar-text pull-left">
-            <!--Username and profile link goes here.-->
-            <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
-            <span ng-hide="User.u_login" ng-cloak id="heading">Hello, {{User.u_name}}!</span>
-            <span class="label"><a ng-hide="User.u_login" ng-cloak class="janrainEngage" href="#">Sign-In</a></span>
-            <span class="label"><a ng-show="User.u_login" ng-cloak href="/user/logout">Logout</a></span>
-          </p>
-          <ul class="nav"  ui-if="User.u_login">
-            <li class="dropdown">
+          <ul class="nav">
+            <li>
+              <!--Username and profile link goes here.-->
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-hide="User.u_login" ng-cloak id="heading" disabled>Hello, {{User.u_name}}!</a>
+            </li>          
+            <li ng-hide="User.u_login" ng-cloak>
+              <a class="janrainEngage" href="#">Sign-In</a>
+            </li>
+            <li ng-show="User.u_login" ng-cloak>
+              <a href="/user/logout">Logout</a>
+            </li>           
+            <li class="dropdown"  ui-if="User.u_login">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="{{notify}}">
-                <b class="caret"></b>
+<!--                 <b class="caret"></b> -->
+                <i class="icon-list-alt icon-white"></i>
               </a>
-              <ul class="dropdown-menu">
+              <ul class="dropdown-menu" ui-if="!!smallnotifications.entities.length">
                 <li>
-                  <table>
+                  <table class="table table-striped">
                     <tr ng-repeat="notification in smallnotifications.entities">
                       <td>
                         <span>{{notification.n_date}}</span>
@@ -259,18 +283,26 @@
                       <td>
                         <span>{{notification.n_message}}</span>
                       </td>
-                      <td>
-                        <ul ng-repeat="n_a in notification.n_action">
-                          <a class="btn btn-small" ng-click="notify_accept_group({{n_a}})">{{n_a.a_text}}</a>
+                      <td ui-if="notification.n_type == 'GROUPINVITE'">
+                        <ul>
+                          <a class="btn btn-small" onClick="notifyAccept({{notification.id}},{{notification.n_relevant}})">Accept</a>
+                        </ul>
+                        <ul>
+                          <a class="btn btn-small" onClick="notifyReject({{notification.id}},{{notification.n_relevant}})">Reject</a>
                         </ul>
                       </td>
                     </tr>
                   </table>
                 </li>
                 <li class="divider"></li>
+                <li>
+                  <a href="notifications.html">
+                    Show All Notifications
+                  </a>
+                </li>      
               </ul>              
             </li>
-          </ul>         
+          </ul>           
           <p class="navbar-search pull-right">
             <input type="text" ng-model="search" onkeypress="searchKeyPress(event);" class="search-query" placeholder="Search by sketch name or owner">
             <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="simpleSearch()" value=">>">
@@ -293,41 +325,6 @@
     
     <!-- Main Body -->
     <div class="container-fluid">
-      <!-- Loading -->
-      
-      <div id="LoadingDiv" ng-hide="waiting=='Ready'"></div>
-      <div class="modal" id="Loading" ng-show="waiting=='Loading'">
-        <div class="modal-body">
-          <span>Loading........</span>
-        </div>
-      </div>
-      <div class="modal" id="Loading" ng-show="waiting=='Saving'">
-        <div class="modal-body">
-          <span>Saving........</span>
-        </div>
-      </div>
-      <div class="modal" id="Message" ng-show="waiting=='Error'" ng-cloak>
-        <div class="modal-body">
-          <div class="modal-header">
-            <input type="submit" class="close" value="x" data-dismiss="modal" ng-click="acknowledge()"/>
-            <h3 id="myUploadItems">{{heading}}</h3>
-          </div>
-          <br/>
-          <div class="control-group">
-            <div class="control-label">
-              <span style="text-align:center">{{message}}</span>
-              <br/>
-              <br/>
-              <span style="text-align:center">{{submessage}}</span>
-              <br/>
-              <br/>
-            </div>
-            <div class="controls">
-              <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
-            </div>
-          </div>
-        </div>
-      </div>        
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
@@ -436,9 +433,9 @@
                 </div>
                 <div class="modal-body">
                   <div class="row-fluid">
-                    <div class="span6">
+                    <div class="span5">
                       <div class="control-group">
-                        <label class="control-label" for="sketchName">Sketch Name</label>
+                        <label class="control-label" for="sketchName" style="font-weight:bold">Sketch Name</label>
                         <div class="controls">
                           <input type="text" ng-model="tempFileName" id="sketchName"/>
                         </div>
@@ -448,43 +445,53 @@
                             <span>No preview available</span>
                           </div>
                         </div>
-                        <label class="control-label" for="sketchDesc">Enter a description for this change (optional; max 255 characters)</label>
+                        <label class="control-label" for="sketchDesc" style="font-weight:bold">Enter a description for this change (optional; max 255 characters)</label>
                         <div class="controls">
                           <textarea ng-model="changeDescription" id="sketchDescription" maxlength="255"></textarea>
                         </div>
                       </div>
                     </div>
-                    <div class="span5 offset1" id="permissions" ng-show="User.u_login">
+                    
+                    <!-- PERMISSIONS -->
+                    <div class="span6 offset1" id="permissions" ng-show="User.u_login">
+                      <!-- Public -->
                       <div class="well well-small">
                         <div class="control-group">
-                          <label class="control-label" for="sketchView">Who can view this?</label>
+                          <label class="control-label" for="sketchView" style="font-weight:bold">Public Permissions</label>
+                          <label class="control-label">Allow Public Access?</label>
                           <div class="controls">
-                            <input type="radio" ng-model="permissions.p_view" value="Self" ng-change="changePermissions(permissions.p_view)"/>Only Me<br/>
-                            <!--input type="radio" ng-model="permissions.p_view" value="Group" ng-change="changePermissions(permissions.p_view)"/>Specific Groups 
-                            <input name="sketchView" disabled/-->
-                            <input type="radio"  ng-model="permissions.p_view" value="Public" ng-change="changePermissions(permissions.p_view)" checked/>Public<br/>
+                            <input type="radio" ng-model="permissions.p_view" value="0" ng-change="changePermissions(permissions.p_view)"/>No<br/>
+                            <input type="radio"  ng-model="permissions.p_view" value="1" ng-change="changePermissions(permissions.p_view)"/>Yes
+                            
+                            <input type="checkbox" ng-model="permissions.p_edit" ng-disabled="permissions.p_view != 1"/>Allow Edits
+                            <input type="checkbox" ng-model="permissions.p_comment" ng-disabled="permissions.p_view != 1"/>Allow Comments<br/>
                           </div>
                         </div>
+                        <hr/>
+                        <!-- Group -->
                         <div class="control-group">
-                          <label class="control-label" for="sketchEdit">Who can edit this?</label>
+                          <label class="control-label" for="sketchView" style="font-weight:bold">Assign to Group(s)</label>
+                          <label class="control-label">Select a Group that you belong to:</label>
                           <div class="controls">
-                            <input type="radio" ng-model="permissions.p_edit" value="Self" ng-change="changePermissions(permissions.p_edit)"/>Only Me<br/>
-                            <!--input type="radio" ng-model="permissions.p_edit" value="Group" ng-change="changePermissions(permissions.p_edit)"/>Specific Groups 
-                            <input name="sketchView" disabled/-->
-                            <input type="radio"  ng-model="permissions.p_edit" value="Public" ng-change="changePermissions(permissions.p_edit)" checked/>Public<br/>
-                          </div>
-                        </div>
-                        <div class="control-group">
-                          <label class="control-label" for="sketchComment">Who can comment on this?</label>
-                          <div class="controls">
-                            <input type="radio" ng-model="permissions.p_comment" value="Self" ng-change="changePermissions(permissions.p_comment)"/>Only Me<br/>
-                            <!--input type="radio" ng-model="permissions.p_comment" value="Group" ng-change="changePermissions(permissions.p_comment)"/>Specific Groups 
-                            <input name="sketchView" disabled/-->
-                            <input type="radio"  ng-model="permissions.p_comment" value="Public" ng-change="changePermissions(permissions.p_comment)" checked/>Public<br/>
+                            
+                            <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
+                            <input type="checkbox" ng-model="group_perm.g_edit" ng-disabled="group_data.id === -1"/>Allow Edits
+                            <input type="checkbox" ng-model="group_perm.g_comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
+                            <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button> 
+                            <ul ng-repeat="g_p in permissions.group_permissions">
+                              <li>
+                                {{g_p.group_name}} - (Can view
+                                <span ui-if="g_p.g_edit">, edit</span>
+                                <span ui-if="g_p.g_comment">, comment</span>)
+                                <button ng-click="removegroupperm(g_p)">Remove</button>
+                              </li>
+                            </ul>
                           </div>
                         </div>
                       </div>
                     </div>
+                    <!-- PERMISSIONS -->
+                    
                   </div>
                   <div class="row-fluid">
                     <div class="control-group">
@@ -523,37 +530,47 @@
                         </div>
                       </div>
                     </div>
-                    <div class="span5 offset1" id="permissions">
+                   
+                    <!-- PERMISSIONS -->
+                    <div class="span6 offset1" id="permissions" ng-show="User.u_login">
+                      <!-- Public -->
                       <div class="well well-small">
                         <div class="control-group">
-                          <label class="control-label" for="sketchView">Who can view this?</label>
+                          <label class="control-label" for="sketchView" style="font-weight:bold">Public Permissions</label>
+                          <label class="control-label">Allow Public Access?</label>
                           <div class="controls">
-                            <input type="radio" ng-model="permissions.p_view" value="Self" ng-change="changePermissions(permissions.p_view)"/>Only Me<br/>
-                            <!--input type="radio" ng-model="permissions.p_view" value="Group" ng-change="changePermissions(permissions.p_view)"/>Specific Groups 
-                            <input name="sketchView" disabled/-->
-                            <input type="radio"  ng-model="permissions.p_view" value="Public" ng-change="changePermissions(permissions.p_view)" checked/>Public<br/>
+                            <input type="radio" ng-model="permissions.p_view" value="0" ng-change="changePermissions(permissions.p_view)"/>No<br/>
+                            <input type="radio"  ng-model="permissions.p_view" value="1" ng-change="changePermissions(permissions.p_view)"/>Yes
+                            
+                            <input type="checkbox" ng-model="permissions.p_edit" ng-disabled="permissions.p_view != 1"/>Allow Edits
+                            <input type="checkbox" ng-model="permissions.p_comment" ng-disabled="permissions.p_view != 1"/>Allow Comments<br/>
                           </div>
                         </div>
+                        <hr/>
+                        <!-- Group -->
                         <div class="control-group">
-                          <label class="control-label" for="sketchEdit">Who can edit this?</label>
+                          <label class="control-label" for="sketchView" style="font-weight:bold">Assign to Group(s)</label>
+                          <label class="control-label">Select a Group that you belong to:</label>
                           <div class="controls">
-                            <input type="radio" ng-model="permissions.p_edit" value="Self" ng-change="changePermissions(permissions.p_edit)"/>Only Me<br/>
-                            <!--input type="radio" ng-model="permissions.p_edit" value="Group" ng-change="changePermissions(permissions.p_edit)"/>Specific Groups 
-                            <input name="sketchView" disabled/-->
-                            <input type="radio"  ng-model="permissions.p_edit" value="Public" ng-change="changePermissions(permissions.p_edit)" checked/>Public<br/>
-                          </div>
-                        </div>
-                        <div class="control-group">
-                          <label class="control-label" for="sketchComment">Who can comment on this?</label>
-                          <div class="controls">
-                            <input type="radio" ng-model="permissions.p_comment" value="Self" ng-change="changePermissions(permissions.p_comment)"/>Only Me<br/>
-                            <!--input type="radio" ng-model="permissions.p_comment" value="Group" ng-change="changePermissions(permissions.p_comment)"/>Specific Groups 
-                            <input name="sketchView" disabled/-->
-                            <input type="radio"  ng-model="permissions.p_comment" value="Public" ng-change="changePermissions(permissions.p_comment)" checked/>Public<br/>
+                            
+                            <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
+                            <input type="checkbox" ng-model="group_perm.g_edit" ng-disabled="group_data.id === -1"/>Allow Edits
+                            <input type="checkbox" ng-model="group_perm.g_comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
+                            <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button> 
+                            <ul ng-repeat="g_p in permissions.group_permissions">
+                              <li>
+                                {{g_p.group_name}} - (Can view
+                                <span ui-if="g_p.g_edit">, edit</span>
+                                <span ui-if="g_p.g_comment">, comment</span>)
+                                <button ng-click="removegroupperm(g_p)">Remove</button>
+                              </li>
+                            </ul>
                           </div>
                         </div>
                       </div>
-                    </div>					
+                    </div>
+                    <!-- PERMISSIONS -->
+			
                   </div>
                   <div class="row-fluid">
                     <div class="control-group">
@@ -721,25 +738,25 @@
     <!-- Le javascript
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="js/jquery.js"></script>
-    <script src="js/moment.min.js"></script>
+    <script src="js/jquery/jquery.js"></script>
+    <script src="js/moment/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
     <script src="js/angular/sketch-controller.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/bootstrap-transition.js"></script>
-    <script src="js/bootstrap-alert.js"></script>
-    <script src="js/bootstrap-modal.js"></script>
-    <script src="js/bootstrap-dropdown.js"></script>
-    <script src="js/bootstrap-scrollspy.js"></script>
-    <script src="js/bootstrap-tab.js"></script>
-    <script src="js/bootstrap-tooltip.js"></script>
-    <script src="js/bootstrap-popover.js"></script>
-    <script src="js/bootstrap-button.js"></script>
-    <script src="js/bootstrap-collapse.js"></script>
-    <script src="js/bootstrap-carousel.js"></script>
-    <script src="js/bootstrap-typeahead.js"></script>
+    <script src="js/bootstrap/bootstrap-transition.js"></script>
+    <script src="js/bootstrap/bootstrap-alert.js"></script>
+    <script src="js/bootstrap/bootstrap-modal.js"></script>
+    <script src="js/bootstrap/bootstrap-dropdown.js"></script>
+    <script src="js/bootstrap/bootstrap-scrollspy.js"></script>
+    <script src="js/bootstrap/bootstrap-tab.js"></script>
+    <script src="js/bootstrap/bootstrap-tooltip.js"></script>
+    <script src="js/bootstrap/bootstrap-popover.js"></script>
+    <script src="js/bootstrap/bootstrap-button.js"></script>
+    <script src="js/bootstrap/bootstrap-collapse.js"></script>
+    <script src="js/bootstrap/bootstrap-carousel.js"></script>
+    <script src="js/bootstrap/bootstrap-typeahead.js"></script>
     
   </body>
 </html>

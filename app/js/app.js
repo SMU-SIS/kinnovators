@@ -16,6 +16,8 @@
       }
     };
   });
+  
+
  //var myApp = angular.module('myApp', ['ngResource','ngMockE2E']);
 
   /*myApp.config(['$routeProvider', function($routeProvider) {

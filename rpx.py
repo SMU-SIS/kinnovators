@@ -75,6 +75,25 @@ class User(db.Model):
         return "N/A"    
         
   @staticmethod
+  def get_image(model_id):
+    #Retrieves display name
+    if int(model_id) == 0:
+      return ""
+    else:
+      try:
+        entity = User.get_by_id(int(model_id))
+        
+        if entity:
+          email_hasher = hashlib.md5()
+          email_hasher.update(entity.email.lower())
+          g_hash = email_hasher.hexdigest()            
+          return g_hash
+        else:
+          return ""
+      except ValueError:
+        return ""      
+        
+  @staticmethod
   def check_if_admin(model_id):
     #Checks admin status
     try:

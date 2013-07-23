@@ -72,7 +72,7 @@ function ConsoleController($scope,$resource,sharedProperties){
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
-    $scope.waiting = "Updating";       
+    $scope.waiting = "Loading";       
     $scope.UserResource.get(function(response) {
           var result = response;
           if ((result.u_login === "True" || result.u_login === true)
@@ -101,7 +101,7 @@ function ConsoleController($scope,$resource,sharedProperties){
                           {'remote_url':$scope.remote_url, 'id':$scope.selecteduser},
                           {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                              });  
-      $scope.waiting = "Updating";       
+      $scope.waiting = "Loading";       
       $scope.RetrieveUserResource.get(function(response) {
             var result = response;
             if (result.status === "success") {

@@ -56,7 +56,7 @@ function GroupsController($scope,$resource,sharedProperties){
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
-    $scope.waiting = "Updating";       
+    $scope.waiting = "Loading";       
     $scope.UserResource.get(function(response) {
           var result = response;
           $scope.iiii = result.u_login;
@@ -86,7 +86,7 @@ function GroupsController($scope,$resource,sharedProperties){
     $scope.getGroup = $resource('http://:remote_url/get/group/:id', 
              {"remote_url":$scope.remote_url,"id":$scope.test}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";   
+    $scope.waiting = "Loading";   
     $scope.getGroup.get(function(response) { 
         var thisgroup = response;
         $scope.setGroup(thisgroup.group_name, thisgroup.u_groups);
@@ -99,7 +99,7 @@ function GroupsController($scope,$resource,sharedProperties){
             }
           }
         }
-        $scope.waiting = "Ready";
+        $scope.list();
       });  
   }
   
@@ -113,7 +113,7 @@ function GroupsController($scope,$resource,sharedProperties){
     $scope.GroupUserListResource = $resource('http://:remote_url/listuser/group/:id',
     {"remote_url":$scope.remote_url,"id":$scope.test}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
+    $scope.waiting = "Loading";
     $scope.GroupUserListResource.get(function(response) { 
         var result = response;
         if (result.status === "success") {
@@ -150,7 +150,19 @@ function GroupsController($scope,$resource,sharedProperties){
             }
           }); 
   }
+
   
+  $scope.list = function(){
+    $scope.ListResource = $resource('http://:remote_url/list/sketch/group/:criteria',
+    {"remote_url":$scope.remote_url,"criteria":$scope.test}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Loading";
+    $scope.ListResource.get(function(response) { 
+        $scope.items = response;
+        $scope.waiting = "Ready";
+     });  
+  };
+    
   
   $scope.acknowledge = function() {
     $scope.waiting = "Ready";
@@ -163,11 +175,11 @@ function GroupsController($scope,$resource,sharedProperties){
     $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
     {"remote_url":$scope.remote_url,"limit":3}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
+    $scope.waiting = "Loading";
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
         if ($scope.smallnotifications.entities.length > 0) {
-          $scope.notify = "You have " + $scope.smallnotifications.entities.length + " new notification(s).";
+          $scope.notify = "You have pending notification(s).";
         }
         $scope.waiting = "Ready";
      });  
@@ -176,19 +188,43 @@ function GroupsController($scope,$resource,sharedProperties){
 
   
   $scope.accept = {};
-  $scope.accept.data = {'u_g' : 0, 'n_id': 0, 'status': 'accept'};
-  $scope.notify_accept_group = function(n_a) {
-    $scope.accept.data = n_a;
-    $scope.AcceptResource = $resource('http://:remote_url/acceptreject/group', 
+  $scope.accept.data = {'n_id': -1, 'u_g' : -1, 'status': ''};
+  
+  $scope.notify_accept = function(n_id, u_g) {
+    $scope.accept.data.n_id = n_id;
+    $scope.accept.data.u_g = u_g;
+    $scope.accept.data.status = 'accept';
+    $scope.notify_group_action();
+  };
+  
+  $scope.notify_reject = function(n_id, u_g) {
+    $scope.accept.data.n_id = n_id;
+    $scope.accept.data.u_g = u_g;
+    $scope.accept.data.status = 'reject';
+    $scope.notify_group_action();
+  };
+  $scope.notify_group_action = function() {
+    $scope.NotifyGroupResource = $resource('http://:remote_url/acceptreject/group', 
                   {"remote_url":$scope.remote_url}, 
                   {'save': { method: 'POST',    params: {} }});
  
-    $scope.waiting = "Updating";
-    var acceptgroup = new $scope.AcceptResource($scope.accept.data);
-    acceptgroup.$save(function(response) { 
+    $scope.waiting = "Saving";
+    var notify_group = new $scope.NotifyGroupResource($scope.accept.data);
+    notify_group.$save(function(response) { 
             var result = response;
-            $scope.accept.data = {'u_g' : 0, 'n_id': 0, 'status': 'accept'};            
+            $scope.accept.data = {'u_g' : -1, 'status': 'accept'};
+            if (result.status === 'success') {
+              $scope.waiting = "Error";
+              $scope.heading = "Success!";
+              $scope.message = result.message;
+            } else {
+              $scope.waiting = "Error";
+              $scope.heading = "Oops...!"
+              $scope.message = result.message;
+              $scope.submessage = result.submessage;
+            }           
             $scope.get_notification();
+            $scope.get_group();
           }); 
   };
   
