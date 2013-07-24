@@ -84,6 +84,19 @@
         });        
       }
     </script>    
+    
+    
+    <script type="text/javascript">
+      function delete_sketch(id) {
+        if (parseInt(id) !== 'NaN') {
+          e = document.getElementById('testdiv');
+          scope = angular.element(e).scope();
+          scope.$apply(function() {
+              scope.delete_sketch(id);
+          });
+        }
+      }
+    </script>
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
@@ -100,6 +113,11 @@
     <div class="modal" id="Loading" ui-if="waiting=='Saving'" ng-cloak>
       <div class="modal-body">
         <span>Saving........</span>
+      </div>
+    </div>
+    <div class="modal" id="Loading" ui-if="waiting=='Deleting'" ng-cloak>
+      <div class="modal-body">
+        <span>Deleting........</span>
       </div>
     </div>
     <div class="modal" id="Message" ui-if="waiting=='Error'" ng-cloak>
@@ -311,7 +329,7 @@
                               <a class="btn btn-info btn-small" href="view.html?id={{files.data.sketchId}}&version={{files.data.version}}">View</a>
                               <a class="btn btn-success btn-small" ui-if="files.data.p_edit" href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}"  title="Edit this sketch">Edit</a>
                               <a class="btn btn-success btn-small disabled" ui-if="!files.data.p_edit"  title="You are not allowed to edit this sketch"><del>Edit</del></a>    
-                              <a class="btn btn-danger btn-small disabled" ui-if="belong"><del>Delete</del></a>
+                              <button class="btn btn-danger btn-small" onClick="delete_sketch({{files.id}})" ui-if="belong">Delete</button>
                             </td>
                           </tr>
                         </tbody>

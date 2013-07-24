@@ -21,7 +21,7 @@ function ViewController($scope,$resource,sharedProperties){
     return d.format("dddd, Do MMM YYYY, hh:mm:ss");
   };
   //Sketch
-  $scope.sketchId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
+  $scope.sketchModelId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
   $scope.version = "";  //Placeholder value for version (identifies version of sketch - starts at "1" unless existing sketch is loaded).
   $scope.fileData = "";  //Placeholder value for fileData (saved data)
   $scope.fileName = "";  //Placeholder value for fileName (name file is saved under)
@@ -37,7 +37,13 @@ function ViewController($scope,$resource,sharedProperties){
   $scope.query = function(item) {
       return !!((item.data.fileName.indexOf($scope.search || '') !== -1 || item.data.owner.indexOf($scope.search || '') !== -1));
   };
-
+  
+  //Original Sketch Filter
+  $scope.isoriginal = function(item) {
+    return ((item.data.originalSketch === item.data.sketchId)
+            && (item.data.originalVersion === item.data.version));
+  }
+  
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
   $scope.remote_url = sharedProperties.getBackendUrl();
@@ -59,7 +65,6 @@ function ViewController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";          
     $scope.UserResource.get(function(response) {
           var result = response;
-          $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
             $scope.get_notification();            
@@ -71,7 +76,7 @@ function ViewController($scope,$resource,sharedProperties){
   }
   
   $scope.item = {};
-	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"", "p_view": true, "p_edit": true, "p_comment": true}; 
+	$scope.item.data = {"sketchId":"", "version":"", "originalSketch":"","originalVersion":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"", "p_view": true, "p_edit": true, "p_comment": true}; 
           
     
   $scope.setTest = function(test) {
@@ -104,10 +109,11 @@ function ViewController($scope,$resource,sharedProperties){
         if (check !== "no") {
           $scope.item = response;
           $scope.fileData = $scope.item.data.fileData;
-          $scope.sketchId = $scope.item.id;
+          $scope.sketchModelId = $scope.item.id;
           loadKSketchFile($scope.fileData);
           if (check === "yes") {
             $scope.getComments();
+            $scope.getLikes();
           } else if (check === "version"){
             $scope.waiting = "Error";
             $scope.heading = "Hmm...";
@@ -205,10 +211,10 @@ function ViewController($scope,$resource,sharedProperties){
   };
 
   $scope.comment = {};
-	$scope.comment.data = {"sketchId":$scope.sketchId, "content":"", "replyToId":-1};    
+	$scope.comment.data = {"sketchModelId":$scope.sketchModelId, "content":"", "replyToId":-1};    
   
   $scope.addComment = function() {
-    $scope.comment.data.sketchId = $scope.sketchId;
+    $scope.comment.data.sketchModelId = $scope.sketchModelId;
     if ($scope.comment.data.content.length > 0) {
       $scope.AddCommentResource = $resource('http://:remote_url/add/comment', 
                     {"remote_url":$scope.remote_url}, 
@@ -217,7 +223,7 @@ function ViewController($scope,$resource,sharedProperties){
       var add_comment = new $scope.AddCommentResource($scope.comment.data);
       add_comment.$save(function(response) { 
               var result = response;
-              $scope.comment.data = {"sketchId":$scope.sketchId, "content":"", "replyToId":-1};    
+              $scope.comment.data = {"sketchModelId":$scope.sketchModelId, "content":"", "replyToId":-1};    
               if (result.status === 'success') {
                 $scope.waiting = "Error";
                 $scope.heading = "Success!";
@@ -235,14 +241,52 @@ function ViewController($scope,$resource,sharedProperties){
   
   $scope.getComments = function() {
      $scope.GetCommentResource = $resource('http://:remote_url/get/comment/:model_id', 
-             {"remote_url":$scope.remote_url,"model_id":$scope.sketchId}, 
+             {"remote_url":$scope.remote_url,"model_id":$scope.sketchModelId}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
     $scope.waiting = "Loading";   
     $scope.GetCommentResource.get(function(response) { 
         $scope.comments = response;           
         $scope.waiting = "Ready";
      });               
-  } 
+  }
+
+  $scope.like = {};
+	$scope.like.data = {"sketchModelId":$scope.sketchModelId};    
+  
+  $scope.toggleLike = function() {
+    $scope.like.data.sketchModelId = $scope.sketchModelId;
+    $scope.ToggleLikeResource = $resource('http://:remote_url/toggle/like', 
+                  {"remote_url":$scope.remote_url}, 
+                  {'save': { method: 'POST',    params: {} }});
+    $scope.waiting = "Loading";   
+    var toggle_like = new $scope.ToggleLikeResource($scope.like.data);
+    toggle_like.$save(function(response) { 
+            var result = response;
+            $scope.like.data = {"sketchModelId":$scope.sketchModelId};  
+            if (result.status === 'success') {
+              $scope.waiting = "Error";
+              $scope.heading = "Success!";
+              $scope.message = result.message;
+            } else {
+              $scope.waiting = "Error";
+              $scope.heading = "Oops...!"
+              $scope.message = result.message;
+              $scope.submessage = result.submessage;
+            }                 
+            $scope.getLikes();
+          });      
+  }
+  
+  $scope.getLikes = function() {
+     $scope.GetLikeResource = $resource('http://:remote_url/get/like/:model_id', 
+             {"remote_url":$scope.remote_url,"model_id":$scope.sketchModelId}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.waiting = "Loading";   
+    $scope.GetLikeResource.get(function(response) { 
+        $scope.likes = response;           
+        $scope.waiting = "Ready";
+     });               
+  }  
   
   $scope.simpleSearch = function() {
     if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {

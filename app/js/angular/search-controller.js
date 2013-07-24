@@ -46,7 +46,6 @@ function SearchController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";       
     $scope.UserResource.get(function(response) {
           var result = response;
-          $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
             $scope.get_notification();            

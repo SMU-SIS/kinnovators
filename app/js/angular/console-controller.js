@@ -23,8 +23,8 @@ function ConsoleController($scope,$resource,sharedProperties){
   $scope.searchUser = "";
   $scope.selecteduser = "";
   $scope.usersfound = "";
+  $scope.test = "-";
   
-  $scope.derp = "derp";
   $scope.newgroup = {};
   $scope.newgroup.data = {"group_name":"", "user_id":""};
   
@@ -36,10 +36,12 @@ function ConsoleController($scope,$resource,sharedProperties){
 
   //Original Sketch Filter
   $scope.isoriginal = function(files) {
-    return (files.data.original === 'original');
+    return ((files.data.originalSketch === files.data.sketchId)
+            && (files.data.originalVersion === files.data.version));
   }
   $scope.isnotoriginal = function(files) {
-    return (files.data.original !== 'original');
+    return ((files.data.originalSketch != files.data.sketchId)
+            || (files.data.originalVersion != files.data.version));
   }
 
   //Replace this url with your final URL from the SingPath API path. 
@@ -227,9 +229,38 @@ function ConsoleController($scope,$resource,sharedProperties){
     $scope.waiting = "Updating";
     $scope.ListResource.get(function(response) { 
         $scope.items = response;
-        $scope.waiting = "Ready";
      });  
+  };  
+  
+  $scope.delete_sketch = function(id) {
+    var confirm_delete = confirm('Are you sure you want to delete this sketch?');
+    if (confirm_delete == true){
+      $scope.DeleteSketchResource = $resource('http://:remote_url/delete/sketch/:model_id',
+      {"remote_url":$scope.remote_url,"model_id":id}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+      $scope.waiting = "Deleting";
+      $scope.DeleteSketchResource.remove(function(response) { 
+        var check = response.status
+        $scope.list();
+        if (check === 'error') {
+            $scope.waiting = "Error";
+            $scope.heading = "Oops!";
+            $scope.message = "Error in deleting sketch.";
+            $scope.submessage = "Please try again later.";         
+        } else {
+            $scope.waiting = "Error";
+            $scope.heading = "Sketch Deleted";
+            $scope.message = "You have successfully deleted the sketch.";     
+        }
+      });  
+    }
   };
   
+  $scope.acknowledge = function() {
+    $scope.waiting = "Ready";
+    $scope.heading = "";
+    $scope.message = "";
+    $scope.submessage = "";
+  }
   $scope.getuser();
 }

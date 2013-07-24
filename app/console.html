@@ -59,6 +59,16 @@
       function edit_sketch(id, version){
         sg_upload = window.open("/app/sketch.html?id=" + id + "&version=" + version, "_blank"); 
         sg_upload.focus();
+      }     
+      
+      function delete_sketch(id) {
+        if (parseInt(id) !== 'NaN') {
+          e = document.getElementById('testdiv');
+          scope = angular.element(e).scope();
+          scope.$apply(function() {
+              scope.delete_sketch(id);
+          });
+        }
       }    
     </script>
   </head>
@@ -75,6 +85,11 @@
     <div class="modal" id="Loading" ui-if="waiting=='Saving'" ng-cloak>
       <div class="modal-body">
         <span>Saving........</span>
+      </div>
+    </div>
+    <div class="modal" id="Loading" ui-if="waiting=='Deleting'" ng-cloak>
+      <div class="modal-body">
+        <span>Deleting........</span>
       </div>
     </div>
     <div class="modal" id="Message" ui-if="waiting=='Error'" ng-cloak>
@@ -128,9 +143,8 @@
     
     <!-- Main Body -->
     <div class="container-fluid">
-
       <div class="row-fluid" id="mainbody">
-        
+      
         <!-- Navigation Sidebar (Access separate panes). -->
         <div class="span2">
           <div class="well sidebar-nav sidebar-nav-fixed">
@@ -148,6 +162,7 @@
         <!-- Main Body -->
         <div class="span10">
             
+            <span id="testdiv" ng-model="test"></span>
             <!-- Panes -->
             <div class="tab-content" id="main-tabs" ng-cloak ng-show="User.u_isadmin">
               
@@ -666,15 +681,24 @@
                             </td>                          
                             <td>{{files.data.sketchId}}</td>
                             <td>{{files.data.version}}</td>
-                            <td>{{files.data.original}}</td>
+                            <td>
+                              <div ng-show="!isoriginal(files)">
+                                <hr/>
+                                <span style="font-weight:bold">Created From:</span> 
+                                  <a href="view.html?id={{files.data.originalSketch}}&version={{files.data.originalVersion}}"  title="View this sketch">
+                                    {{files.data.originalName}} (version {{files.data.originalVersion}})
+                                  </a>
+                                <br>
+                              </div>
+                            </td>
                             <td>{{files.data.fileName}}</td>    
                             <td>{{files.data.changeDescription}}</td>
                             <td>{{tzformat(files.created)}}</td>
                             <td>{{files.data.appver.toFixed(1)}}</td>
                             <td>
-                              <a class="btn btn-info btn-small" onclick="view_sketch({{files.data.sketchId}},{{files.data.version}})">View</a>
-                              <a class="btn btn-success btn-small" onclick="edit_sketch({{files.data.sketchId}},{{files.data.version}})">Edit</a>
-                              <a class="btn btn-danger btn-small disabled"><del>Delete</del></a>
+                              <a class="btn btn-info btn-small" onClick="view_sketch({{files.data.sketchId}},{{files.data.version}})">View</a>
+                              <a class="btn btn-success btn-small" onClick="edit_sketch({{files.data.sketchId}},{{files.data.version}})">Edit</a>   
+                              <button class="btn btn-danger btn-small" onClick="delete_sketch({{files.id}})">Delete</button>
                             </td>
                           </tr>
                         </tbody>

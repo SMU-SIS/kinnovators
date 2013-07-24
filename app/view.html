@@ -365,11 +365,13 @@
                 </div>
                 <div class="span4" ng-cloak>
                   <div class="well well-small">
-                    <span style="font-weight:bold">Sketch Name:</span> {{item.data.fileName}}
+                    <!-- <span style="font-weight:bold">Sketch Name:</span> {{item.data.fileName}}
                     <br>
                     <span style="font-weight:bold">Sketch Version:</span> {{item.data.version}}
+                    <br> -->
+                    <span style="font-weight:bold">Sketch Description:</span>
                     <br>
-                    <span style="font-weight:bold">Sketch Description:</span> {{item.data.changeDescription}}    
+                    {{item.data.changeDescription}}    
                     <br>                
                     <hr/>
                     <span style="font-weight:bold">Done By:</span> {{item.data.owner}}
@@ -377,11 +379,42 @@
                     <span style="font-weight:bold">Created On:</span> {{item.created}}
                     <br>
                     <hr/>
-                    <span style="font-weight:bold">Created From:</span> {{item.data.original}}
+                    <span style="font-weight:bold">Groups:</span>
                     <br>
-                    <span style="font-weight:bold">Edited On:</span> {{item.modified}}
+                    <ul ng-repeat="group in item.data.groups">
+                      <li>
+                        <a href="groups.html?id={{group.group_id}}">
+                          {{group.group_name}}
+                        </a> - (Can view
+                                <span ui-if="group.edit">, edit</span>
+                                <span ui-if="group.comment">, comment</span>)
+                      </li>
+                    </ul>
+                    <div ng-show="!isoriginal(item)">
+                      <hr/>
+                      <span style="font-weight:bold">Created From:</span> 
+                        <a href="view.html?id={{item.data.originalSketch}}&version={{item.data.originalVersion}}"  title="View this sketch">
+                          {{item.data.originalName}} (version {{item.data.originalVersion}})
+                        </a>
+                      <br>
+                    </div>
                   </div>
-                  <div>
+                  <div class="well well-small" ng-cloak>
+                    <div ui-if="likes.is_user_like">
+                      You and <span style="font-weight:bold">{{likes.count_other_users}}</span> other user(s) have liked this sketch.
+                    </div>
+                    <div ui-if="!likes.is_user_like">
+                      <span style="font-weight:bold">{{likes.count}}</span> user(s) have liked this sketch.
+                    </div>
+                    <div ui-if="User.u_login">
+                      <button class="btn btn-danger btn-small" ui-if="likes.is_user_like" title="Unlike" ng-click="toggleLike()">Unlike</button>
+                       
+                      <button class="btn btn-success btn-small" ui-if="!likes.is_user_like" title="Llike" ng-click="toggleLike()">Like</button>
+                    </div>
+                    <div ui-if="!User.u_login">
+                      You have to <a class="janrainEngage" href="#">log in</a> to like/unlike this sketch.
+                    </div>
+                    <hr/>
                     <span class='st_facebook_hcount' displayText='Facebook'></span>
                     <span class='st_fblike_hcount' displayText='Facebook Like'></span>
                   </div>

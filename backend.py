@@ -50,7 +50,8 @@ class Sketch(db.Model):
   owner = db.IntegerProperty(required=True)
   fileData = db.TextProperty(required=True)
   thumbnailData = db.TextProperty()
-  original = db.StringProperty(required=True) #might be changed
+  original_sketch = db.IntegerProperty(required=True) #might be changed
+  original_version = db.IntegerProperty(required=True)
   created = db.DateTimeProperty(auto_now_add=True) #The time that the model was created    
   modified = db.DateTimeProperty(auto_now=True)
   appver = db.FloatProperty()
@@ -67,81 +68,92 @@ class Sketch(db.Model):
     try:
       #update ModelCount when adding
       jsonData = json.loads(data)
-      modelCount = ModelCount.get_counter()
-      
-      #For sketch files saved through "Save As"
-      if jsonData['sketchId'] == '':
-        ModelCount.increment_counter()
-        jsonData['sketchId'] = str(modelCount.count)
-      #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
-      if (jsonData['original'] == ':') or (jsonData['original'] == ':-1'):
-        jsonData['original'] = 'original'
-      
-      #update VersionCount when adding  
-      versionCount = VersionCount.get_and_increment_counter(long(jsonData['sketchId']))
+      if jsonData['fileName'].strip() != "":
+        modelCount = ModelCount.get_counter()
         
-      #update AppVersionCount when adding
-      AppVersionCount.increment_counter(float(jsonData['appver']), jsonData['original'])
-      
-      jsonData['version'] = str(versionCount)
-      file = jsonData['fileData']
-      thumbnail = jsonData['thumbnailData']
-      change = jsonData['changeDescription']
-      change = change[:255]
+        #For sketch files saved through "Save As"
+        if jsonData['sketchId'] == "":
+          ModelCount.increment_counter()
+          jsonData['sketchId'] = str(modelCount.count)
+        # #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
         
-      entity = Sketch(sketchId=long(jsonData['sketchId']),
-                      version=long(jsonData['version']),
-                      changeDescription=change,
-                      fileName=jsonData['fileName'],
-                      owner=long(jsonData['owner_id']),
-                      fileData=file,
-                      thumbnailData=thumbnail,
-                      original=jsonData['original'],
-                      appver=float(jsonData['appver']))
-      
-      verify = entity.put()
-      
-      if (verify):
-      
-        permissions_key = Permissions.add(entity.key().id(),
-                                          bool(long(jsonData['p_view'])),
-                                          bool(jsonData['p_edit']),
-                                          bool(jsonData['p_comment']))
-        #Update group permissions when adding
+        #update VersionCount when adding  
+        versionCount = VersionCount.get_and_increment_counter(long(jsonData['sketchId']))
         
-        group_count = 0
-        try:
-          if jsonData['group_permissions']:
-            group_permissions = jsonData['group_permissions']
-            for g_p in group_permissions:
-              group_key = Sketch_Groups.add(entity.key().id(),
-                                            long(g_p['group_id']),
-                                            bool(g_p['g_edit']),
-                                            bool(g_p['g_comment']))
-              if group_key != -1:
-                group_count += 1
-        except:
+        check_original = False
+        if jsonData['originalVersion'] == "":
+          if jsonData['originalSketch'] == "":
+            check_original = True
+            jsonData['originalVersion'] = versionCount
+            jsonData['originalSketch'] = str(modelCount.count)
+        
+        #update AppVersionCount when adding
+        AppVersionCount.increment_counter(float(jsonData['appver']), check_original)
+        
+        jsonData['version'] = str(versionCount)
+        file = jsonData['fileData']
+        thumbnail = jsonData['thumbnailData']
+        change = jsonData['changeDescription']
+        change = change[:255]
+          
+        entity = Sketch(sketchId=long(jsonData['sketchId']),
+                        version=long(jsonData['version']),
+                        changeDescription=change,
+                        fileName=jsonData['fileName'],
+                        owner=long(jsonData['owner_id']),
+                        fileData=file,
+                        thumbnailData=thumbnail,
+                        original_sketch=long(jsonData['originalSketch']),
+                        original_version=long(jsonData['originalVersion']),
+                        appver=float(jsonData['appver']))
+        
+        verify = entity.put()
+        
+        if (verify):
+        
+          permissions_key = Permissions.add(entity.key().id(),
+                                            bool(long(jsonData['p_view'])),
+                                            bool(jsonData['p_edit']),
+                                            bool(jsonData['p_comment']))
+          #Update group permissions when adding
+          
           group_count = 0
-      
-        if (permissions_key != -1):
-          result = {'id': entity.key().id(), 
-                    'status': "success",
-                    'data': jsonData} #this would also check if the json submitted was valid
+          try:
+            if jsonData['group_permissions']:
+              group_permissions = jsonData['group_permissions']
+              for g_p in group_permissions:
+                group_key = Sketch_Groups.add(entity.key().id(),
+                                              long(g_p['group_id']),
+                                              bool(g_p['edit']),
+                                              bool(g_p['comment']))
+                if group_key != -1:
+                  group_count += 1
+          except:
+            group_count = 0
         
+          if (permissions_key != -1):
+            result = {'id': entity.key().id(), 
+                      'status': "success",
+                      'data': jsonData} #this would also check if the json submitted was valid
+          
+          else:
+            #Rollback
+            rollback = Sketch.get_by_id(entity.key.id())
+            if rollback:
+              rollback.delete()
+            result = {'status': "error",
+                     'message': "Save unsuccessful. Please try again."}
+          
         else:
-          #Rollback
-          rollback = Sketch.get_by_id(entity.key.id())
-          if rollback:
-            rollback.delete()
           result = {'status': "error",
-                   'message': "Save unsuccessful. Please try again."}
-        
+                    'message': "Save unsuccessful. Please try again."}
+
       else:
         result = {'status': "error",
                   'message': "Save unsuccessful. Please try again."}
     except:
-      result = {'status': "error",
-                'message': "Save unsuccessful. Please try again."}
+     result = {'status': "error",
+               'message': "Save unsuccessful. Please try again."}
     
     return result
   
@@ -180,7 +192,9 @@ class Sketch(db.Model):
                 'thumbnailData': object.thumbnailData,
                 'owner': user_name,
                 'owner_id': object.owner,
-                'original': object.original,
+                'originalSketch': object.original_sketch,
+                'originalVersion': object.original_version,
+                'originalName': Sketch.get_sketch_name(object.original_sketch,object.original_version),
                 'appver': object.appver,
                 'p_view': 1,
                 'p_edit': bool(permissions['p_edit']),
@@ -226,7 +240,9 @@ class Sketch(db.Model):
                 'thumbnailData': object.thumbnailData,
                 'owner': user_name,
                 'owner_id': object.owner,
-                'original': object.original,
+                'originalSketch': object.original_sketch,
+                'originalVersion': object.original_version,
+                'originalName': Sketch.get_sketch_name(object.original_sketch,object.original_version),
                 'appver': object.appver,
                 'p_view': 1,
                 'p_edit': bool(permissions['p_edit']),
@@ -297,11 +313,15 @@ class Sketch(db.Model):
                     'owner_id': theobject.owner,
                     'fileData': theobject.fileData,
                     'thumbnailData': theobject.thumbnailData,
-                    'original': theobject.original,
+                    'originalSketch': theobject.original_sketch,
+                    'originalVersion': theobject.original_version,
+                    'originalName': Sketch.get_sketch_name(theobject.original_sketch,theobject.original_version),
                     'appver': theobject.appver,
                     'p_view': 1,
                     'p_edit': bool(permissions['p_edit']),
-                    'p_comment': bool(permissions['p_comment'])}
+                    'p_comment': bool(permissions['p_comment']),
+                    'p_public': Permissions.check_permissions(theobject.key().id()),
+                    'groups': Sketch_Groups.get_groups_for_sketch(theobject.key().id())}
               
           result = {'method':'get_entity_by_versioning',
                       'success':"yes",
@@ -339,11 +359,11 @@ class Sketch(db.Model):
     en_type = "Welp"
     for g_s in group_sketches:
       en_type = "Sketch"
-      sketch_id = long(g_s['sketch_id'])
-      permissions = Permissions.user_access_control(sketch_id)
+      sketch_model_id = long(g_s['sketch_model_id'])
+      permissions = Permissions.user_access_control(sketch_model_id, userid)
       #if permissions['p_view']:
       en_type = en_type + "h"
-      theobject = Sketch.get_by_id(sketch_id)
+      theobject = Sketch.get_by_id(sketch_model_id)
       user_name = User.get_name(theobject.owner)
       data = {'sketchId': theobject.sketchId,
                 'version': theobject.version,
@@ -352,7 +372,9 @@ class Sketch(db.Model):
                 'owner': user_name,
                 'owner_id': theobject.owner,
                 'thumbnailData': theobject.thumbnailData,
-                'original': theobject.original,
+                'originalSketch': theobject.original_sketch,
+                'originalVersion': theobject.original_version,
+                'originalName': Sketch.get_sketch_name(theobject.original_sketch,theobject.original_version),
                 'appver': theobject.appver,
                 'p_view': 1,
                 'p_edit': bool(permissions['p_edit']),
@@ -385,6 +407,17 @@ class Sketch(db.Model):
     return is_owner
     
   @staticmethod
+  def get_sketch_name(sketchId=-1,version=-1):
+    try:
+      object = Sketch.all().filter('sketchId =', long(sketchId)).filter('version =', long(version)).get()
+      if object:
+        return object.fileName
+      else:
+        return "N/A"
+    except:
+      return "N/A"
+    
+  @staticmethod
   def clear():
     #update model count when clearing model on api
     count = 0
@@ -400,31 +433,68 @@ class Sketch(db.Model):
   
   #You can't name it delete since db.Model already has a delete method
   @staticmethod
-  def remove(model_id):
-    #update model count when deleting
-    entity = Sketch.get_by_id(long(model_id))
-    
-    if entity:
+  def remove(sketch_model_id, user_id):
+    #Only the sketch owner or an admin may delete the sketch
+    can_delete = False
+    is_admin = User.check_if_admin(user_id)
+    is_owner = Sketch.check_if_owner(long(sketch_model_id), user_id)
+    if is_owner:
+      can_delete = True
+    elif is_admin:
+      can_delete = True
+      
+    if can_delete:
+      entity = Sketch.get_by_id(long(sketch_model_id))
+      
+      if entity:
+        appver = entity.appver
+        fileName = entity.fileName
+        owner = entity.owner
+        check_original = False
+        if entity.sketchId == entity.original_sketch:
+          if entity.version == entity.original_version:
+            check_original = True
+            
         entity.delete()
-    
-        result = {'method':'delete_model_success',
-                  'id': model_id
-                  }
-    else:
-        result = {'method':'delete_model_not_found'}
+        AppVersionCount.decrement_counter(appver, check_original)
+        Comment.delete_by_sketch(long(sketch_model_id))
+        Permissions.delete_by_sketch(long(sketch_model_id))
+        Sketch_Groups.delete_by_sketch(long(sketch_model_id))
+        Like.delete_by_sketch(long(sketch_model_id))
         
-    modelCount = ModelCount.all().filter('en_type','Sketch').get()
-    if modelCount:
-        modelCount.count -= 1
-        modelCount.put()
+        if is_admin and not is_owner:
+          
+          notify = Notification(user_id = owner,
+                                notification_type = "ADMINDELETE",
+                                other_user = 0,
+                                other_info = fileName,
+                                relevant_id = 0)
+                                
+          notify.put()
+          
+        
+    
+        result = {'method':'remove',
+                  'id': sketch_model_id,
+                  'status': 'success'
+                    }
+      else:
+          result = {'method':'remove',
+                    'id': sketch_model_id,
+                    'status': 'error'}
+          
+    else:
+      result = {'method':'remove',
+                    'id': sketch_model_id,
+                    'status': 'error'}
     
     return result
 
   #data is a dictionary that must be merged with current json data and stored. 
   @staticmethod
-  def edit_entity(model_id, data):
+  def edit_entity(sketch_model_id, data):
     jsonData = json.loads(data)
-    entity = Sketch.get_by_id(long(model_id))
+    entity = Sketch.get_by_id(long(sketch_model_id))
     
     if jsonData['sketchId']!='':
       entity.sketchId=long(jsonData['sketchId'])
@@ -440,8 +510,10 @@ class Sketch(db.Model):
       entity.fileData=jsonData['fileData']
     if jsonData['thumbnail']!='':
       entity.thumbnailData=jsonData['thumbnail']
-    if jsonData['original']!='':
-      entity.original=jsonData['original']
+    if jsonData['originalSketch']!='':
+      entity.original_sketch=long(jsonData['originalSketch'])
+    if jsonData['originalVersion']!='':
+      entity.original_version=long(jsonData['originalVersion'])
     if jsonData['appver']!='':
       entity.appver=float(jsonData['appver'])
     entity.put()
@@ -512,19 +584,29 @@ class AppVersionCount(db.Model):
        return d
   
   @staticmethod  
-  def increment_counter(app_version = -1, original = "original"):
+  def increment_counter(app_version = -1, original = True):
     appVersionCount = AppVersionCount.all().filter('app_version', float(app_version)).get()
     if appVersionCount:
       appVersionCount.sketch_count += 1
-      if original == 'original':
+      if original:
         appVersionCount.original_count += 1
       appVersionCount.put()
     else:
-      if original == 'original':
+      if original:
         appVersionCount = AppVersionCount(app_version=float(app_version), sketch_count = 1, original_count = 1)
       else:
         appVersionCount = AppVersionCount(app_version=float(app_version), sketch_count = 1, original_count = 0)
-      appVersionCount.put()    
+      appVersionCount.put()
+      
+  
+  @staticmethod  
+  def decrement_counter(app_version = -1, original = True):
+    appVersionCount = AppVersionCount.all().filter('app_version', float(app_version)).get()
+    if appVersionCount:
+      appVersionCount.sketch_count -= 1
+      if original:
+        appVersionCount.original_count -= 1
+      appVersionCount.put()
   
   @staticmethod
   def retrieve_by_version():
@@ -565,7 +647,7 @@ class AppVersionCount(db.Model):
     return result
   
 class Comment(db.Model):
-  sketch_id = db.IntegerProperty(required=True)
+  sketch_model_id = db.IntegerProperty(required=True)
   user_id = db.IntegerProperty(required=True)
   content = db.StringProperty(required=True)
   reply_to_id = db.IntegerProperty()
@@ -584,9 +666,9 @@ class Comment(db.Model):
     jsonData = json.loads(data)
     
     #For sketch files saved through "Save As"
-    if jsonData['sketchId'] != '' and user_id != -1:
+    if jsonData['sketchModelId'] != '' and user_id != -1:
       #Check Permissions
-      permissions = Permissions.user_access_control(long(jsonData['sketchId']), long(user_id))
+      permissions = Permissions.user_access_control(long(jsonData['sketchModelId']), long(user_id))
         
       if bool(permissions['p_comment']):
         #Placeholder for reply
@@ -594,7 +676,7 @@ class Comment(db.Model):
         contentData = jsonData['content']
         contentData = contentData[:255]
           
-        entity = Comment(sketch_id=long(jsonData['sketchId']),
+        entity = Comment(sketch_model_id=long(jsonData['sketchModelId']),
                         user_id=long(user_id),
                         content=contentData,
                         reply_to_id=long(jsonData['replyToId']))
@@ -626,8 +708,8 @@ class Comment(db.Model):
 
     entities = []
     for object in objects:
-      if long(model_id) == object.sketch_id:
-        data = {'sketchId': object.sketch_id,
+      if long(model_id) == object.sketch_model_id:
+        data = {'sketchModelId': object.sketch_model_id,
                 'user_id': object.user_id,
                 'user_name': User.get_name(long(object.user_id)),
                 'g_hash': User.get_image(long(object.user_id)),
@@ -645,10 +727,24 @@ class Comment(db.Model):
               'count': len(entities),
               'entities': entities}
     return result
+    
+  @staticmethod  
+  def delete_by_sketch(sketch_model_id):
+    theQuery = Comment.all()
+    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    objects = theQuery.run()
+    count = 0
+    for object in objects:
+      object.delete()
+      count += 1
+    result = {'method':'delete_by_sketch',
+              'en_type': 'Comment',
+              'sketchModelId': sketch_model_id,
+              'count': count}
+    return result
       
-  
 class Permissions(db.Model):
-  sketch_id = db.IntegerProperty(required=True)
+  sketch_model_id = db.IntegerProperty(required=True)
   view = db.BooleanProperty(required=True)
   edit = db.BooleanProperty(required=True)
   comment = db.BooleanProperty(required=True)
@@ -662,7 +758,7 @@ class Permissions(db.Model):
   def add(s_id, p_view, p_edit, p_comment):
     p_key = -1
     try:
-      entity = Permissions(sketch_id = long(s_id),
+      entity = Permissions(sketch_model_id = long(s_id),
                           view = bool(p_view),
                           edit = bool(p_edit),
                           comment = bool(p_comment))
@@ -678,7 +774,7 @@ class Permissions(db.Model):
               'p_edit':False,
               'p_comment':False}
               
-    permissions = Permissions.all().filter('sketch_id', sketch_id).get()
+    permissions = Permissions.all().filter('sketch_model_id', sketch_id).get()
     if permissions:
       result = {'p_view':permissions.view,
                 'p_edit':permissions.edit,
@@ -686,7 +782,7 @@ class Permissions(db.Model):
     return result
     
   @staticmethod
-  def user_access_control(sketch_id = 0, user_id = 0):
+  def user_access_control(sketch_model_id = 0, user_id = 0):
     permissions = {'p_view':False,
                     'p_edit':False,
                     'p_comment':False}
@@ -696,16 +792,16 @@ class Permissions(db.Model):
                     'p_edit':True,
                     'p_comment':True}
     #Check if Owner - if true, grant FULL access
-    elif Sketch.check_if_owner(long(sketch_id), user_id):
+    elif Sketch.check_if_owner(long(sketch_model_id), user_id):
       permissions = {'p_view':True,
                     'p_edit':True,
                     'p_comment':True}
     else:
       #Retrieve public permissions
-      permissions = Permissions.check_permissions(long(sketch_id))
+      permissions = Permissions.check_permissions(long(sketch_model_id))
       
       #Retrieve group permissions
-      group_permissions = Sketch_Groups.get_groups_for_sketch(long(sketch_id))
+      group_permissions = Sketch_Groups.get_groups_for_sketch(long(sketch_model_id))
       user_groups = UserGroupMgmt.get_memberships(user_id)
       user_group_permissions = []
       for u_g in user_groups:
@@ -723,9 +819,21 @@ class Permissions(db.Model):
         if permissions['p_edit'] and permissions['p_comment']:
           break
     return permissions
-  
+    
+  @staticmethod  
+  def delete_by_sketch(sketch_model_id):
+    theQuery = Permissions.all()
+    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    theobject = theQuery.get()
+    if theobject:
+      theobject.delete()
+    result = {'method':'delete_by_sketch',
+              'en_type': 'Permissions',
+              'sketchModelId': sketch_model_id}
+    return result 
+    
 class Sketch_Groups(db.Model):
-  sketch_id = db.IntegerProperty(required=True)
+  sketch_model_id = db.IntegerProperty(required=True)
   group_id = db.IntegerProperty(required=True)
   edit = db.BooleanProperty(required=True)
   comment = db.BooleanProperty(required=True)
@@ -742,7 +850,7 @@ class Sketch_Groups(db.Model):
   def add(s_id, g_id, g_edit, g_comment):
     g_key = -1
     try:
-      entity = Sketch_Groups(sketch_id = long(s_id),
+      entity = Sketch_Groups(sketch_model_id = long(s_id),
                           group_id = long(g_id),
                           edit = bool(g_edit),
                           comment = bool(g_comment))
@@ -753,16 +861,17 @@ class Sketch_Groups(db.Model):
     return g_key
   
   @staticmethod
-  def get_groups_for_sketch(sketch_id=0):
+  def get_groups_for_sketch(sketch_model_id=0):
     theQuery = Sketch_Groups.all()
     objects = theQuery.run()
     
     entities = []
     for object in objects:
-      if object.sketch_id == sketch_id:
+      if object.sketch_model_id == sketch_model_id:
         data = {'id': object.key().id(),
-                'sketch_id': object.sketch_id,
+                'sketch_model_id': object.sketch_model_id,
                 'group_id': object.group_id,
+                'group_name': Group.get_name(object.group_id),
                 'edit': object.edit,
                 'comment':object.comment}
         entities.append(data)
@@ -777,14 +886,29 @@ class Sketch_Groups(db.Model):
     for object in objects:
       if object.group_id == group_id:
         data = {'id': object.key().id(),
-                'sketch_id': object.sketch_id,
+                'sketch_model_id': object.sketch_model_id,
                 'group_id': object.group_id,
+                'group_name': Group.get_name(object.group_id),
                 'edit': object.edit,
                 'comment':object.comment}
         entities.append(data)
     return entities
     
-  
+  @staticmethod  
+  def delete_by_sketch(sketch_model_id):
+    theQuery = Sketch_Groups.all()
+    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    objects = theQuery.run()
+    count = 0
+    for object in objects:
+      object.delete()
+      count += 1
+    result = {'method':'delete_by_sketch',
+              'en_type': 'Sketch_Groups',
+              'sketchModelId': sketch_model_id,
+              'count': count}
+    return result
+    
 class Group(db.Model):
   group_name = db.StringProperty(required=True)
   group_sketches = db.TextProperty()
@@ -919,8 +1043,6 @@ class Group(db.Model):
         entities.append(data)
     return entities
     
-  
-  
 class UserGroupMgmt(db.Model):
   user_id = db.IntegerProperty(required=True)
   group_id = db.IntegerProperty(required=True)
@@ -1013,12 +1135,12 @@ class UserGroupMgmt(db.Model):
               'message': 'You have successfully ' + jsonData['status'] + 'ed the group invitation.'}
     return result
       
-
 class Notification(db.Model):
   user_id = db.IntegerProperty(required=True)
   notification_date = db.DateTimeProperty(auto_now_add=True)
   notification_type = db.StringProperty()
   other_user = db.IntegerProperty()
+  other_info = db.StringProperty()
   relevant_id = db.IntegerProperty()
 
   def to_dict(self):
@@ -1066,6 +1188,12 @@ class Notification(db.Model):
                   'n_message': o_user + " has rejected your invitation to the group " + relevant + ".",
                   'n_type': object.notification_type,
                   'n_relevant': object.relevant_id}
+        elif object.notification_type == "ADMINDELETE":
+          entity = {'n_date':n_date,
+                  'id': object.key().id(),
+                  'n_message': "An administrator has deleted your sketch '" + object.other_info + "'.",
+                  'n_type': object.notification_type,
+                  'n_relevant': 0}
           entities.append(entity)            
         #Placeholder for other notification types
         count += 1
@@ -1080,7 +1208,105 @@ class Notification(db.Model):
               'retrieved': count}      
     return result
       
+class Like(db.Model):
+  sketch_model_id = db.IntegerProperty(required=True)
+  user_id = db.IntegerProperty(required=True)
+  created = db.DateTimeProperty(auto_now_add=True) #The time that the model was 
   
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d
+       
+  @staticmethod     
+  def like_unlike(data, userid):
+    result = {}
+    try:
+      jsonData = json.loads(data)
+      sketchModelId = long(jsonData['sketchModelId'])
+      permissions = Permissions.user_access_control(sketchModelId, userid)
+      
+      if bool(permissions['p_view']):
+        #Users can only (un)like sketches they can view
+        theQuery = Like.all()
+        theQuery.filter('sketch_model_id =', sketchModelId).filter('user_id =', userid)
+        theobject = theQuery.get()
+        data = {'sketchModelId': sketchModelId,
+                'userid': userid,
+                'action': ""}
+        
+        if theobject is None:
+          #No existing Like by this user for this sketch - new Like
+          newobject = Like(sketch_model_id = sketchModelId,
+                           user_id = long(userid))
+                           
+          newobject.put()
+          data['action'] = "Like"
+        else:
+          #Like by this user for this sketch exists - delete Like
+          theobject.delete()
+          data['action'] = "Dislike"
+          
+        result = {'status': "success",
+                  'data': data}
+      else:
+        result = {'status': "error"}
+    except:
+      result = {'status': "error"}
+    return result
+
+  @staticmethod
+  def check_if_user_likes(sketchModelId = -1, userid = -1):
+    try:
+      theQuery = Like.all()
+      theQuery.filter('sketch_model_id =', long(sketchModelId)).filter('user_id =', long(userid))
+      theobject = theQuery.get()
+      if theobject:
+        return True
+      else:
+        return False
+    except:
+      return False
+      
+  @staticmethod
+  def get_entities_by_id(sketchModelId, userid = 0):
+    utc = UTC()
+    theQuery = Like.all()
+    objects = theQuery.run()
+    
+    entities = []
+    for object in objects:
+      if object.sketch_model_id == long(sketchModelId):
+        data = {'id': object.key().id(),
+                'sketch_model_id': object.sketch_model_id,
+                'user_id': object.user_id,
+                'user_name': User.get_name(object.user_id),
+                'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S")}
+        entities.append(data)
+      
+    result = {'method':'get_entities_by_id',
+              'en_type': 'Like',
+              'is_user_like': Like.check_if_user_likes(sketchModelId, userid),
+              'count': len(entities),
+              'count_other_users': (len(entities) - 1),
+              'entities': entities}
+    return result
+        
+  @staticmethod  
+  def delete_by_sketch(sketch_model_id):
+    theQuery = Like.all()
+    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    objects = theQuery.run()
+    count = 0
+    for object in objects:
+      object.delete()
+      count += 1
+    result = {'method':'delete_by_sketch',
+              'en_type': 'Like',
+              'sketchModelId': sketch_model_id,
+              'count': count}
+    return result
+    
 class ActionHandler(webapp2.RequestHandler):
     """Class which handles bootstrap procedure and seeds the necessary
     entities in the datastore.
@@ -1161,8 +1387,17 @@ class ActionHandler(webapp2.RequestHandler):
           
           return self.respond(result)
 
-    def delete_sketch(self, model_id):
-        result = Sketch.remove(model_id)
+    def delete_sketch(self, model_id):  #/delete/sketch/<model_id>
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        auser = self.auth.get_user_by_session()
+        userid = 0
+        if auser:
+          userid = auser['user_id']
+        result = Sketch.remove(model_id, userid)
         
         return self.respond(result)
           
@@ -1173,7 +1408,7 @@ class ActionHandler(webapp2.RequestHandler):
         logging.info("**********************")
 
         auser = self.auth.get_user_by_session()
-        userid = ""
+        userid = 0
         if auser:
           userid = auser['user_id']
           
@@ -1187,7 +1422,7 @@ class ActionHandler(webapp2.RequestHandler):
         logging.info("**********************")
 
         auser = self.auth.get_user_by_session()
-        userid = ""
+        userid = 0
         if auser:
           userid = auser['user_id']
           
@@ -1206,7 +1441,7 @@ class ActionHandler(webapp2.RequestHandler):
           offset = int(new_offset)
 
         auser = self.auth.get_user_by_session()
-        userid = ""
+        userid = 0
         if auser:
           userid = auser['user_id']
 
@@ -1225,7 +1460,7 @@ class ActionHandler(webapp2.RequestHandler):
           offset = int(new_offset)
 
         auser = self.auth.get_user_by_session()
-        userid = ""
+        userid = 0
         if auser:
           userid = auser['user_id']
           
@@ -1239,7 +1474,7 @@ class ActionHandler(webapp2.RequestHandler):
         logging.info("**********************")
 
         auser = self.auth.get_user_by_session()
-        userid = ""
+        userid = 0
         if auser:
           userid = auser['user_id']
         
@@ -1253,7 +1488,7 @@ class ActionHandler(webapp2.RequestHandler):
         logging.info("**********************")
 
         auser = self.auth.get_user_by_session()
-        userid = ""
+        userid = 0
         if auser:
           userid = auser['user_id']
         
@@ -1397,6 +1632,41 @@ class ActionHandler(webapp2.RequestHandler):
 
         result = Comment.get_entities_by_id(model_id)
         return self.respond(result) 
+          
+    def toggle_like(self):
+        logging.info(self.request.method)
+        auser = self.auth.get_user_by_session()
+        result = {'status':'error',
+              'message':'There was an error in liking/unliking the sketch.',
+              'submessage':'Please try again later.'}    
+        if auser:
+          userid = auser['user_id']
+          if self.request.method=="POST":
+            logging.info("in POST")
+            logging.info(self.request.body)
+            result = Like.like_unlike(self.request.body, userid)
+      
+          else:
+            data = self.request.get("obj")
+            if data: 
+              logging.info("Adding new data: "+data)
+              result = Like.like_unlike(data, userid)
+        return self.respond(result)        
+        
+    def get_like(self, model_id):
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+        
+        auser = self.auth.get_user_by_session()
+        if auser:
+          userid = auser['user_id']
+          result = Like.get_entities_by_id(model_id, userid)
+        else:
+          result = Like.get_entities_by_id(model_id, 0)
+        return self.respond(result)    
+   
         
 webapp2_config = {}
 webapp2_config['webapp2_extras.sessions'] = {
@@ -1405,7 +1675,7 @@ webapp2_config['webapp2_extras.sessions'] = {
 
 application = webapp2.WSGIApplication([
     webapp2.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
-    webapp2.Route('/sketch/<model_id>/delete', handler=ActionHandler, handler_method='delete_sketch'), 
+    webapp2.Route('/delete/sketch/<model_id>', handler=ActionHandler, handler_method='delete_sketch'), 
     webapp2.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'), # Add Sketch
     webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), # List Sketch
     webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'), # List Sketch That Meets <criteria>
@@ -1424,6 +1694,9 @@ application = webapp2.WSGIApplication([
     
     webapp2.Route('/add/comment', handler=ActionHandler, handler_method='add_comment'), # Add Comment
     webapp2.Route('/get/comment/<model_id>', handler=ActionHandler, handler_method='get_comment'), # Get Comment For Sketch
+    
+    webapp2.Route('/toggle/like', handler=ActionHandler, handler_method='toggle_like'), # Add Comment
+    webapp2.Route('/get/like/<model_id>', handler=ActionHandler, handler_method='get_like'), # Get Comment For Sketch
     
     webapp2.Route('/list/version', handler=ActionHandler, handler_method='get_versions') # Get Versions
     ],

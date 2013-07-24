@@ -94,12 +94,6 @@
         } 
         e = document.getElementById('testdiv');
         scope = angular.element(e).scope();
-        //if (query_string.id !== undefined) {
-        //  scope.$apply(function() {
-        //      scope.setTest(query_string.id);
-        //      scope.get_sketch();
-        //  });
-        //}
         if (query_string.id !== undefined) {
           scope.$apply(function() {
               scope.setTest(query_string.id);
@@ -148,7 +142,7 @@
           e = document.getElementById('SaveAsSketch');
           scope = angular.element(e).scope();
           scope.$apply(function() {
-            scope.setMeta("", "", "", "", "");
+            scope.setMeta("", 1, "", "", "");
             scope.setData("");
           });	
 
@@ -475,17 +469,19 @@
                           <div class="controls">
                             
                             <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
-                            <input type="checkbox" ng-model="group_perm.g_edit" ng-disabled="group_data.id === -1"/>Allow Edits
-                            <input type="checkbox" ng-model="group_perm.g_comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
-                            <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button> 
-                            <ul ng-repeat="g_p in permissions.group_permissions">
-                              <li>
-                                {{g_p.group_name}} - (Can view
-                                <span ui-if="g_p.g_edit">, edit</span>
-                                <span ui-if="g_p.g_comment">, comment</span>)
-                                <button ng-click="removegroupperm(g_p)">Remove</button>
-                              </li>
-                            </ul>
+                            <input type="checkbox" ng-model="group_perm.edit" ng-disabled="group_data.id === -1"/>Allow Edits
+                            <input type="checkbox" ng-model="group_perm.comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
+                            <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button>
+                            <div id="group_permissions">
+                              <ul ng-repeat="g_p in permissions.group_permissions">
+                                <li>
+                                  {{g_p.group_name}} - (Can view
+                                  <span ui-if="g_p.edit">, edit</span>
+                                  <span ui-if="g_p.comment">, comment</span>)
+                                  <button ng-click="removegroupperm(g_p)">Remove</button>
+                                </li>
+                              </ul>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -512,7 +508,7 @@
                 </div>
                 <div class="modal-body">
                   <div class="row-fluid">
-                    <div class="span6">
+                    <div class="span5">
                       <div class="control-group">
                         <label class="control-label" for="sketchName">Sketch Name</label>
                         <div class="controls">
@@ -554,14 +550,14 @@
                           <div class="controls">
                             
                             <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
-                            <input type="checkbox" ng-model="group_perm.g_edit" ng-disabled="group_data.id === -1"/>Allow Edits
-                            <input type="checkbox" ng-model="group_perm.g_comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
+                            <input type="checkbox" ng-model="group_perm.edit" ng-disabled="group_data.id === -1"/>Allow Edits
+                            <input type="checkbox" ng-model="group_perm.comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
                             <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button> 
                             <ul ng-repeat="g_p in permissions.group_permissions">
                               <li>
                                 {{g_p.group_name}} - (Can view
-                                <span ui-if="g_p.g_edit">, edit</span>
-                                <span ui-if="g_p.g_comment">, comment</span>)
+                                <span ui-if="g_p.edit">, edit</span>
+                                <span ui-if="g_p.comment">, comment</span>)
                                 <button ng-click="removegroupperm(g_p)">Remove</button>
                               </li>
                             </ul>

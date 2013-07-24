@@ -74,7 +74,6 @@ function ProfileController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";       
     $scope.UserResource.get(function(response) {
           var result = response;
-          $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
             $scope.User.u_created = $scope.tzformat($scope.User.u_created);
@@ -178,7 +177,7 @@ function ProfileController($scope,$resource,sharedProperties){
     $scope.GroupListResource = $resource('http://:remote_url/list/group/:criteria',
     {"remote_url":$scope.remote_url,"criteria":$scope.profile_user.id}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
+    $scope.waiting = "Saving";
     $scope.GroupListResource.get(function(response) { 
         $scope.groups = response;
      });  
@@ -195,7 +194,7 @@ function ProfileController($scope,$resource,sharedProperties){
     $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
     {"remote_url":$scope.remote_url,"limit":3}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
+    $scope.waiting = "Loading";
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
         if ($scope.smallnotifications.entities.length > 0) {
@@ -209,13 +208,36 @@ function ProfileController($scope,$resource,sharedProperties){
     $scope.ListResource = $resource('http://:remote_url/list/sketch/user/:criteria',
     {"remote_url":$scope.remote_url,"criteria":$scope.profile_user.id}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
+    $scope.waiting = "Loading";
     $scope.ListResource.get(function(response) { 
         $scope.items = response;
         $scope.waiting = "Ready";
-     });  
+    });  
   };
   
+  $scope.delete_sketch = function(id) {
+    var confirm_delete = confirm('Are you sure you want to delete this sketch?');
+    if (confirm_delete == true){
+      $scope.DeleteSketchResource = $resource('http://:remote_url/delete/sketch/:model_id',
+      {"remote_url":$scope.remote_url,"model_id":id}, 
+             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+      $scope.waiting = "Deleting";
+      $scope.DeleteSketchResource.remove(function(response) { 
+        var check = response.status
+        $scope.list();
+        if (check === 'error') {
+            $scope.waiting = "Error";
+            $scope.heading = "Oops!";
+            $scope.message = "Error in deleting sketch.";
+            $scope.submessage = "Please try again later.";         
+        } else {
+            $scope.waiting = "Error";
+            $scope.heading = "Sketch Deleted";
+            $scope.message = "You have successfully deleted the sketch.";     
+        }
+      });  
+    }
+  };
   
   $scope.accept = {};
   $scope.accept.data = {'n_id': -1, 'u_g' : -1, 'status': ''};
@@ -239,7 +261,7 @@ function ProfileController($scope,$resource,sharedProperties){
                   {"remote_url":$scope.remote_url}, 
                   {'save': { method: 'POST',    params: {} }});
  
-    $scope.waiting = "Updating";
+    $scope.waiting = "Loading";
     var notify_group = new $scope.NotifyGroupResource($scope.accept.data);
     notify_group.$save(function(response) { 
             var result = response;

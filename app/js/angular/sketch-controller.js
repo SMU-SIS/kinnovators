@@ -64,7 +64,6 @@ function SketchController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";          
     $scope.UserResource.get(function(response) {
           var result = response;
-          $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
             $scope.grouplist();
@@ -77,7 +76,7 @@ function SketchController($scope,$resource,sharedProperties){
   }
   
   $scope.item = {};
-	$scope.item.data = {"sketchId":"", "version":"", "original":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"", "p_view": true, "p_edit": true, "p_comment": true, "group_permissions": []};    
+	$scope.item.data = {"sketchId":"", "version":"", "originalSketch":"","originalVersion":"", "owner":"", "owner_id":"", "fileName":"", "fileData":"", "changeDescription":"", "appver":"", "p_view": true, "p_edit": true, "p_comment": true, "group_permissions": []};    
   
 	$scope.saveAs = function() { //Saving new file
 	   	
@@ -85,7 +84,8 @@ function SketchController($scope,$resource,sharedProperties){
 		
 		$scope.item.data.sketchId = "";			
 		
-		$scope.item.data.original = $scope.sketchId + ":" + $scope.version;
+		$scope.item.data.originalSketch = $scope.sketchId;
+		$scope.item.data.originalVersion = $scope.version;
 		
 		$scope.item.data.owner = $scope.User.u_name;
     $scope.item.data.owner_id = $scope.User.id;
@@ -110,7 +110,9 @@ function SketchController($scope,$resource,sharedProperties){
 		$scope.fileData = $scope.fileData.replace(/(\r\n|\n|\r)/gm," ");
 		
 		$scope.item.data.sketchId = $scope.sketchId;
-		$scope.item.data.original = $scope.sketchId + ":" + $scope.version; 
+		
+		$scope.item.data.originalSketch = $scope.sketchId;
+		$scope.item.data.originalVersion = $scope.version;
 		$scope.item.data.owner = $scope.User.u_name;
     $scope.item.data.owner_id = $scope.User.id;
 		$scope.item.data.fileName = $scope.fileName;
@@ -142,7 +144,7 @@ function SketchController($scope,$resource,sharedProperties){
 
   $scope.permissions = {"p_view": 1, "p_edit": false, "p_comment": false, "group_permissions": []};
   $scope.group_data = {"id":-1,"data":""};
-  $scope.group_perm = {"group_id": -1, "group_name": "", "g_edit": false, "g_comment": false};
+  $scope.group_perm = {"group_id": -1, "group_name": "", "edit": false, "comment": false};
   
   $scope.changePermissions = function(value) {
     if (value = "changePermissions(1)") {
@@ -155,7 +157,7 @@ function SketchController($scope,$resource,sharedProperties){
     $scope.group_perm.group_name = $scope.group_data.data.group_name;
     $scope.permissions.group_permissions.push($scope.group_perm);
     $scope.group_data = {"id":-1,"data":""};
-    $scope.group_perm = {"group_id": -1, "group_name": "", "g_edit": false, "g_comment": false};
+    $scope.group_perm = {"group_id": -1, "group_name": "", "edit": false, "comment": false};
   }
 	
   $scope.removegroupperm = function(id) {
@@ -247,7 +249,7 @@ function SketchController($scope,$resource,sharedProperties){
         if (check !== "no") {
           var rsketch = response.data;
           $scope.setMeta(rsketch.sketchId, rsketch.version, rsketch.owner, rsketch.owner_id, rsketch.fileName);
-          $scope.setPermissions(rsketch.p_view, rsketch.p_edit, rsketch.p_comment, rsketch.group_permissions);
+          $scope.setPermissions(rsketch.p_public.p_view, rsketch.p_public.p_edit, rsketch.p_public.p_comment, rsketch.groups);
           $scope.fileData = rsketch.fileData;
           $scope.thumbnailData = rsketch.thumbnailData;
           loadKSketchFile($scope.fileData);
