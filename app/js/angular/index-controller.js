@@ -3,7 +3,7 @@
 /* Controller for index.html */
 
 //angular.module('app', ['ngResource']);
-function IndexController($scope,$resource,sharedProperties){
+function IndexController($scope,$resource,sharedProperties, sharedFunctions){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
   
@@ -49,8 +49,8 @@ function IndexController($scope,$resource,sharedProperties){
             $scope.get_notification();            
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+            $scope.waiting = "Ready";
           }
-          $scope.waiting = "Ready";
     });
   }
   
@@ -64,8 +64,10 @@ function IndexController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";   
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
-        if ($scope.smallnotifications.entities.length > 0) {
-          $scope.notify = "You have pending notification(s).";
+        if ($scope.smallnotifications.entities !== undefined) {
+          if ($scope.smallnotifications.entities.length > 0) {
+            $scope.notify = "You have pending notification(s).";
+          }
         }
         $scope.waiting = "Ready";
      });  
@@ -120,12 +122,10 @@ function IndexController($scope,$resource,sharedProperties){
     $scope.heading = "";
     $scope.message = "";
     $scope.submessage = "";
-  }  
+  }
+  
   $scope.simpleSearch = function() {
-    if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
-      var searchUrl = "search.html?query=" + $scope.search.replace(/^\s+|\s+$/g,'');
-      window.location.href=searchUrl;
-    }
+    sharedFunctions.simpleSearch($scope.search);
   }
   
   $scope.getuser();

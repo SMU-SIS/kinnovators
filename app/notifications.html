@@ -98,7 +98,7 @@
         <div class="container-fluid" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
-          <ul class="nav">
+          <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -177,7 +177,6 @@
               
               <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
               <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->

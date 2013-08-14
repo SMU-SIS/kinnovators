@@ -250,7 +250,7 @@
         <div class="container-fluid" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
-          <ul class="nav">
+          <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -330,7 +330,6 @@
               
               <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
               <li id="cs" class="active"><a>Create a Sketch</a></li>
-              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
               <li class="nav-header"></li>
               <li>
                 <span style="font-weight:bold">Note: To save your file, please use the black buttons on the top-right corner of the editor. The save/load icons within the editor do not work.</span>
@@ -359,7 +358,7 @@
                   <button class="btn btn-inverse btn-small" ng-show="fileName==''" disabled ng-cloak>Save</button> 
                   <button class="btn btn-inverse btn-small" title="Saves a new version of current sketch" onclick="initSave()" data-toggle="modal" href="#SaveSketch" ng-hide="fileName==''"  ng-cloak>Save</button> 
                   <button class="btn btn-inverse btn-small" title="Saves current sketch as a new sketch" onclick="initSave()" data-toggle="modal" href="#SaveAsSketch">Save As</button>
-                  <button class="btn btn-inverse btn-small" title="Reverts to saved version of sketch" ng-click="reload_sketch()">Revert</button>
+                  <button class="btn btn-inverse btn-small" ng-disabled="item.data.fileData == ''" title="Reverts to saved version of sketch" ng-click="reload_sketch()">Revert</button>
                   <button class="btn btn-info btn-small" title="How to use the K-Sketch editor" data-toggle="modal" href="#HelpSketch">Help</button>
                 </div>
                 <div class="span2" >
@@ -434,9 +433,11 @@
                           <input type="text" ng-model="tempFileName" id="sketchName"/>
                         </div>
                         <div class="controls">
-                          <img src="data:image/png;base64,{{thumbnailData}}" alt="Red dot" ui-if="!!thumbnailData">
-                          <div class="well well-small" ui-if="!thumbnailData">
-                            <span>No preview available</span>
+                          <div class="well well-small" id="sketchDisplay">
+                            <img src="data:image/png;base64,{{thumbnailData}}" alt="Red dot" ui-if="!!thumbnailData">
+                            <span ui-if="!thumbnailData">
+                              No preview available
+                            </span>
                           </div>
                         </div>
                         <label class="control-label" for="sketchDesc" style="font-weight:bold">Enter a description for this change (optional; max 255 characters)</label>
@@ -450,32 +451,31 @@
                     <div class="span6 offset1" id="permissions" ng-show="User.u_login">
                       <!-- Public -->
                       <div class="well well-small">
-                        <div class="control-group">
-                          <label class="control-label" for="sketchView" style="font-weight:bold">Public Permissions</label>
-                          <label class="control-label">Allow Public Access?</label>
-                          <div class="controls">
-                            <input type="radio" ng-model="permissions.p_view" value="0" ng-change="changePermissions(permissions.p_view)"/>No<br/>
-                            <input type="radio"  ng-model="permissions.p_view" value="1" ng-change="changePermissions(permissions.p_view)"/>Yes
-                            
-                            <input type="checkbox" ng-model="permissions.p_edit" ng-disabled="permissions.p_view != 1"/>Allow Edits
-                            <input type="checkbox" ng-model="permissions.p_comment" ng-disabled="permissions.p_view != 1"/>Allow Comments<br/>
+                        <div id="group_permissions">
+                          <div class="control-group">
+                            <label class="control-label" for="sketchView" style="font-weight:bold">Public Permissions</label>
+                            <label class="control-label">Allow Public Access?</label>
+                            <div class="controls">
+                              <input type="radio" ng-model="permissions.p_view" value="0" ng-change="changePermissions(permissions.p_view)"/>No<br/>
+                              <input type="radio"  ng-model="permissions.p_view" value="1" ng-change="changePermissions(permissions.p_view)"/>Yes
+                              
+                              <input type="checkbox" ng-model="permissions.p_edit" ng-disabled="permissions.p_view != 1"/>Allow Edits
+                              <input type="checkbox" ng-model="permissions.p_comment" ng-disabled="permissions.p_view != 1"/>Allow Comments<br/>
+                            </div>
                           </div>
-                        </div>
-                        <hr/>
-                        <!-- Group -->
-                        <div class="control-group">
-                          <label class="control-label" for="sketchView" style="font-weight:bold">Assign to Group(s)</label>
-                          <label class="control-label">Select a Group that you belong to:</label>
-                          <div class="controls">
-                            
-                            <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
-                            <input type="checkbox" ng-model="group_perm.edit" ng-disabled="group_data.id === -1"/>Allow Edits
-                            <input type="checkbox" ng-model="group_perm.comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
-                            <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button>
-                            <div id="group_permissions">
+                          <hr/>
+                          <!-- Group -->
+                          <div class="control-group">
+                            <label class="control-label" for="sketchView" style="font-weight:bold">Assign to Group(s)</label>
+                            <label class="control-label">Select a Group that you belong to:</label>
+                            <div class="controls">
+                              <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
+                              <input type="checkbox" ng-model="group_data.edit" ng-disabled="!group_data"/>Allow Edits
+                              <input type="checkbox" ng-model="group_data.comment" ng-disabled="!group_data"/>Allow Comments<br/><br/>
+                              <button class="btn btn-small" ng-click="addgroupperm(group_data)">Add Group</button>
                               <ul ng-repeat="g_p in permissions.group_permissions">
                                 <li>
-                                  {{g_p.group_name}} - (Can view
+                                  {{g_p.data.group_name}} - (Can view
                                   <span ui-if="g_p.edit">, edit</span>
                                   <span ui-if="g_p.comment">, comment</span>)
                                   <button ng-click="removegroupperm(g_p)">Remove</button>
@@ -492,7 +492,7 @@
                   <div class="row-fluid">
                     <div class="control-group">
                       <div class="controls">
-                        <input type="submit" ng-click="saveAs()" value="Submit" data-dismiss="modal"/>
+                        <input type="submit" ng-disabled="tempFileName.trim() == ''" ng-click="saveAs()" value="Submit" data-dismiss="modal"/>
                       </div>
                     </div>	        
                   </div>                  
@@ -514,10 +514,12 @@
                         <div class="controls">
                           <span id="sketchName">{{fileName}}</span>
                         </div>
-                        <div class="controls">
-                          <img src="data:image/png;base64,{{thumbnailData}}" alt="Red dot" ui-if="!!thumbnailData">
-                          <div class="well well-small" ui-if="!thumbnailData">
-                            <span>No preview available</span>
+                        <div class="controls">  
+                          <div class="well well-small" id="sketchDisplay">
+                            <img src="data:image/png;base64,{{thumbnailData}}" alt="Red dot" ui-if="!!thumbnailData">
+                            <span ui-if="!thumbnailData">
+                              No preview available
+                            </span>
                           </div>
                         </div>
                         <label class="control-label" for="sketchDesc">Enter a description for this change (optional; max 255 characters)</label>
@@ -531,36 +533,38 @@
                     <div class="span6 offset1" id="permissions" ng-show="User.u_login">
                       <!-- Public -->
                       <div class="well well-small">
-                        <div class="control-group">
-                          <label class="control-label" for="sketchView" style="font-weight:bold">Public Permissions</label>
-                          <label class="control-label">Allow Public Access?</label>
-                          <div class="controls">
-                            <input type="radio" ng-model="permissions.p_view" value="0" ng-change="changePermissions(permissions.p_view)"/>No<br/>
-                            <input type="radio"  ng-model="permissions.p_view" value="1" ng-change="changePermissions(permissions.p_view)"/>Yes
-                            
-                            <input type="checkbox" ng-model="permissions.p_edit" ng-disabled="permissions.p_view != 1"/>Allow Edits
-                            <input type="checkbox" ng-model="permissions.p_comment" ng-disabled="permissions.p_view != 1"/>Allow Comments<br/>
+                        <div id="group_permissions">
+                          <div class="control-group">
+                            <label class="control-label" for="sketchView" style="font-weight:bold">Public Permissions</label>
+                            <label class="control-label">Allow Public Access?</label>
+                            <div class="controls">
+                              <input type="radio" ng-model="permissions.p_view" value="0" ng-change="changePermissions(permissions.p_view)"/>No<br/>
+                              <input type="radio"  ng-model="permissions.p_view" value="1" ng-change="changePermissions(permissions.p_view)"/>Yes
+                              
+                              <input type="checkbox" ng-model="permissions.p_edit" ng-disabled="permissions.p_view != 1"/>Allow Edits
+                              <input type="checkbox" ng-model="permissions.p_comment" ng-disabled="permissions.p_view != 1"/>Allow Comments<br/>
+                            </div>
                           </div>
-                        </div>
-                        <hr/>
-                        <!-- Group -->
-                        <div class="control-group">
-                          <label class="control-label" for="sketchView" style="font-weight:bold">Assign to Group(s)</label>
-                          <label class="control-label">Select a Group that you belong to:</label>
-                          <div class="controls">
-                            
-                            <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
-                            <input type="checkbox" ng-model="group_perm.edit" ng-disabled="group_data.id === -1"/>Allow Edits
-                            <input type="checkbox" ng-model="group_perm.comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
-                            <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button> 
-                            <ul ng-repeat="g_p in permissions.group_permissions">
-                              <li>
-                                {{g_p.group_name}} - (Can view
-                                <span ui-if="g_p.edit">, edit</span>
-                                <span ui-if="g_p.comment">, comment</span>)
-                                <button ng-click="removegroupperm(g_p)">Remove</button>
-                              </li>
-                            </ul>
+                          <hr/>
+                          <!-- Group -->
+                          <div class="control-group">
+                            <label class="control-label" for="sketchView" style="font-weight:bold">Assign to Group(s)</label>
+
+                            <label class="control-label">Select a Group that you belong to:</label>
+                            <div class="controls">
+                              <select ng-model="group_data" ng-options="group as group.data.group_name for group in groups.entities" ng-cloak></select> <br/>
+                              <input type="checkbox" ng-model="group_perm.edit" ng-disabled="group_data.id === -1"/>Allow Edits
+                              <input type="checkbox" ng-model="group_perm.comment" ng-disabled="group_data.id === -1"/>Allow Comments<br/><br/>
+                              <button class="btn btn-small" ng-click="addgroupperm()">Add Group</button> 
+                              <ul ng-repeat="g_p in permissions.group_permissions">
+                                <li>
+                                  {{g_p.group_name}} - (Can view
+                                  <span ui-if="g_p.edit">, edit</span>
+                                  <span ui-if="g_p.comment">, comment</span>)
+                                  <button ng-click="removegroupperm(g_p)">Remove</button>
+                                </li>
+                              </ul>
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -119,8 +119,8 @@
       <div class="navbar-inner">
         <div class="container-fluid" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
-          <a class="brand" id="logo" href=" index.html">K-Sketch</a>
-          <ul class="nav">
+          <a class="brand" id="logo" href=" index.html" title="Return to K-Sketch">K-Sketch</a>
+          <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -133,9 +133,11 @@
               <a href="/user/logout">Logout</a>
             </li>
           </ul>                 
-          <p class="navbar-text pull-right">
-            <a href="/app/console.html"><span style="font-weight:bold">Administrator Console</span></a>
-          </p>
+          <ul class="nav pull-right">
+            <li>
+              <a href="/app/console.html"><span style="font-weight:bold">Administrator Console</span></a>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -691,8 +693,13 @@
                                 <br>
                               </div>
                             </td>
-                            <td>{{files.data.fileName}}</td>    
-                            <td>{{files.data.changeDescription}}</td>
+                            <td>{{files.data.fileName}}</td>                   
+                            <td ui-if="files.data.changeDescription.length > 50" title="{{files.data.changeDescription}}" ng-cloak>
+                              {{files.data.changeDescription.substring(0, 49)}}...
+                            </td>
+                            <td ui-if="files.data.changeDescription.length <= 50" ng-cloak>
+                              {{files.data.changeDescription}}
+                            </td>
                             <td>{{tzformat(files.created)}}</td>
                             <td>{{files.data.appver.toFixed(1)}}</td>
                             <td>

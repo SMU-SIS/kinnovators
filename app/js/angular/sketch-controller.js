@@ -3,7 +3,7 @@
 /* Controller for sketch.html */
 
 //angular.module('app', ['ngResource']);
-function SketchController($scope,$resource,sharedProperties){
+function SketchController($scope,$resource,sharedProperties,sharedFunctions){
 
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
 
@@ -70,8 +70,8 @@ function SketchController($scope,$resource,sharedProperties){
             $scope.get_notification();            
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+            $scope.waiting = "Ready";
           }
-          $scope.waiting = "Ready";
     });
   }
   
@@ -142,9 +142,7 @@ function SketchController($scope,$resource,sharedProperties){
     $scope.waiting = "Ready";
 	}
 
-  $scope.permissions = {"p_view": 1, "p_edit": false, "p_comment": false, "group_permissions": []};
-  $scope.group_data = {"id":-1,"data":""};
-  $scope.group_perm = {"group_id": -1, "group_name": "", "edit": false, "comment": false};
+  $scope.permissions = {"p_view": 1, "p_edit": true, "p_comment": true, "group_permissions": []};
   
   $scope.changePermissions = function(value) {
     if (value = "changePermissions(1)") {
@@ -152,17 +150,18 @@ function SketchController($scope,$resource,sharedProperties){
       $scope.permissions.p_comment = false;
     }
   };
-  $scope.addgroupperm = function() {
-    $scope.group_perm.group_id = $scope.group_data.id;
-    $scope.group_perm.group_name = $scope.group_data.data.group_name;
-    $scope.permissions.group_permissions.push($scope.group_perm);
-    $scope.group_data = {"id":-1,"data":""};
-    $scope.group_perm = {"group_id": -1, "group_name": "", "edit": false, "comment": false};
+  $scope.addgroupperm = function(id) {
+    if (id == undefined) return;
+    var index = $scope.groups.entities.indexOf(id);
+    $scope.groups.entities.splice(index, 1);
+    $scope.permissions.group_permissions.push(id);
+    $scope.group_data = undefined;
   }
 	
   $scope.removegroupperm = function(id) {
     var index = $scope.permissions.group_permissions.indexOf(id);
     $scope.permissions.group_permissions.splice(index, 1);
+    $scope.groups.entities.push(id);
   }
   
   $scope.setPermissions = function(view, edit, comment, group_permissions) {
@@ -209,7 +208,7 @@ function SketchController($scope,$resource,sharedProperties){
   }
   
   $scope.add_sketch = function(){
-    $scope.SaveResource = $resource('http://:remote_url/sketch', 
+    $scope.SaveResource = $resource('http://:remote_url/add/sketch', 
                   {"remote_url":$scope.remote_url}, 
                   {'save': { method: 'POST',    params: {} }});
  
@@ -310,8 +309,10 @@ function SketchController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";   
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
-        if ($scope.smallnotifications.entities.length > 0) {
-          $scope.notify = "You have pending notification(s).";
+        if ($scope.smallnotifications.entities !== undefined) {
+          if ($scope.smallnotifications.entities.length > 0) {
+            $scope.notify = "You have pending notification(s).";
+          }
         }
         $scope.waiting = "Ready";
      });  
@@ -360,15 +361,7 @@ function SketchController($scope,$resource,sharedProperties){
   };
   
   $scope.simpleSearch = function() {
-    if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
-      //var searchAlert = confirm("Warning - Navigating away from this page will remove all your unsaved progress.\n\nDo you wish to continue?");
-      //if (searchAlert === true) {
-        var searchUrl = "search.html?query=" + $scope.search.replace(/^\s+|\s+$/g,'');
-        window.location.href=searchUrl;
-      } else {
-        $scope.search = "";
-      }
-    //}
+    sharedFunctions.simpleSearch($scope.search);
   }
   
   $scope.getStatus = function() {

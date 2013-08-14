@@ -3,7 +3,7 @@
 /* Controller for search.html */
 
 //angular.module('app', ['ngResource']);
-function SearchController($scope,$resource,sharedProperties){
+function SearchController($scope,$resource,sharedProperties, sharedFunctions){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
   
@@ -21,6 +21,9 @@ function SearchController($scope,$resource,sharedProperties){
   };
   
   $scope.search = "";
+  $scope.search_types = [{"name":"Sketch Name", "id": "name"},
+                          {"name":"Sketch Owner", "id": "owner"}]
+  $scope.selected_search = {"name":"Sketch Name", "id": "name"};
   $scope.predicate_users = '-created';
   
   //Replace this url with your final URL from the SingPath API path. 
@@ -51,8 +54,8 @@ function SearchController($scope,$resource,sharedProperties){
             $scope.get_notification();            
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+            $scope.waiting = "Ready";
           }
-          $scope.waiting = "Ready";
     });
   }
 
@@ -67,8 +70,10 @@ function SearchController($scope,$resource,sharedProperties){
     $scope.waiting = "Updating";
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
-        if ($scope.smallnotifications.entities.length > 0) {
-          $scope.notify = "You have pending notification(s).";
+        if ($scope.smallnotifications.entities !== undefined) {
+          if ($scope.smallnotifications.entities.length > 0) {
+            $scope.notify = "You have pending notification(s).";
+          }
         }
         $scope.waiting = "Ready";
      });  

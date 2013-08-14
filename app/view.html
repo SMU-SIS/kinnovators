@@ -211,7 +211,7 @@
         <div class="container-fluid" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
-          <ul class="nav">
+          <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -292,7 +292,6 @@
               
               <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
               <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -364,7 +363,7 @@
                   </div>
                 </div>
                 <div class="span4" ng-cloak>
-                  <div class="well well-small">
+                  <div class="well well-small" ng-cloak>
                     <!-- <span style="font-weight:bold">Sketch Name:</span> {{item.data.fileName}}
                     <br>
                     <span style="font-weight:bold">Sketch Version:</span> {{item.data.version}}
@@ -374,28 +373,35 @@
                     {{item.data.changeDescription}}    
                     <br>                
                     <hr/>
-                    <span style="font-weight:bold">Done By:</span> {{item.data.owner}}
+                    <span style="font-weight:bold">Done By:</span>
+                    <a href="profile.html?id={{item.data.owner_id}}" ui-if="item.data.owner_id != 0">{{item.data.owner}}</a>
+                    <span ui-if="item.data.owner_id == 0">{{item.data.owner}}</span>
                     <br>
                     <span style="font-weight:bold">Created On:</span> {{item.created}}
                     <br>
-                    <hr/>
-                    <span style="font-weight:bold">Groups:</span>
-                    <br>
-                    <ul ng-repeat="group in item.data.groups">
-                      <li>
-                        <a href="groups.html?id={{group.group_id}}">
-                          {{group.group_name}}
-                        </a> - (Can view
-                                <span ui-if="group.edit">, edit</span>
-                                <span ui-if="group.comment">, comment</span>)
-                      </li>
-                    </ul>
+                    <div ui-if="item.data.owner_id != 0">
+                      <hr/>
+                      <span style="font-weight:bold">Groups:</span>
+                      <br>
+                      <ul ng-repeat="group in item.data.groups">
+                        <li>
+                          <a href="groups.html?id={{group.group_id}}">
+                            {{group.group_name}}
+                          </a> - (Can view
+                                  <span ui-if="group.edit">, edit</span>
+                                  <span ui-if="group.comment">, comment</span>)
+                        </li>
+                      </ul>
+                    </div>
                     <div ng-show="!isoriginal(item)">
                       <hr/>
                       <span style="font-weight:bold">Created From:</span> 
-                        <a href="view.html?id={{item.data.originalSketch}}&version={{item.data.originalVersion}}"  title="View this sketch">
+                        <a href="view.html?id={{item.data.originalSketch}}&version={{item.data.originalVersion}}"  title="View this sketch" ui-if="item.data.originalName != 'N/A'">
                           {{item.data.originalName}} (version {{item.data.originalVersion}})
                         </a>
+                        <span ui-if="item.data.originalName == 'N/A'">
+                          The "parent" sketch no longer exists.
+                        </span>
                       <br>
                     </div>
                   </div>

@@ -3,7 +3,7 @@
 /* Controller for profile.html */
 
 //angular.module('app', ['ngResource']);
-function ProfileController($scope,$resource,sharedProperties){
+function ProfileController($scope,$resource,sharedProperties, sharedFunctions){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
   
@@ -23,6 +23,8 @@ function ProfileController($scope,$resource,sharedProperties){
   };
   
   $scope.search = "";
+  $scope.selected_search = "Name";
+  
   $scope.derp = "derp";
   $scope.newgroup = {};
   $scope.newgroup.data = {"group_name":"", "user_id":""};
@@ -93,7 +95,6 @@ function ProfileController($scope,$resource,sharedProperties){
             }
             else { window.location.replace("index.html");}
           }
-          $scope.waiting = "Ready";
     });
   };	
   
@@ -197,8 +198,10 @@ function ProfileController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
-        if ($scope.smallnotifications.entities.length > 0) {
-          $scope.notify = "You have pending notification(s).";
+        if ($scope.smallnotifications.entities !== undefined) {
+          if ($scope.smallnotifications.entities.length > 0) {
+            $scope.notify = "You have pending notification(s).";
+          }
         }
         $scope.waiting = "Ready";
      });  
@@ -282,10 +285,7 @@ function ProfileController($scope,$resource,sharedProperties){
   };
   
   $scope.simpleSearch = function() {
-    if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
-      var searchUrl = "search.html?query=" + $scope.search.replace(/^\s+|\s+$/g,'');
-      window.location.href=searchUrl;
-    }
+    sharedFunctions.simpleSearch($scope.search);
   }
   
   $scope.getuser();

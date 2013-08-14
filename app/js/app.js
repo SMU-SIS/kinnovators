@@ -16,7 +16,17 @@
       }
     };
   });
-  
+  myApp.factory('sharedFunctions', function($window) {
+    return{
+      simpleSearch: function(search, search_type) {
+        if (search.replace(/^\s+|\s+$/g,'') !== "") {
+          var searchUrl = "search.html?query=" + search.replace(/^\s+|\s+$/g,'') +"&type="+search_type;
+          window.location.href=searchUrl;
+        }
+        return searchUrl
+      }
+    }
+  });
 
  //var myApp = angular.module('myApp', ['ngResource','ngMockE2E']);
 

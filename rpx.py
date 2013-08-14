@@ -288,47 +288,52 @@ class RPXTokenHandler(BaseHandler):
         if json_data['stat'] == 'ok':
           # extract some useful fields
           info = json_data['profile']
-          oid = info['identifier']
-          email = info.get('email', '')
-          try:
-            display_name = info['displayName']
-          except KeyError:
-            display_name = email.partition('@')[0]
+            # check provider "Google"
+          if info['providerName'] == "Google":
+            oid = info['identifier']
+            email = info.get('email', '')
+            try:
+              display_name = info['displayName']
+            except KeyError:
+              display_name = email.partition('@')[0]
 
-          # check if there is a user present with that auth_id
-          user = self.auth.store.user_model.get_by_auth_id(oid)
-          if not user:
-            #Version currently hardcoded as 1.0 - to import code for this later.
-            appver = 1.0
+            # check if there is a user present with that auth_id
+            user = self.auth.store.user_model.get_by_auth_id(oid)
+            if not user:
+              #Version currently hardcoded as 1.0 - to import code for this later.
+              appver = 1.0
+              
+              success, user = self.auth.store.user_model.create_user(oid, email=email, display_name=display_name, real_name=display_name, logincount=0, assigned_version=appver, is_admin=False, is_active=True)
+              logging.info('New user created in the DS')
+              
+              #update AppUserCount when adding
+              appUserCount = AppUserCount.all().filter('app_version', appver).get()
+              if appUserCount:
+                appUserCount.user_count += 1
+                appUserCount.put()
+              else:
+                appUserCount = AppUserCount(app_version=appver,user_count = 1)
+                appUserCount.put()   
             
-            success, user = self.auth.store.user_model.create_user(oid, email=email, display_name=display_name, real_name=display_name, logincount=0, assigned_version=appver, is_admin=False, is_active=True)
-            logging.info('New user created in the DS')
-            
-            #update AppUserCount when adding
-            appUserCount = AppUserCount.all().filter('app_version', appver).get()
-            if appUserCount:
-              appUserCount.user_count += 1
-              appUserCount.put()
+            userid = user.get_id()
+            if not user.logincount:
+              user.logincount = 1
             else:
-              appUserCount = AppUserCount(app_version=appver,user_count = 1)
-              appUserCount.put()   
-          
-          userid = user.get_id()
-          if not user.logincount:
-            user.logincount = 1
+              user.logincount += 1 
+            user.lastlogin = datetime.datetime.now()
+            user.put()
+                   
+            
+            token = self.auth.store.user_model.create_auth_token(userid)
+            self.auth.get_user_by_token(userid, token)
+            logging.info('The user is already present in the DS')
+            
+            # assign a session
+            self.session.add_flash('You have successfully logged in', 'success')
+            self.redirect('/app/profile.html')
           else:
-            user.logincount += 1 
-          user.lastlogin = datetime.datetime.now()
-          user.put()
-                 
-          
-          token = self.auth.store.user_model.create_auth_token(userid)
-          self.auth.get_user_by_token(userid, token)
-          logging.info('The user is already present in the DS')
-          
-          # assign a session
-          self.session.add_flash('You have successfully logged in', 'success')
-          self.redirect('/')
+            self.session.add_flash('There was an error while processing the login', 'error')
+            self.redirect('/')
         else:
           self.session.add_flash('There was an error while processing the login', 'error')
           self.redirect('/')

@@ -98,7 +98,7 @@
         <div class="container-fluid" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
-          <ul class="nav">
+          <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -177,7 +177,6 @@
               
               <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
               <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
-              <li id="vs"><a title="Search for sketch" href="search.html">Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -186,7 +185,8 @@
         <div class="span10">
           <span id="testdiv" ng-model="test" hidden></span>        
           <div class="hero-unit">
-            <div id="myCarousel" class="carousel slide">
+
+            <div id="myCarousel" class="carousel slide" data-interval="false">
               <div class="well well-small">
                 <div class="carousel-inner">
                   <div class="item active">
@@ -220,30 +220,14 @@
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <!--div class="item">
-                    <div class="container-fluid">
-                      <h1 id="title1">K-Sketch Developers</h1>
-                      <p><a href="https://sourceforge.net/projects/k-sketch">Sourceforge</a></p>
-                      <p><a href="http://www.k-sketch.org/indigo/#klector">K-Lector</a></p>
-                      <p><a href="www.richardcdavis.com">Richard C. Davis</a> - Project Leader</p>
-                      <p>Zhang Rui - Research Fellow</p>
-                      <p>Guan Mengyuan - Research Fellow</p>
-                    </div>
-                  </div>   
-                  <div class="item">
-                    <div class="container-fluid">
-                      <h1 id="title1">The Kinnovators!</h1>
-                      <p>We at "The Kinnovators!" believe in facilitating the creative process. Our hope is that, by embarking on this project, we can help to create a community where creative ideas can be nurtured, and where said ideas can mingle and inspire others.</p>
-                      <p><a class="btn btn-primary btn-large" href="https://wiki.smu.edu.sg/is480/IS480_Team_wiki:_2013T1_The_Kinnovators!">Visit our Wiki! &raquo;</a></p>
-                    </div>
-                  </div-->                    
+                  </div>                  
                 </div>                
               </div>
 
               <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
               <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>              
             </div>
+
           </div>
         </div><!--/span-->
       </div><!--/row-->
@@ -251,7 +235,9 @@
       <hr>
       
       <footer>
-        <p>This page requires JavaScript and Adobe Flash Player, and is optimized for Mozilla Firefox and Google Chrome. &copy; Richard C. Davis 2013</p>
+        <p>
+          This page requires JavaScript and Adobe Flash Player, and is optimized for Mozilla Firefox and Google Chrome. &copy; Richard C. Davis 2013
+        </p>
       </footer>
       
     </div><!--/.fluid-container-->

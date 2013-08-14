@@ -61,7 +61,7 @@ class Sketch(db.Model):
        d["id"] = self.key().id()
        return d
 
-      
+  #Creates a new Sketch entity 
   @staticmethod
   def add(data):
     result = {}
@@ -69,11 +69,12 @@ class Sketch(db.Model):
       #update ModelCount when adding
       jsonData = json.loads(data)
       if jsonData['fileName'].strip() != "":
-        modelCount = ModelCount.get_counter()
+        ModelCount.increment_counter('Sketch_count')
+        modelCount = ModelCount.get_counter('Sketch')
         
         #For sketch files saved through "Save As"
         if jsonData['sketchId'] == "":
-          ModelCount.increment_counter()
+          ModelCount.increment_counter('Sketch')
           jsonData['sketchId'] = str(modelCount.count)
         # #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
         
@@ -123,7 +124,7 @@ class Sketch(db.Model):
               group_permissions = jsonData['group_permissions']
               for g_p in group_permissions:
                 group_key = Sketch_Groups.add(entity.key().id(),
-                                              long(g_p['group_id']),
+                                              long(g_p['id']),
                                               bool(g_p['edit']),
                                               bool(g_p['comment']))
                 if group_key != -1:
@@ -157,19 +158,19 @@ class Sketch(db.Model):
     
     return result
   
+  #Gets Sketch entities by search criteria
   @staticmethod
   def get_entities(criteria="", userid=""):
     utc = UTC()
     #update ModelCount when adding
     theQuery = Sketch.all()
-    #if model:
-      #theQuery = theQuery.filter('model', model)
-
-    objects = theQuery.run()
-
     entities = []
     possible_users = User.get_matching_ids(criteria)
     count = 0
+    total_count = ModelCount.get_counter("Sketch_count")
+    
+    objects = theQuery.run()
+
     for object in objects:
       include = True
       if criteria != "":
@@ -182,9 +183,11 @@ class Sketch(db.Model):
       if include:
         #Check Permissions
         permissions = Permissions.user_access_control(object.key().id(),userid)
-          
+        user_name = User.get_name(object.owner)
+        p_view = 0
         if bool(permissions['p_view']):
-          user_name = User.get_name(object.owner)
+          p_view = 1
+        
           data = {'sketchId': object.sketchId,
                 'version': object.version,
                 'changeDescription': object.changeDescription,
@@ -196,11 +199,12 @@ class Sketch(db.Model):
                 'originalVersion': object.original_version,
                 'originalName': Sketch.get_sketch_name(object.original_sketch,object.original_version),
                 'appver': object.appver,
-                'p_view': 1,
+                'p_view': p_view,
                 'p_edit': bool(permissions['p_edit']),
                 'p_comment': bool(permissions['p_comment'])}
-          
+            
           entity = {'id': object.key().id(),
+                'total_count': total_count,
                 'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
                 'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
                 'data': data}
@@ -210,10 +214,12 @@ class Sketch(db.Model):
     
     result = {'method':'get_entities',
               'en_type': 'Sketch',
+              'criteria': criteria,
               'count': count,
               'entities': entities}
     return result
 
+  #Gets Sketch entities by User ID
   @staticmethod
   def get_entities_by_id(criteria="",userid=""):
     utc = UTC()
@@ -262,6 +268,7 @@ class Sketch(db.Model):
               'entities': entities}
     return result
 
+  #Gets a specific Sketch by SketchID and version
   @staticmethod
   def get_entity_by_versioning(sketchId=-1,version=-1, purpose="View", userid=""):
     utc = UTC()
@@ -330,8 +337,8 @@ class Sketch(db.Model):
                       'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
                       'data': data
                       }
-          if not versionmatch:
-            result['success'] = "version"
+          # if not versionmatch:
+            # result['success'] = "version"
 
         else:
           result = {'method':'get_entity_by_versioning',
@@ -343,6 +350,7 @@ class Sketch(db.Model):
       
     return result
 
+  #Gets Sketch entities by Group
   @staticmethod
   def get_entity_by_group(groupId=-1,userid=""):
     utc = UTC()
@@ -393,19 +401,22 @@ class Sketch(db.Model):
               'count': count,
               'entities': entities}
     return result
-    
+  
+  #Checks if a Sketch entity belongs to a particular User
   @staticmethod
   def check_if_owner(id = 0, user_id = 0):
     is_owner = False
     try:
-      object = Sketch.get_by_id(long(id))
-      if object:
-        if object.owner == long(user_id):
-          is_owner = True
+      if long(user_id) != 0:
+        object = Sketch.get_by_id(long(id))
+        if object:
+          if object.owner == long(user_id):
+            is_owner = True
     except ValueError:
       is_owner = False
     return is_owner
-    
+  
+  #Gets the name of a Sketch entity
   @staticmethod
   def get_sketch_name(sketchId=-1,version=-1):
     try:
@@ -416,21 +427,28 @@ class Sketch(db.Model):
         return "N/A"
     except:
       return "N/A"
-    
-  @staticmethod
-  def clear():
-    #update model count when clearing model on api
-    count = 0
-    for object in Sketch.all():
-      count += 1
-      object.delete()
-      
-    modelCount = ModelCount.all().filter('en_type','Sketch').get()
-    if modelCount:
-      modelCount.delete()
-    result = {'items_deleted': count}
-    return result
   
+  #Counts the number of Sketch entities that a particular User may #View/Edit/Comment
+  @staticmethod
+  def count_permitted(user_id=0, permission_type="View"):
+    query = Sketch.all()
+    objects = query.run()
+    
+    count = 0
+    for object in objects:
+      permissions = Permissions.user_access_control(object.key().id(),user_id)
+      if permission_type == "View":
+        if bool(permissions['p_view']):
+          count = count + 1
+      if permission_type == "Edit":
+        if bool(permissions['p_edit']):
+          count = count + 1
+      if permission_type == "Comment":
+        if bool(permissions['p_comment']):
+          count = count + 1
+    return count
+    
+  #Deletes a specific Sketch entity.
   #You can't name it delete since db.Model already has a delete method
   @staticmethod
   def remove(sketch_model_id, user_id):
@@ -456,6 +474,7 @@ class Sketch(db.Model):
             check_original = True
             
         entity.delete()
+        ModelCount.decrement_counter('Sketch_count')
         AppVersionCount.decrement_counter(appver, check_original)
         Comment.delete_by_sketch(long(sketch_model_id))
         Permissions.delete_by_sketch(long(sketch_model_id))
@@ -490,7 +509,7 @@ class Sketch(db.Model):
     
     return result
 
-  #data is a dictionary that must be merged with current json data and stored. 
+  #Edits a specific Sketch entity. Currently not used.
   @staticmethod
   def edit_entity(sketch_model_id, data):
     jsonData = json.loads(data)
@@ -523,7 +542,7 @@ class Sketch(db.Model):
               }
     return result
     
-#Quick retrieval for supported models metadata and count stats
+#Counter increment for Sketch ID and Sketch Count.
 class ModelCount(db.Model):
   en_type = db.StringProperty(required=True,default='Default-entype')
   count = db.IntegerProperty(required=True, default=0)
@@ -534,19 +553,27 @@ class ModelCount(db.Model):
        return d
   
   @staticmethod
-  def get_counter():
-    return ModelCount.all().filter('en_type','Sketch').get()
+  def get_counter(en_type):
+    return ModelCount.all().filter('en_type',en_type).get()
   
   @staticmethod
-  def increment_counter():
-    modelCount = ModelCount.all().filter('en_type','Sketch').get()
+  def increment_counter(en_type):
+    modelCount = ModelCount.all().filter('en_type',en_type).get()
     if modelCount:
       modelCount.count += 1
       modelCount.put()
     else:
       modelCount = ModelCount(en_type='Sketch', count=1)
       modelCount.put()
-  
+      
+  @staticmethod
+  def decrement_counter(en_type):
+    modelCount = ModelCount.all().filter('en_type',en_type).get()
+    if modelCount:
+      modelCount.count -= 1
+      modelCount.put()
+
+#Counter increment for version numbers for each Sketch ID.
 class VersionCount(db.Model):
   sketchId = db.IntegerProperty(required=True, default=0)
   lastVersion = db.IntegerProperty(required=True, default=0)
@@ -571,7 +598,7 @@ class VersionCount(db.Model):
       versionCount.put()
     return versionCount.lastVersion
   
-  
+#Counter increment for number of sketches for each application version.
 class AppVersionCount(db.Model):
   app_version = db.FloatProperty()
   sketch_count = db.IntegerProperty()
@@ -645,7 +672,9 @@ class AppVersionCount(db.Model):
               'entities': entities,
               'total': total}  
     return result
-  
+
+
+#Handles Comment data, and creation of comments
 class Comment(db.Model):
   sketch_model_id = db.IntegerProperty(required=True)
   user_id = db.IntegerProperty(required=True)
@@ -657,7 +686,8 @@ class Comment(db.Model):
        d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
        d["id"] = self.key().id()
        return d  
-       
+  
+  #Adds a new Comment entity
   @staticmethod
   def add(data, user_id=-1):
     result = {}
@@ -695,7 +725,7 @@ class Comment(db.Model):
     
     return result       
   
-
+  #Gets Comment entities for a specific Sketch
   @staticmethod
   def get_entities_by_id(model_id):
     utc = UTC()
@@ -727,7 +757,8 @@ class Comment(db.Model):
               'count': len(entities),
               'entities': entities}
     return result
-    
+  
+  #Clears comments for a specific Sketch
   @staticmethod  
   def delete_by_sketch(sketch_model_id):
     theQuery = Comment.all()
@@ -1013,8 +1044,9 @@ class Group(db.Model):
       for u_g in user_groups_query:
         user_name = User.get_name(u_g.user_id)
         u_entity = {'user': user_name,
-              'user_id': u_g.user_id,#placeholder
-              'role': u_g.role}
+                    'g_hash': User.get_image(u_g.user_id),
+                    'user_id': u_g.user_id,#placeholder
+                    'role': u_g.role}
         u_groups.append(u_entity)    
     
     result = {'method':'get_entity',
@@ -1344,21 +1376,7 @@ class ActionHandler(webapp2.RequestHandler):
             
         return self.response.out.write(json.dumps(result,default=dthandler)) 
 
-    def metadata(self):
-        #Fetch all ModelCount records to produce metadata on currently supported models. 
-        models = []
-        for mc in ModelCount.all():
-          models.append({'model':mc.model, 'count': mc.count})
-    
-        result = {'method':'metadata',
-                  'model': "metadata",
-                  'count': len(models),
-                  'entities': models
-                  } 
-        
-        return self.respond(result)
-
-    def add_or_list_sketch(self): #/sketch
+    def add_sketch(self): #/sketch
         #Check for GET paramenter == model to see if this is an add or list. 
         #Call Sketch.add(model, data) or
         #Fetch all models and return a list. 
@@ -1377,14 +1395,7 @@ class ActionHandler(webapp2.RequestHandler):
           if data: 
             logging.info("Adding new data: "+data)
             result = Sketch.add(data)
-          else:
-            offset = 0
-            new_offset = self.request.get("offset")
-            if new_offset:
-              offset = int(new_offset)
-
-            result = Sketch.get_entities(offset=offset)
-          
+            
           return self.respond(result)
 
     def delete_sketch(self, model_id):  #/delete/sketch/<model_id>
@@ -1445,7 +1456,7 @@ class ActionHandler(webapp2.RequestHandler):
         if auser:
           userid = auser['user_id']
 
-        result = Sketch.get_entities(criteria=criteria,userid=userid)
+        result = Sketch.get_entities(criteria=criteria, userid=userid)
         return self.respond(result)
       
     def list_sketch(self): #/list/sketch
@@ -1480,6 +1491,34 @@ class ActionHandler(webapp2.RequestHandler):
         
         result = Sketch.get_entity_by_versioning(sketchId, version, "View", userid=userid)
         return self.respond(result)     
+
+    def view_latest_sketch(self, sketchId): #/get/sketch/view/<sketchId>/<version>
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        auser = self.auth.get_user_by_session()
+        userid = 0
+        if auser:
+          userid = auser['user_id']
+        
+        result = Sketch.get_entity_by_versioning(sketchId, -1, "View", userid=userid)
+        return self.respond(result)     
+        
+    def edit_latest_sketch(self, sketchId): #/get/sketch/edit/<sketchId>/<version>
+        #Check for GET parameter == model to see if this is a get or an edit
+        logging.info("**********************")
+        logging.info(self.request.method)
+        logging.info("**********************")
+
+        auser = self.auth.get_user_by_session()
+        userid = 0
+        if auser:
+          userid = auser['user_id']
+        
+        result = Sketch.get_entity_by_versioning(sketchId, -1, "Edit", userid=userid)
+        return self.respond(result) 
         
     def edit_sketch(self, sketchId, version): #/get/sketch/edit/<sketchId>/<version>
         #Check for GET parameter == model to see if this is a get or an edit
@@ -1676,12 +1715,14 @@ webapp2_config['webapp2_extras.sessions'] = {
 application = webapp2.WSGIApplication([
     webapp2.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
     webapp2.Route('/delete/sketch/<model_id>', handler=ActionHandler, handler_method='delete_sketch'), 
-    webapp2.Route('/sketch', handler=ActionHandler, handler_method='add_or_list_sketch'), # Add Sketch
+    webapp2.Route('/add/sketch', handler=ActionHandler, handler_method='add_sketch'), # Add Sketch
     webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), # List Sketch
     webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'), # List Sketch That Meets <criteria>
     webapp2.Route('/list/sketch/user/<criteria>', handler=ActionHandler, handler_method='user_sketch'), # List Sketch By User
     webapp2.Route('/list/sketch/group/<criteria>', handler=ActionHandler, handler_method='group_sketch'), # List Sketch By Group
+    webapp2.Route('/get/sketch/view/<sketchId>', handler=ActionHandler, handler_method='view_latest_sketch'), # Get Sketch (View)
     webapp2.Route('/get/sketch/view/<sketchId>/<version>', handler=ActionHandler, handler_method='view_sketch'), # Get Sketch (View)
+    webapp2.Route('/get/sketch/edit/<sketchId>', handler=ActionHandler, handler_method='edit_latest_sketch'), # Get Sketch (Edit)
     webapp2.Route('/get/sketch/edit/<sketchId>/<version>', handler=ActionHandler, handler_method='edit_sketch'), # Get Sketch (Edit)
     webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), # Add Group
     webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'), # Get Group

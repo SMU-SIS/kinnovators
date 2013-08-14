@@ -3,7 +3,7 @@
 /* Controller for sketch.html */
 
 //angular.module('app', ['ngResource']);
-function ViewController($scope,$resource,sharedProperties){
+function ViewController($scope,$resource,sharedProperties,sharedFunctions){
 
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
 
@@ -70,8 +70,8 @@ function ViewController($scope,$resource,sharedProperties){
             $scope.get_notification();            
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+            $scope.waiting = "Ready";
           }
-          $scope.waiting = "Ready";
     });
   }
   
@@ -137,7 +137,7 @@ function ViewController($scope,$resource,sharedProperties){
   }
   
   $scope.acknowledge = function() {
-    if ($scope.heading === "Access Denied") {
+    if ($scope.heading === "Access Denied" || $scope.heading === "Oops...!") {
       if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
       {
         var referLink = document.createElement("a");
@@ -160,8 +160,10 @@ function ViewController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";   
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
-        if ($scope.smallnotifications.entities.length > 0) {
-          $scope.notify = "You have pending notification(s).";
+        if ($scope.smallnotifications.entities !== undefined) {
+          if ($scope.smallnotifications.entities.length > 0) {
+            $scope.notify = "You have pending notification(s).";
+          }
         }
         $scope.waiting = "Ready";
      });  
@@ -289,15 +291,7 @@ function ViewController($scope,$resource,sharedProperties){
   }  
   
   $scope.simpleSearch = function() {
-    if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
-      //var searchAlert = confirm("Warning - Navigating away from this page will remove all your unsaved progress.\n\nDo you wish to continue?");
-      //if (searchAlert === true) {
-        var searchUrl = "search.html?query=" + $scope.search.replace(/^\s+|\s+$/g,'');
-        window.location.href=searchUrl;
-      } else {
-        $scope.search = "";
-      }
-    //}
+    sharedFunctions.simpleSearch($scope.search);
   }
   
   $scope.getuser();

@@ -3,7 +3,7 @@
 /* Controller for index.html */
 
 //angular.module('app', ['ngResource']);
-function NotificationsController($scope,$resource,sharedProperties){
+function NotificationsController($scope,$resource,sharedProperties, sharedFunctions){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
   
@@ -58,7 +58,6 @@ function NotificationsController($scope,$resource,sharedProperties){
             }
             else { window.location.replace("index.html");} 
           }
-          $scope.waiting = "Ready";
     });
   }
   
@@ -73,8 +72,10 @@ function NotificationsController($scope,$resource,sharedProperties){
     $scope.waiting = "Loading";   
     $scope.AllNotificationResource.get(function(response) { 
         $scope.notifications = response;
-        if ($scope.notifications.entities.length > 0) {
-          $scope.notify = "You have pending notification(s).";
+        if ($scope.notifications.entities !== undefined) {
+          if ($scope.notifications.entities.length > 0) {
+            $scope.notify = "You have pending notification(s).";
+          }
         }
         $scope.waiting = "Ready";
      });  
@@ -131,10 +132,7 @@ function NotificationsController($scope,$resource,sharedProperties){
     $scope.submessage = "";
   }  
   $scope.simpleSearch = function() {
-    if ($scope.search.replace(/^\s+|\s+$/g,'') !== "") {
-      var searchUrl = "search.html?query=" + $scope.search.replace(/^\s+|\s+$/g,'');
-      window.location.href=searchUrl;
-    }
+    sharedFunctions.simpleSearch($scope.search);
   }
   
   $scope.getuser();

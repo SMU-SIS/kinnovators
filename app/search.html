@@ -127,7 +127,7 @@
         <div class="container-fluid" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
-          <ul class="nav">
+          <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
               <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
@@ -176,7 +176,7 @@
           </ul>          
           <p class="navbar-search pull-right">
             <input type="text" ng-model="search" onkeypress="searchKeyPress(event);" class="search-query" placeholder="Search by sketch name or owner">
-            <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="simpleSearch()" value=">>">
+            <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="searchlist()" value=">>">
             <script>
               function searchKeyPress(e)
               {
@@ -207,7 +207,6 @@
               
               <li id="sc" ng-show="User.u_login" ng-cloak><a title="View personal profile, sketches and group memberships" href="profile.html?id={{User.id}}">My Sketchbook</a></li>
               <li id="cs"><a title="Open editor to create a new sketch" href="sketch.html">Create a Sketch</a></li>
-              <li id="vs" class="active"><a>Search for Sketch</a></li>
             </ul>
           </div><!--/.well -->
         </div><!--/span-->
@@ -274,9 +273,15 @@
                 </td>
                 <td>{{files.data.fileName}}</td>
                 <td>{{files.data.version}}</td>                
-                <td>{{files.data.changeDescription}}</td>
+                <td ui-if="files.data.changeDescription.length > 50" title="{{files.data.changeDescription}}" ng-cloak>
+                  {{files.data.changeDescription.substring(0, 49)}}...
+                </td>
+                <td ui-if="files.data.changeDescription.length <= 50" ng-cloak>
+                  {{files.data.changeDescription}}
+                </td>
                 <td ui-if="User.u_login">
-                  <a href="profile.html?id={{files.data.owner_id}}">{{files.data.owner}}</a>
+                  <a href="profile.html?id={{files.data.owner_id}}" ui-if="files.data.owner_id != 0">{{files.data.owner}}</a>
+                  <span ui-if="files.data.owner_id == 0">{{files.data.owner}}</span>
                 </td>
                 <td ui-if="!User.u_login">{{files.data.owner}}</td>
                 <td>{{tzformat(files.created)}}</td>

@@ -3,7 +3,7 @@
 /* Controller for profile.html */
 
 //angular.module('app', ['ngResource']);
-function ConsoleController($scope,$resource,sharedProperties){
+function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
 
@@ -93,7 +93,6 @@ function ConsoleController($scope,$resource,sharedProperties){
             }
             else { window.location.replace("index.html");}
           }
-          $scope.waiting = "Ready";
     });
   }	
   
