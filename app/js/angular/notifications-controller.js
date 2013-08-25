@@ -35,7 +35,33 @@ function NotificationsController($scope,$resource,sharedProperties, sharedFuncti
                           {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                              }
                       );
-                          
+  $scope.getuser = function(){
+    $scope.getusermeta = {};
+    $scope.getusermeta.data = {'id':0};
+    $scope.UserResource = $resource('http://:remote_url/user/getuser',
+                    {"remote_url":$scope.remote_url}, 
+                    {'save': { method: 'POST',    params: {} }});
+ 
+    $scope.waiting = "Loading";     
+    var getusermeta = new $scope.UserResource($scope.getusermeta.data);
+    getusermeta.$save(function(response) {
+          var result = response;
+          $scope.iiii = result.u_login;
+          if (result.u_login === "True" || result.u_login === true) {
+            $scope.User = result;
+            $scope.get_all_notification();             
+          } else {
+            if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
+            {
+              var referLink = document.createElement("a");
+              referLink.href = "index.html";
+              document.body.appendChild(referLink);
+              referLink.click();
+            }
+            else { window.location.replace("index.html");} 
+          }
+    });
+  }                          
   $scope.getuser = function(){
     $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
@@ -121,7 +147,7 @@ function NotificationsController($scope,$resource,sharedProperties, sharedFuncti
               $scope.message = result.message;
               $scope.submessage = result.submessage;
             }                 
-            $scope.get_notification();
+            $scope.get_all_notification();
           }); 
   };
 

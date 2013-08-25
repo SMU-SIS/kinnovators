@@ -68,7 +68,6 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
           
         });
   };*/
-  
   $scope.getuser = function(){
     $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
@@ -81,7 +80,7 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
               && (result.u_isadmin === "True" || result.u_isadmin === true)) {
             $scope.User = result;
             $scope.alluserlist();
-            $scope.versionlist();
+            $scope.versionlist();         
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
@@ -94,16 +93,19 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
             else { window.location.replace("index.html");}
           }
     });
-  }	
+  }  
   
   $scope.retrieveuser = function(){
-    if ($scope.selecteduser !== "" && typeof $scope.selecteduser !== 'undefined') {
-      $scope.RetrieveUserResource = $resource('http://:remote_url/user/getuser/:id',
-                          {'remote_url':$scope.remote_url, 'id':$scope.selecteduser},
-                          {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
-                             });  
-      $scope.waiting = "Loading";       
-      $scope.RetrieveUserResource.get(function(response) {
+    if ($scope.selecteduser !== undefined) {
+      $scope.retrieveusermeta = {};
+      $scope.retrieveusermeta.data = {'id':$scope.selecteduser};
+      $scope.RetrieveUserResource = $resource('http://:remote_url/user/getuserid',
+                      {"remote_url":$scope.remote_url}, 
+                      {'save': { method: 'POST',    params: {} }});
+   
+      $scope.waiting = "Loading";     
+      var retrieveusermeta = new $scope.RetrieveUserResource($scope.retrieveusermeta.data);
+      retrieveusermeta.$save(function(response) {
             var result = response;
             if (result.status === "success") {
               $scope.selecteduserdata = result;
@@ -115,9 +117,8 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
             }
             $scope.waiting = "Ready";
       });
-    }    
-  };	
-  
+    }
+  }
   $scope.addgroup = function(){
     $scope.newgroup.data.user_id = $scope.User.id;
     $scope.GroupResource = $resource('http://:remote_url/group', 
@@ -142,28 +143,40 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
   };    
 
   $scope.userlist = function() {
-    $scope.selecteduser = "";
+    $scope.selected = "";
+    $scope.selecteduser = undefined;
     $scope.selecteduserdata = "";
     $scope.items = "";
-    $scope.UserListResource = $resource('http://:remote_url/user/listuser/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.searchUser}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.userlistmeta = {};
+    $scope.userlistmeta.data = {'criteria':$scope.searchUser};
+    $scope.UserListResource = $resource('http://:remote_url/user/listuser',
+             {"remote_url":$scope.remote_url}, 
+             {'save': {method: 'POST', params:{} }});
     $scope.waiting = "Updating";
-    $scope.UserListResource.get(function(response) { 
+    var userlistmeta = new $scope.UserListResource($scope.userlistmeta.data);
+    userlistmeta.$save(function(response) {
         var result = response;
         if (result.status === "success") {
           $scope.usersfound = result;
+          if ($scope.usersfound.entities.length > 0) {
+            $scope.selecteduser = $scope.usersfound.entities[0];
+          } else {
+            $scope.selected = "No user(s) found!";
+          }
         }
         $scope.waiting = "Ready";
      });  
   }
   
   $scope.alluserlist = function() {
+    $scope.userlistmeta = {};
+    $scope.userlistmeta.data = {'criteria':""};
     $scope.AllUserListResource = $resource('http://:remote_url/user/listuser',
-    {"remote_url":$scope.remote_url}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+             {"remote_url":$scope.remote_url}, 
+             {'save': {method: 'POST', params:{} }});
     $scope.waiting = "Updating";
-    $scope.AllUserListResource.get(function(response) { 
+    var userlistmeta = new $scope.AllUserListResource($scope.userlistmeta.data);
+    userlistmeta.$save(function(response) {
         var result = response;
         if (result.status === "success") {
           $scope.allusersfound = result;
@@ -221,17 +234,44 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
   }
 
   
-  $scope.list = function(){
-    $scope.ListResource = $resource('http://:remote_url/list/sketch/user/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.selecteduserdata.id}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
-    $scope.ListResource.get(function(response) { 
-        $scope.items = response;
-     });  
-  };  
+  $scope.console_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
   
-  $scope.delete_sketch = function(id) {
+  $scope.more_sketch = function() {
+    $scope.console_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
+    $scope.list();
+  }
+  
+  $scope.paginate_back = function() {
+    
+  }
+  
+  $scope.paginate_forward = function() {
+    if ($scope.console_pagination.next_offset > 
+        $scope.console_pagination.offset) {
+      $scope.console_pagination.offset = $scope.console_pagination.next_offset;
+      $scope.list();
+    }
+  }
+  
+  $scope.list = function(){
+    $scope.listmeta = {};
+    $scope.listmeta.data = {'id':$scope.selecteduserdata.id,
+                            'show':"all",
+                            "limit":$scope.console_pagination.limit,
+                            "offset":$scope.console_pagination.offset};
+    $scope.ListResource = $resource('http://:remote_url/list/sketch/user',
+             {"remote_url":$scope.remote_url}, 
+             {'save': {method: 'POST', params:{} }});
+    $scope.waiting = "Loading";
+    var listmeta = new $scope.ListResource($scope.listmeta.data);
+    listmeta.$save(function(response) {
+        $scope.items = response;
+        $scope.console_pagination.next_offset = $scope.items.next_offset;
+        $scope.waiting = "Ready";
+    });  
+  };
+  
+/*   $scope.delete_sketch = function(id) {
     var confirm_delete = confirm('Are you sure you want to delete this sketch?');
     if (confirm_delete == true){
       $scope.DeleteSketchResource = $resource('http://:remote_url/delete/sketch/:model_id',
@@ -253,7 +293,7 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
         }
       });  
     }
-  };
+  }; */
   
   $scope.acknowledge = function() {
     $scope.waiting = "Ready";

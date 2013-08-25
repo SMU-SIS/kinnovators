@@ -1,5 +1,5 @@
 application: k-sketch-test
-version: 15
+version: fragmented
 runtime: python27
 api_version: 1
 threadsafe: false
@@ -8,6 +8,11 @@ builtins:
 #- deferred: on
 
 handlers:
+# Uncomment and use this handler for batch updates of entities when necessary
+#- url: /update_schema
+#  script: update_schema_handler.app  # path to webapp2 application definition.
+#  login: admin
+#  secure: always
 
 - url: /
   static_files: index.html
@@ -29,7 +34,7 @@ handlers:
   script: rpx.application
 
 - url: /.*
-  script: backend.application
+  script: handler.application
   
 libraries:
 - name: webapp2

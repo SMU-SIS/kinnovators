@@ -84,10 +84,10 @@
             <br/>
             <br/>
           </div>
-          <div class="controls">
-            <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
-          </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
       </div>
     </div>        
 
@@ -115,9 +115,10 @@
 <!--                 <b class="caret"></b> -->
                 <i class="icon-list-alt icon-white"></i>
               </a>
-              <ul class="dropdown-menu" ui-if="!!smallnotifications.entities.length">
+              <ul class="dropdown-menu">
                 <li>
-                  <table class="table table-striped">
+                  <a ui-if="!smallnotifications.entities.length"><span>You have no new notifications.</span></a>
+                  <table class="table table-striped" ui-if="!!smallnotifications.entities.length">
                     <tr ng-repeat="notification in smallnotifications.entities">
                       <td>
                         <span>{{notification.n_date}}</span>
@@ -142,7 +143,7 @@
                     Show All Notifications
                   </a>
                 </li>      
-              </ul>              
+              </ul>                            
             </li>
           </ul>         
           <p class="navbar-search pull-right">
@@ -163,8 +164,9 @@
         </div>
       </div>
     </div>
+    
     <!-- Main Body -->
-    <div class="container-fluid">
+    <div class="container-fluid" id="wrap">
         
       <div class="row-fluid" id="mainbody">
         
@@ -186,46 +188,29 @@
           <span id="testdiv" ng-model="test" hidden></span>        
           <div class="hero-unit">
 
-            <div id="myCarousel" class="carousel slide" data-interval="false">
+            <div id="myCarousel" >
               <div class="well well-small">
-                <div class="carousel-inner">
-                  <div class="item active">
-                    <div class="container-fluid">
-                      <h1 id="title1">Welcome to K-Sketch! </h1>
-                      <br/>
-                      <div class="row-fluid">
-                        <div class="span6">
-                          <div class="well well-small">
-                            <object width="100%" height="250" type="movie" data="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US">
-                              <param name="movie" value="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US"></param>
-                              <param name="allowFullScreen" value="true"></param>
-                              <param name="allowscriptaccess" value="always"></param>
-                              <embed src="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US" type="application/x-shockwave-flash" width="100%" height="250" allowscriptaccess="always" allowfullscreen="true"></embed>
-                            </object>
-                          </div>
-                        </div>
-                        <div class="span6">
-                          <p>Animations made easy.</p>
-                          <p><a title="Create a sketch now!" class="btn btn-primary btn-large" href="sketch.html">Start Now! &raquo;</a></p>
-                        </div>
+                <div class="container-fluid">
+                  <h1 id="title1">Welcome to K-Sketch! </h1>
+                  <br/>
+                  <div class="row-fluid">
+                    <div class="span6">
+                      <div class="well well-small">
+                        <object width="100%" height="250" type="movie" data="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US">
+                          <param name="movie" value="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US"></param>
+                          <param name="allowFullScreen" value="true"></param>
+                          <param name="allowscriptaccess" value="always"></param>
+                          <embed src="http://www.youtube.com/v/UYLR5Nf4mWs?version=3&amp;hl=en_US" type="application/x-shockwave-flash" width="100%" height="250" allowscriptaccess="always" allowfullscreen="true"></embed>
+                        </object>
                       </div>
                     </div>
-                  </div> 
-                  <div class="item">
-                    <div class="container-fluid">
-                      <h1 id="title1">Most Popular Sketches</h1>
-                      <div class="row-fluid">
-                        <div class="span12">
-                          <p>Coming Soon.........</p>          
-                        </div>
-                      </div>
+                    <div class="span6">
+                      <p>Animations made easy.</p>
+                      <p><a title="Create a sketch now!" class="btn btn-primary btn-large" href="sketch.html">Start Now! &raquo;</a></p>
                     </div>
-                  </div>                  
-                </div>                
-              </div>
-
-              <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
-              <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>              
+                  </div>
+                </div>
+              </div>           
             </div>
 
           </div>
@@ -253,6 +238,7 @@
     <script src="lib/angular/angular-resource.min.js"></script>
     <script src="js/angular/index-controller.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/bootbox/bootbox.min.js"></script>
     <script src="js/bootstrap/bootstrap-transition.js"></script>
     <script src="js/bootstrap/bootstrap-alert.js"></script>
     <script src="js/bootstrap/bootstrap-modal.js"></script>

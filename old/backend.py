@@ -7,7 +7,6 @@
 Note to self: json.loads = json string to objects. json.dumps is object to json string.
 """
 import datetime
-import logging
 import os
 import urllib
 import urllib2
@@ -63,30 +62,67 @@ class Sketch(db.Model):
 
   #Creates a new Sketch entity 
   @staticmethod
-  def add(data):
+  def add(data, userid):
     result = {}
-    try:
-      #update ModelCount when adding
-      jsonData = json.loads(data)
-      if jsonData['fileName'].strip() != "":
-        ModelCount.increment_counter('Sketch_count')
-        modelCount = ModelCount.get_counter('Sketch')
+    #try:
+    #update ModelCount when adding
+    jsonData = json.loads(data)
+    if jsonData['fileName'].strip() != "":
+      #Check if sketch is original
+      check_original = False
+      #Check if sketch is a new version
+      check_new_version = False
+      #Check if sketch was made from latest version if not original
+      check_if_latest = True
+      
+      ModelCount.increment_counter('Sketch_count')
+      modelCount = ModelCount.get_counter('Sketch')
+      
+      #For new sketches/sketches saved as new sketches
+      if jsonData['sketchId'] == "":
+        #Assigns new SketchId
+        ModelCount.increment_counter('Sketch')
+        jsonData['sketchId'] = str(modelCount.count)
+      
+      #Placeholder for current version of SketchId
+      versionCount = 0
+      
+      #If sketch is completely original (i.e. new sketch)
+      if jsonData['originalSketch'] == -1:
+        check_original = True
+        #Creates new version counter for the new Sketch.
+        versionCount = VersionCount.get_and_increment_counter(long(jsonData['sketchId']))
+        jsonData['originalVersion'] = versionCount
+        jsonData['originalSketch'] = str(modelCount.count)
         
-        #For sketch files saved through "Save As"
-        if jsonData['sketchId'] == "":
-          ModelCount.increment_counter('Sketch')
-          jsonData['sketchId'] = str(modelCount.count)
-        # #For sketch files saved through "Save As" that were not derived from another file - this might be changed. 
-        
-        #update VersionCount when adding  
+      #If sketch is an updated version of existing sketch (i.e. edit sketch)
+      elif jsonData['originalSketch'] == jsonData['sketchId']:
+        v_count = VersionCount.get_counter(long(jsonData['sketchId']))
+        versionCount = v_count.lastVersion
+        check_new_version = True
+        #Updated sketch was created from latest version (ALLOWED)
+        if long(jsonData['originalVersion']) == versionCount:
+          #Incrementing counter
+          versionCount = VersionCount.get_and_increment_counter(long(jsonData['sketchId']))
+        #Updated sketch was NOT created from latest version (HALT!)
+        else:
+          check_if_latest = False
+      #If sketch is a new sketch created from an existing sketch (i.e. save as sketch)
+      else:
+        #Creates new version counter for the new Sketch.
         versionCount = VersionCount.get_and_increment_counter(long(jsonData['sketchId']))
         
-        check_original = False
-        if jsonData['originalVersion'] == "":
-          if jsonData['originalSketch'] == "":
-            check_original = True
-            jsonData['originalVersion'] = versionCount
-            jsonData['originalSketch'] = str(modelCount.count)
+      
+      #If sketch was an updated sketch created from latest version, a sketch saved as a new sketch, or completely original.
+      if check_if_latest:
+        allow_permissions = False
+        if not check_new_version:
+          allow_permissions = True
+        elif long(userid) == long(jsonData['owner_id']):
+          allow_permissions = True
+        elif User.check_if_admin(long(userid)):
+          allow_permissions = True
+          
         
         #update AppVersionCount when adding
         AppVersionCount.increment_counter(float(jsonData['appver']), check_original)
@@ -109,83 +145,113 @@ class Sketch(db.Model):
                         appver=float(jsonData['appver']))
         
         verify = entity.put()
-        
-        if (verify):
-        
-          permissions_key = Permissions.add(entity.key().id(),
-                                            bool(long(jsonData['p_view'])),
-                                            bool(jsonData['p_edit']),
-                                            bool(jsonData['p_comment']))
-          #Update group permissions when adding
-          
-          group_count = 0
-          try:
+        if (allow_permissions):
+          if (verify):
+            
+            permissions_key = Permissions.add(long(jsonData['sketchId']),
+                                              bool(long(jsonData['p_view'])),
+                                              bool(jsonData['p_edit']),
+                                              bool(jsonData['p_comment']))
+            #Update group permissions when adding
+            
+            group_count = 0
+            #try:
             if jsonData['group_permissions']:
               group_permissions = jsonData['group_permissions']
-              for g_p in group_permissions:
-                group_key = Sketch_Groups.add(entity.key().id(),
-                                              long(g_p['id']),
-                                              bool(g_p['edit']),
-                                              bool(g_p['comment']))
-                if group_key != -1:
-                  group_count += 1
-          except:
-            group_count = 0
-        
-          if (permissions_key != -1):
-            result = {'id': entity.key().id(), 
-                      'status': "success",
-                      'data': jsonData} #this would also check if the json submitted was valid
+              group_count = Sketch_Groups.add(long(jsonData['sketchId']),
+                                              group_permissions)
+            #except:
+             # group_count = 0
           
+            if (permissions_key != -1):
+              result = {'id': entity.key().id(), 
+                        'status': "success",
+                        'method': "add",
+                        'en_type': "Sketch",
+                        'data': jsonData} #this would also check if the json submitted was valid
+            
+            else:
+              #Rollback
+              rollback = Sketch.get_by_id(entity.key.id())
+              if rollback:
+                rollback.delete()
+              result = {'status': "error",
+                       'message': "Save unsuccessful. Please try again."}
+            
           else:
-            #Rollback
-            rollback = Sketch.get_by_id(entity.key.id())
-            if rollback:
-              rollback.delete()
             result = {'status': "error",
-                     'message': "Save unsuccessful. Please try again."}
-          
+                      'message': "Save unsuccessful. Please try again."}
         else:
-          result = {'status': "error",
-                    'message': "Save unsuccessful. Please try again."}
-
+          result = {'id': entity.key().id(), 
+                    'status': "success",
+                    'method': "add",
+                    'en_type': "Sketch",
+                    'data': jsonData} #this would also check if the json submitted was valid
+      
+      #If sketch was NOT created from latest version
       else:
         result = {'status': "error",
-                  'message': "Save unsuccessful. Please try again."}
-    except:
-     result = {'status': "error",
-               'message': "Save unsuccessful. Please try again."}
+                  'message': "You cannot update an existing sketch from a previous version.",
+                  'submessage': "You may still save it as a new sketch."}
+      
+    else:
+      result = {'status': "error",
+                'message': "Save unsuccessful. Please try again."}
+    #except:
+    #  result = {'status': "error",
+    #            'message': "Save unsuccessful. Please try again."}
     
     return result
   
   #Gets Sketch entities by search criteria
   @staticmethod
-  def get_entities(criteria="", userid=""):
+  def get_entities(data, userid=""):
     utc = UTC()
     #update ModelCount when adding
-    theQuery = Sketch.all()
-    entities = []
-    possible_users = User.get_matching_ids(criteria)
-    count = 0
     total_count = ModelCount.get_counter("Sketch_count")
     
-    objects = theQuery.run()
-
-    for object in objects:
-      include = True
-      if criteria != "":
-        include = False
-        if criteria.lower() in object.fileName.lower():
-          include = True
-        if object.owner in possible_users:
-          include = True
+    jsonData = json.loads(data)
+    criteria = jsonData['criteria'].strip()
+    show = jsonData['show']
+    limit = long(jsonData['limit'])
+    offset = long(jsonData['offset'])
+    possible_names = []
+    possible_users = []
+    objects = []
+    if criteria:
+      possible_names = Sketch.get_matching_names(criteria)
+      possible_users = User.get_matching_ids(criteria)
+      
+    objects = Sketch.all().order('-modified').fetch(limit=None)
+    
+    entities = []
+    count = 0
+    next_offset = 0
+    
+    if objects:
+      for object in objects[offset:]:
+        #Criteria Filter
+        criteria_check = True
+        if criteria:
+          criteria_check = False
+          if object.fileName in possible_names:
+            criteria_check = True
+          if object.owner in possible_users:
+            criteria_check = True
         
-      if include:
+        #Latest Version Filter
+        latest_check = True
+        if show == "latest":
+          versionCount = VersionCount.get_counter(long(object.sketchId))
+          if object.version < versionCount.lastVersion:
+            latest_check = False
+        
         #Check Permissions
-        permissions = Permissions.user_access_control(object.key().id(),userid)
+        permissions = Permissions.user_access_control(object.sketchId,userid)
         user_name = User.get_name(object.owner)
         p_view = 0
-        if bool(permissions['p_view']):
+        
+        if criteria_check and latest_check and bool(permissions['p_view']):
           p_view = 1
         
           data = {'sketchId': object.sketchId,
@@ -201,43 +267,68 @@ class Sketch(db.Model):
                 'appver': object.appver,
                 'p_view': p_view,
                 'p_edit': bool(permissions['p_edit']),
-                'p_comment': bool(permissions['p_comment'])}
+                'p_comment': bool(permissions['p_comment']),
+                'like': Like.get_entities_by_id(object.sketchId, 0)['count'],
+                'comment': Comment.get_entities_by_id(object.sketchId)['count']}
             
           entity = {'id': object.key().id(),
-                'total_count': total_count,
                 'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
                 'modified': object.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
                 'data': data}
           
           entities.append(entity)
           count += 1
-    
+          
+        if count >= limit:
+          next = objects.index(object) + 1
+          if next < len(objects):
+            next_offset = objects.index(object) + 1
+          break
+        
     result = {'method':'get_entities',
               'en_type': 'Sketch',
               'criteria': criteria,
-              'count': count,
+              'total_count': total_count,
+              'retrieve_type': show,
+              'retrieved_count': count,
+              'offset': offset,
+              'limit': limit,
+              'next_offset': next_offset,
               'entities': entities}
     return result
 
   #Gets Sketch entities by User ID
   @staticmethod
-  def get_entities_by_id(criteria="",userid=""):
+  def get_entities_by_id(data,userid=""):
     utc = UTC()
     #update ModelCount when adding
     theQuery = Sketch.all()
     #if model:
       #theQuery = theQuery.filter('model', model)
-
-    objects = theQuery.run()
+    
+    jsonData = json.loads(data)
+    criteria = long(jsonData['id'])
+    show = jsonData['show']
+    limit = long(jsonData['limit'])
+    offset = long(jsonData['offset'])
+    objects = theQuery.fetch(limit=None)
 
     entities = []
     count = 0
-    for object in objects:
+    next_offset = 0
+    
+    for object in objects[offset:]:
       if long(criteria) == object.owner:
+        #Latest Version Filter
+        latest_check = True
+        if show == "latest":
+          versionCount = VersionCount.get_counter(long(object.sketchId))
+          if object.version < versionCount.lastVersion:
+            latest_check = False
         #Check Permissions
-        permissions = Permissions.user_access_control(object.key().id(),userid)
+        permissions = Permissions.user_access_control(object.sketchId,userid)
           
-        if bool(permissions['p_view']):
+        if bool(permissions['p_view']) and latest_check:
           user_name = User.get_name(object.owner)
           data = {'sketchId': object.sketchId,
                 'version': object.version,
@@ -252,7 +343,9 @@ class Sketch(db.Model):
                 'appver': object.appver,
                 'p_view': 1,
                 'p_edit': bool(permissions['p_edit']),
-                'p_comment': bool(permissions['p_comment'])}
+                'p_comment': bool(permissions['p_comment']),
+                'like': Like.get_entities_by_id(object.sketchId, 0)['count'],
+                'comment': Comment.get_entities_by_id(object.sketchId)['count']}
           
           entity = {'id': object.key().id(),
                 'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
@@ -261,18 +354,28 @@ class Sketch(db.Model):
           
           entities.append(entity)
           count += 1
+            
+        if count >= limit:
+          next = objects.index(object) + 1
+          if next < len(objects):
+            next_offset = objects.index(object) + 1
+          break
     
     result = {'method':'get_entities_by_id',
               'en_type': 'Sketch',
               'count': count,
+              'offset': offset,
+              'limit': limit,
+              'next_offset': next_offset,
               'entities': entities}
     return result
 
   #Gets a specific Sketch by SketchID and version
   @staticmethod
-  def get_entity_by_versioning(sketchId=-1,version=-1, purpose="View", userid=""):
+  def get_entity_by_versioning(data, purpose="View", userid=""):
     utc = UTC()
     versionmatch = True
+    latestversion = True
     result = {'method':'get_entity_by_versioning',
                   'success':"no",
                   'id': 0,
@@ -282,26 +385,29 @@ class Sketch(db.Model):
                   }
     
     try:
-      #Retrieve Sketch with given Sketch ID and version
-      query = Sketch.all()
-      query.filter('sketchId =', long(sketchId)).filter('version =', long(version))
+      jsonData = json.loads(data)
+      sketchId = jsonData['id']
+      version = jsonData['version']
+      theobject = None
       
-      theobject = query.get()
+      versionCount = VersionCount.get_counter(long(sketchId))
       
-      #If unable to find Sketch, attempt to retrieve latest available version.
-      if theobject is None:
-        versionCount = VersionCount.get_counter(long(sketchId))
-        if long(version) != -1:
+      #Get latest version
+      if versionCount and long(version) == -1:
+        theobject = Sketch.all().filter('sketchId =', long(sketchId)).filter('version =', versionCount.lastVersion).get()
+      #Get specific version
+      elif long(version) != -1:
+        theobject = Sketch.all().filter('sketchId =', long(sketchId)).filter('version =', long(version)).get()
+        if theobject:
+          if long(version) != versionCount.lastVersion:
+            latestversion = False
+        else:
+          theobject = Sketch.all().filter('sketchId =', long(sketchId)).filter('version =', versionCount.lastVersion).get()
           versionmatch = False
-        
-        if versionCount:
-          query = Sketch.all()
-          query.filter('sketchId =', long(sketchId)).filter('version =', long(versionCount.lastVersion))
-          theobject = query.get()
       
       if theobject:
         #Check Permissions
-        permissions = Permissions.user_access_control(theobject.key().id(),userid)
+        permissions = Permissions.user_access_control(theobject.sketchId,userid)
         
         #Check access type (view/edit):
         access = False
@@ -327,24 +433,26 @@ class Sketch(db.Model):
                     'p_view': 1,
                     'p_edit': bool(permissions['p_edit']),
                     'p_comment': bool(permissions['p_comment']),
-                    'p_public': Permissions.check_permissions(theobject.key().id()),
-                    'groups': Sketch_Groups.get_groups_for_sketch(theobject.key().id())}
+                    'p_public': Permissions.check_permissions(theobject.sketchId),
+                    'groups': Sketch_Groups.get_groups_for_sketch(theobject.sketchId),
+                    'ismatching': versionmatch,
+                    'islatest': latestversion}
               
           result = {'method':'get_entity_by_versioning',
-                      'success':"yes",
-                      'id': theobject.key().id(),
-                      'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
-                      'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
-                      'data': data
-                      }
-          # if not versionmatch:
-            # result['success'] = "version"
+                    'en_type': 'Sketch',
+                    'status':'success',
+                    'id': theobject.key().id(),
+                    'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+                    'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+                    'data': data
+                    }
 
         else:
           result = {'method':'get_entity_by_versioning',
-                        'success':"no",
-                        'id': "Forbidden"
-                        }
+                   'status':"Forbidden"}
+      else:
+        result = {'method':'get_entity_by_versioning',
+                  'status':"Error"}
     except (RuntimeError, ValueError):
       result['data'] = ""
       
@@ -352,43 +460,40 @@ class Sketch(db.Model):
 
   #Gets Sketch entities by Group
   @staticmethod
-  def get_entity_by_group(groupId=-1,userid=""):
+  def get_entity_by_group(data,userid=""):
     utc = UTC()
-    result = {'method':'get_entity_by_group',
-                  'success':"no",
-                  'id': 0,
-                  'created': datetime.datetime.now().replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
-                  'modified': datetime.datetime.now().replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
-                  'data': ""
-                  }
+    result = {}
+    jsonData = json.loads(data)
+    groupId = long(jsonData['id'])
     group_sketches = Sketch_Groups.get_sketches_for_group(long(groupId))
     entities = []
     count = 0
-    en_type = "Welp"
     for g_s in group_sketches:
-      en_type = "Sketch"
-      sketch_model_id = long(g_s['sketch_model_id'])
-      permissions = Permissions.user_access_control(sketch_model_id, userid)
-      #if permissions['p_view']:
-      en_type = en_type + "h"
-      theobject = Sketch.get_by_id(sketch_model_id)
-      user_name = User.get_name(theobject.owner)
-      data = {'sketchId': theobject.sketchId,
-                'version': theobject.version,
-                'changeDescription': theobject.changeDescription,
-                'fileName': theobject.fileName,
-                'owner': user_name,
-                'owner_id': theobject.owner,
-                'thumbnailData': theobject.thumbnailData,
-                'originalSketch': theobject.original_sketch,
-                'originalVersion': theobject.original_version,
-                'originalName': Sketch.get_sketch_name(theobject.original_sketch,theobject.original_version),
-                'appver': theobject.appver,
-                'p_view': 1,
-                'p_edit': bool(permissions['p_edit']),
-                'p_comment': bool(permissions['p_comment']),
-                'g_edit': bool(g_s['edit']),
-                'g_comment': bool(g_s['comment'])}
+      sketch_id = long(g_s['sketch_id'])
+      permissions = Permissions.user_access_control(sketch_id, userid)
+      
+      if permissions['p_view']:
+        versionCount = VersionCount.get_counter(sketch_id)
+        theobject = Sketch.all().filter('sketchId',sketch_id).filter('version',long(versionCount.lastVersion)).get()
+        user_name = User.get_name(theobject.owner)
+        data = {'sketchId': theobject.sketchId,
+                  'version': theobject.version,
+                  'changeDescription': theobject.changeDescription,
+                  'fileName': theobject.fileName,
+                  'owner': user_name,
+                  'owner_id': theobject.owner,
+                  'thumbnailData': theobject.thumbnailData,
+                  'originalSketch': theobject.original_sketch,
+                  'originalVersion': theobject.original_version,
+                  'originalName': Sketch.get_sketch_name(theobject.original_sketch,theobject.original_version),
+                  'appver': theobject.appver,
+                  'p_view': 1,
+                  'p_edit': bool(permissions['p_edit']),
+                  'p_comment': bool(permissions['p_comment']),
+                  'g_edit': bool(g_s['edit']),
+                  'g_comment': bool(g_s['comment']),
+                  'like': Like.get_entities_by_id(theobject.sketchId, 0)['count'],
+                  'comment': Comment.get_entities_by_id(theobject.sketchId)['count']}
                 
       entity = {'id': theobject.key().id(),
             'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
@@ -397,7 +502,7 @@ class Sketch(db.Model):
       entities.append(entity)
       count += 1
     result = {'method':'get_entity_by_group',
-              'en_type': en_type,
+              'en_type': "Sketch",
               'count': count,
               'entities': entities}
     return result
@@ -408,7 +513,8 @@ class Sketch(db.Model):
     is_owner = False
     try:
       if long(user_id) != 0:
-        object = Sketch.get_by_id(long(id))
+        versionCount = VersionCount.get_counter(id)
+        object = Sketch.all().filter('sketchId',id).filter('version',long(versionCount.lastVersion)).get()
         if object:
           if object.owner == long(user_id):
             is_owner = True
@@ -427,6 +533,19 @@ class Sketch(db.Model):
         return "N/A"
     except:
       return "N/A"
+      
+  #Gets the names of Sketches that match the given criteria
+  @staticmethod
+  def get_matching_names(criteria=""):
+    theQuery = Sketch.all()
+    objects = theQuery.run()
+    entities = []
+    if criteria != "":
+      for object in objects:
+        if criteria.lower() in object.fileName.lower():
+          entities.append(object.fileName)
+          
+    return entities
   
   #Counts the number of Sketch entities that a particular User may #View/Edit/Comment
   @staticmethod
@@ -451,18 +570,18 @@ class Sketch(db.Model):
   #Deletes a specific Sketch entity.
   #You can't name it delete since db.Model already has a delete method
   @staticmethod
-  def remove(sketch_model_id, user_id):
+  def remove(sketch_id, version, user_id):
     #Only the sketch owner or an admin may delete the sketch
     can_delete = False
     is_admin = User.check_if_admin(user_id)
-    is_owner = Sketch.check_if_owner(long(sketch_model_id), user_id)
+    is_owner = Sketch.check_if_owner(long(sketch_id), user_id)
     if is_owner:
       can_delete = True
     elif is_admin:
       can_delete = True
       
     if can_delete:
-      entity = Sketch.get_by_id(long(sketch_model_id))
+      entity = Sketch.all().filter('sketchId',sketch_id).filter('version',version).get()
       
       if entity:
         appver = entity.appver
@@ -476,35 +595,27 @@ class Sketch(db.Model):
         entity.delete()
         ModelCount.decrement_counter('Sketch_count')
         AppVersionCount.decrement_counter(appver, check_original)
-        Comment.delete_by_sketch(long(sketch_model_id))
-        Permissions.delete_by_sketch(long(sketch_model_id))
-        Sketch_Groups.delete_by_sketch(long(sketch_model_id))
-        Like.delete_by_sketch(long(sketch_model_id))
+        Comment.delete_by_sketch(long(sketch_id))
+        Permissions.delete_by_sketch(long(sketch_id))
+        Sketch_Groups.delete_by_sketch(long(sketch_id))
+        Like.delete_by_sketch(long(sketch_id))
         
         if is_admin and not is_owner:
           
-          notify = Notification(user_id = owner,
-                                notification_type = "ADMINDELETE",
-                                other_user = 0,
-                                other_info = fileName,
-                                relevant_id = 0)
-                                
-          notify.put()
-          
-        
+          Notification.add(owner, "ADMINDELETE", 0, fileName, 0)
     
         result = {'method':'remove',
-                  'id': sketch_model_id,
+                  'id': sketch_id,
                   'status': 'success'
                     }
       else:
           result = {'method':'remove',
-                    'id': sketch_model_id,
+                    'id': sketch_id,
                     'status': 'error'}
           
     else:
       result = {'method':'remove',
-                    'id': sketch_model_id,
+                    'id': sketch_id,
                     'status': 'error'}
     
     return result
@@ -668,6 +779,7 @@ class AppVersionCount(db.Model):
             
     
     result = {'method':'retrieve_by_version',
+              'en_type': 'AppVersionCount',
               'status':'success',
               'entities': entities,
               'total': total}  
@@ -676,7 +788,7 @@ class AppVersionCount(db.Model):
 
 #Handles Comment data, and creation of comments
 class Comment(db.Model):
-  sketch_model_id = db.IntegerProperty(required=True)
+  sketch_id = db.IntegerProperty()
   user_id = db.IntegerProperty(required=True)
   content = db.StringProperty(required=True)
   reply_to_id = db.IntegerProperty()
@@ -696,9 +808,9 @@ class Comment(db.Model):
     jsonData = json.loads(data)
     
     #For sketch files saved through "Save As"
-    if jsonData['sketchModelId'] != '' and user_id != -1:
+    if jsonData['sketchId'] != '' and user_id != -1:
       #Check Permissions
-      permissions = Permissions.user_access_control(long(jsonData['sketchModelId']), long(user_id))
+      permissions = Permissions.user_access_control(long(jsonData['sketchId']), long(user_id))
         
       if bool(permissions['p_comment']):
         #Placeholder for reply
@@ -706,12 +818,16 @@ class Comment(db.Model):
         contentData = jsonData['content']
         contentData = contentData[:255]
           
-        entity = Comment(sketch_model_id=long(jsonData['sketchModelId']),
+        entity = Comment(sketch_id=long(jsonData['sketchId']),
                         user_id=long(user_id),
                         content=contentData,
                         reply_to_id=long(jsonData['replyToId']))
           
         verify = entity.put()
+        
+        result = {'status':"success",
+                  'method':"add",
+                  'en_type':"Comment"}
       else:
         result = {'status': "error",
                 'message': "Sorry, but you are not authorized to comment."}
@@ -724,6 +840,15 @@ class Comment(db.Model):
     #            'message': "Error in posting comment. Please try again."}
     
     return result       
+  
+  #Handler wrapper method to call get_entities_by_id via JSON POST
+  @staticmethod
+  def get_entities_by_id_handler_wrapper(data):
+    jsonData = json.loads(data)
+    model_id = long(jsonData['id'])
+    result = Comment.get_entities_by_id(model_id)
+    
+    return result
   
   #Gets Comment entities for a specific Sketch
   @staticmethod
@@ -738,8 +863,8 @@ class Comment(db.Model):
 
     entities = []
     for object in objects:
-      if long(model_id) == object.sketch_model_id:
-        data = {'sketchModelId': object.sketch_model_id,
+      if long(model_id) == object.sketch_id:
+        data = {'sketchId': object.sketch_id,
                 'user_id': object.user_id,
                 'user_name': User.get_name(long(object.user_id)),
                 'g_hash': User.get_image(long(object.user_id)),
@@ -760,9 +885,9 @@ class Comment(db.Model):
   
   #Clears comments for a specific Sketch
   @staticmethod  
-  def delete_by_sketch(sketch_model_id):
+  def delete_by_sketch(sketch_id):
     theQuery = Comment.all()
-    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    theQuery = theQuery.filter('sketch_id =', long(sketch_id))
     objects = theQuery.run()
     count = 0
     for object in objects:
@@ -770,12 +895,12 @@ class Comment(db.Model):
       count += 1
     result = {'method':'delete_by_sketch',
               'en_type': 'Comment',
-              'sketchModelId': sketch_model_id,
+              'sketchId': sketch_id,
               'count': count}
     return result
       
 class Permissions(db.Model):
-  sketch_model_id = db.IntegerProperty(required=True)
+  sketch_id = db.IntegerProperty()
   view = db.BooleanProperty(required=True)
   edit = db.BooleanProperty(required=True)
   comment = db.BooleanProperty(required=True)
@@ -789,11 +914,21 @@ class Permissions(db.Model):
   def add(s_id, p_view, p_edit, p_comment):
     p_key = -1
     try:
-      entity = Permissions(sketch_model_id = long(s_id),
-                          view = bool(p_view),
-                          edit = bool(p_edit),
-                          comment = bool(p_comment))
-      entity.put()
+      entity = Permissions.all().filter('sketch_id',long(s_id)).get()
+      #Update existing permissions
+      if entity:
+        entity.view = bool(p_view)
+        entity.edit = bool(p_edit)
+        entity.comment = bool(p_comment)
+        entity.put()
+        
+      #No existing permissions - create new permissions
+      else:
+        entity = Permissions(sketch_id = long(s_id),
+                            view = bool(p_view),
+                            edit = bool(p_edit),
+                            comment = bool(p_comment))
+        entity.put()
       p_key = entity.key().id()
     except:
       p_key = -1
@@ -805,7 +940,7 @@ class Permissions(db.Model):
               'p_edit':False,
               'p_comment':False}
               
-    permissions = Permissions.all().filter('sketch_model_id', sketch_id).get()
+    permissions = Permissions.all().filter('sketch_id', sketch_id).get()
     if permissions:
       result = {'p_view':permissions.view,
                 'p_edit':permissions.edit,
@@ -813,7 +948,7 @@ class Permissions(db.Model):
     return result
     
   @staticmethod
-  def user_access_control(sketch_model_id = 0, user_id = 0):
+  def user_access_control(sketch_id = 0, user_id = 0):
     permissions = {'p_view':False,
                     'p_edit':False,
                     'p_comment':False}
@@ -823,22 +958,22 @@ class Permissions(db.Model):
                     'p_edit':True,
                     'p_comment':True}
     #Check if Owner - if true, grant FULL access
-    elif Sketch.check_if_owner(long(sketch_model_id), user_id):
+    elif Sketch.check_if_owner(long(sketch_id), user_id):
       permissions = {'p_view':True,
                     'p_edit':True,
                     'p_comment':True}
     else:
       #Retrieve public permissions
-      permissions = Permissions.check_permissions(long(sketch_model_id))
+      permissions = Permissions.check_permissions(long(sketch_id))
       
       #Retrieve group permissions
-      group_permissions = Sketch_Groups.get_groups_for_sketch(long(sketch_model_id))
+      group_permissions = Sketch_Groups.get_groups_for_sketch(long(sketch_id))
       user_groups = UserGroupMgmt.get_memberships(user_id)
       user_group_permissions = []
       for u_g in user_groups:
         group_id = u_g['group_id']
         for g_p in group_permissions:
-          if long(group_id) == long(g_p['group_id']):
+          if long(group_id) == long(g_p['id']):
             user_group_permissions.append(g_p)
       #Apply group permissions
       for u_g_p in user_group_permissions:
@@ -852,19 +987,19 @@ class Permissions(db.Model):
     return permissions
     
   @staticmethod  
-  def delete_by_sketch(sketch_model_id):
+  def delete_by_sketch(sketch_id):
     theQuery = Permissions.all()
-    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    theQuery = theQuery.filter('sketch_id =', long(sketch_id))
     theobject = theQuery.get()
     if theobject:
       theobject.delete()
     result = {'method':'delete_by_sketch',
               'en_type': 'Permissions',
-              'sketchModelId': sketch_model_id}
+              'sketchId': sketch_id}
     return result 
     
 class Sketch_Groups(db.Model):
-  sketch_model_id = db.IntegerProperty(required=True)
+  sketch_id = db.IntegerProperty()
   group_id = db.IntegerProperty(required=True)
   edit = db.BooleanProperty(required=True)
   comment = db.BooleanProperty(required=True)
@@ -878,34 +1013,50 @@ class Sketch_Groups(db.Model):
        return d
        
   @staticmethod
-  def add(s_id, g_id, g_edit, g_comment):
-    g_key = -1
+  def add(s_id, group_permissions):
+    count = 0
+    current_perm = Sketch_Groups.all().filter('sketch_id', long(s_id)).fetch(limit=None)
+    for c_p in current_perm:
+      c_p.delete()
     try:
-      entity = Sketch_Groups(sketch_model_id = long(s_id),
-                          group_id = long(g_id),
-                          edit = bool(g_edit),
-                          comment = bool(g_comment))
-      entity.put()
-      g_key = entity.key().id()
+      for g_p in group_permissions:
+        edit = False
+        comment = False
+        try:
+          edit = bool(g_p['edit'])
+        except (KeyError, ValueError):
+          edit = False
+        try:
+          comment = bool(g_p['comment'])
+        except (KeyError, ValueError):
+          edit = False
+          
+        new_perm = Sketch_Groups(sketch_id = long(s_id),
+                            group_id = long(g_p['id']),
+                            edit = edit,
+                            comment = comment)
+        new_perm.put()
+        count += 1
     except:
-      g_key = -1
-    return g_key
+      count = 0
+    return count
   
   @staticmethod
-  def get_groups_for_sketch(sketch_model_id=0):
+  def get_groups_for_sketch(sketch_id=0):
     theQuery = Sketch_Groups.all()
     objects = theQuery.run()
     
     entities = []
     for object in objects:
-      if object.sketch_model_id == sketch_model_id:
-        data = {'id': object.key().id(),
-                'sketch_model_id': object.sketch_model_id,
-                'group_id': object.group_id,
-                'group_name': Group.get_name(object.group_id),
-                'edit': object.edit,
-                'comment':object.comment}
-        entities.append(data)
+      if object.sketch_id == sketch_id:
+        data = {'group_name': Group.get_name(object.group_id)}
+        entity = {'object_id': object.key().id(),
+                  'sketch_id': object.sketch_id,
+                  'id': object.group_id,
+                  'data':data,
+                  'edit': object.edit,
+                  'comment':object.comment}
+        entities.append(entity)
     return entities    
   
   @staticmethod
@@ -917,7 +1068,7 @@ class Sketch_Groups(db.Model):
     for object in objects:
       if object.group_id == group_id:
         data = {'id': object.key().id(),
-                'sketch_model_id': object.sketch_model_id,
+                'sketch_id': object.sketch_id,
                 'group_id': object.group_id,
                 'group_name': Group.get_name(object.group_id),
                 'edit': object.edit,
@@ -926,9 +1077,9 @@ class Sketch_Groups(db.Model):
     return entities
     
   @staticmethod  
-  def delete_by_sketch(sketch_model_id):
+  def delete_by_sketch(sketch_id):
     theQuery = Sketch_Groups.all()
-    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    theQuery = theQuery.filter('sketch_id', long(sketch_id))
     objects = theQuery.run()
     count = 0
     for object in objects:
@@ -936,7 +1087,22 @@ class Sketch_Groups(db.Model):
       count += 1
     result = {'method':'delete_by_sketch',
               'en_type': 'Sketch_Groups',
-              'sketchModelId': sketch_model_id,
+              'sketchId': sketch_id,
+              'count': count}
+    return result
+    
+  @staticmethod  
+  def delete_by_group(group_id):
+    theQuery = Sketch_Groups.all()
+    theQuery = theQuery.filter('group_id', long(group_id))
+    objects = theQuery.run()
+    count = 0
+    for object in objects:
+      object.delete()
+      count += 1
+    result = {'method':'delete_by_group',
+              'en_type': 'Sketch_Groups',
+              'groupId': group_id,
               'count': count}
     return result
     
@@ -978,9 +1144,11 @@ class Group(db.Model):
           usergroupmgmt.put()
         
           result = {'status': 'success',
-              'g_name': jsonData['group_name'],
-              'u_id': jsonData['user_id'],
-              'role': "Founder"}
+                    'method': 'add',
+                    'en_type': 'Group',
+                    'g_name': jsonData['group_name'],
+                    'u_id': jsonData['user_id'],
+                    'role': "Founder"}
         else:
           result = {'status': 'error',
                     'message': 'The name you chose is already in use!',
@@ -1001,7 +1169,9 @@ class Group(db.Model):
       return "N/A"
       
   @staticmethod
-  def get_entities(criteria=""):
+  def get_entities(data):
+    jsonData = json.loads(data)
+    criteria = long(jsonData['id'])
     utc = UTC()
     theQuery = UserGroupMgmt.all()
     objects = theQuery.run()
@@ -1033,47 +1203,121 @@ class Group(db.Model):
     return result
     
   @staticmethod
-  def get_entity(model_id):
+  def get_entity(data):
+    jsonData = json.loads(data)
+    model_id = long(jsonData['id'])
     utc = UTC()
+    result = {}
     theobject = Group.get_by_id(long(model_id))
-    
-    user_groups_query = UserGroupMgmt.all().filter('group_id', theobject.key().id()).run()
-    u_groups = []
-    
-    if user_groups_query:
-      for u_g in user_groups_query:
-        user_name = User.get_name(u_g.user_id)
-        u_entity = {'user': user_name,
-                    'g_hash': User.get_image(u_g.user_id),
-                    'user_id': u_g.user_id,#placeholder
-                    'role': u_g.role}
-        u_groups.append(u_entity)    
-    
-    result = {'method':'get_entity',
-                  'id': model_id,
-                  'group_name': theobject.group_name,
-                  'u_groups': u_groups
-                  }
+    if theobject:
+      user_groups_query = UserGroupMgmt.all().filter('group_id', theobject.key().id()).run()
+      u_groups = []
+      
+      if user_groups_query:
+        for u_g in user_groups_query:
+          user_name = User.get_name(u_g.user_id)
+          u_entity = {'user': user_name,
+                      'g_hash': User.get_image(u_g.user_id),
+                      'user_id': u_g.user_id,
+                      'group_id': model_id,#placeholder
+                      'role': u_g.role}
+          u_groups.append(u_entity)    
+      
+      result = {'status':'success',
+                'method':'get_entity',
+                'en_type': 'Group',
+                'id': model_id,
+                'group_name': theobject.group_name,
+                'u_groups': u_groups
+                }
+    else:
+      result = {'status':'Error',
+                'message':'There was an error in loading the group you wanted.',
+                'submessage':'Please check the URL and try again later.'}
     return result
     
   @staticmethod
-  def check_users(model_id):
+  def check_users(data):
+  
+    jsonData = json.loads(data)
+    model_id = long(jsonData['id'])
+    criteria = jsonData['criteria'].strip()
+    
     theQuery = User.all()
     objects = theQuery.run()
-    groupQuery = UserGroupMgmt.all().filter('group_id',int(model_id))
-    groupObjects = groupQuery.run()
+    
+    groupQuery = UserGroupMgmt.all().filter('group_id', int(model_id))
+    groupObjects = groupQuery.fetch(limit=None)
+    
     entities = []
     for object in objects:
+      test = ""
       include = True
+      if criteria != "":      
+        if criteria.lower() in object.display_name.lower():
+          include = True
+        else:
+          include = False
+      
       for groupObject in groupObjects:
+        test += " " + str(groupObject.user_id)
         if object.key().id() == groupObject.user_id:
           include = False
+            
       if include:
         data = {'id': object.key().id(),
                 'u_name': object.display_name,
                 'u_realname': object.real_name}
         entities.append(data)
     return entities
+   
+  @staticmethod
+  def remove(data, userid):
+    jsonData = json.loads(data)
+    model_id = long(jsonData['id'])
+    
+    theobject = Group.get_by_id(long(model_id))
+    
+    check_founder = UserGroupMgmt.all().filter('group_id', model_id).filter('role', "Founder").get()
+    result = {}
+    if theobject and check_founder:
+      can_delete = False
+      if check_founder.user_id == userid:
+        can_delete = True
+        
+      if can_delete:
+        group_name = theobject.group_name
+        theobject.delete()
+        user_groups_query = UserGroupMgmt.all().filter('group_id', model_id).run()
+        
+        pending = Notification.all().filter('notification_type','GROUPINVITE').run()
+        
+        for p in pending:
+          u_g = UserGroupMgmt.get_by_id(p.relevant_id)
+          if u_g and u_g.group_id == model_id:
+            p.notification_type = 'GROUPDELCANCEL'
+            p.other_info = group_name
+            p.n_date = datetime.datetime.now()
+            p.put()
+        
+        Sketch_Groups.delete_by_group(model_id)
+        
+        for u_g in user_groups_query:
+          
+          if u_g.role == 'Member':
+            Notification.add(u_g.user_id, "GROUPDELETE", userid, group_name, 0)
+          u_g.delete()
+        result = {'status': 'success',
+                  'method': 'remove',
+                  'en_type': 'Group',
+                  'message': "The group '" + group_name + "' has been successfully deleted."}
+      else:
+        result = {'status': 'Error',
+                  'message': "You have to be the Founder in order to delete the group." }
+    else:
+      result = {'status': 'Error',
+                'message': "Unable to delete the group!"}
+    return result
     
 class UserGroupMgmt(db.Model):
   user_id = db.IntegerProperty(required=True)
@@ -1087,41 +1331,119 @@ class UserGroupMgmt(db.Model):
     result = {'status':'error',
               'message':'There was an error in sending the invite.',
               'submessage':'Please try again later.'}    
-    if jsonData['user_id'] != 0:
-      theQuery = UserGroupMgmt.all().filter('group_id', int(jsonData['group_id']))
-      objects = theQuery.run()
-      user_group_exists = False
-      for object in objects:
-        if int(jsonData['user_id']) == object.user_id:
-          user_group_exists = True
-          break
-      if not user_group_exists:
-        entity = UserGroupMgmt(user_id=int(jsonData['user_id']),
-                              group_id=int(jsonData['group_id']),
-                              role="Pending")
+    if jsonData['group_id'] != 0:
+      users = jsonData['users']
+      invited = []
+      theQuery = UserGroupMgmt.all().filter('group_id', long(jsonData['group_id']))
+      objects = theQuery.fetch(limit=None)
+      for user in users:
+        user_group_exists = False
+        for object in objects:
+          if long(user['id']) == long(object.user_id):
+            user_group_exists = True
+            break
+        if not user_group_exists:
+          entity = UserGroupMgmt(user_id=long(user['id']),
+                                group_id=long(jsonData['group_id']),
+                                role="Pending")
+        
+          entity.put()
+          
+          Notification.add(long(user['id']), "GROUPINVITE", long(other_user), "",entity.key().id()) 
+          invited.append(user['u_name'])
       
-        entity.put()
-        
-        notify = Notification(user_id = int(jsonData['user_id']),
-                              notification_type = "GROUPINVITE",
-                              other_user = int(other_user),
-                              relevant_id = entity.key().id())
-                              
-        notify.put()
-        
+      if len(invited) > 0:
         result = {'status': 'success',
-            'user_id': jsonData['user_id'],
-            'group_id': jsonData['group_id'],
-            'role': "Pending"}
+              'invited': invited,
+              'group_id': jsonData['group_id']}  
       else:
         result = {'status':'error',
-                'message':'You cannot invite an existing or pending member!'}   
+                'message':'Please select valid user(s) to invite.'}   
         
     else:
       result = {'status':'error',
-              'message':'Please select a valid user to invite.'}   
+              'message':'Please select valid user(s) to invite.'}   
     return result
     
+  @staticmethod
+  def remove_user(data, userid):
+    jsonData = json.loads(data)
+    remove_id = long(jsonData['user_id'])
+    role = jsonData['role']
+    group_id = long(jsonData['group_id'])
+    
+    result = {}
+    
+    user_groups_query = UserGroupMgmt.all().filter('group_id', group_id).filter('user_id', remove_id).get()
+    check_founder = UserGroupMgmt.all().filter('group_id', group_id).filter('role', "Founder").get()
+    
+    if user_groups_query and check_founder:
+      if check_founder.user_id == userid or User.check_if_admin(userid):
+        if userid != remove_id:
+          user_groups_query.delete()
+          result = {'status': 'success',
+                    'method': 'remove_user',
+                    'en_type': 'UserGroupMgmt',
+                    'type': 'kick',
+                    'message': 'You have expelled ' + User.get_name(remove_id) + ' the group "' + Group.get_name(group_id) + '".'}
+          Notification.add(remove_id, "GROUPEXPEL", userid, "", group_id)
+        else:
+          result = {'status': 'Error',
+                    'message': 'You cannot expel yourself if you are the Founder!',
+                    'submessage': 'Pass the Founder position to someone else before trying to leave.'}
+      elif remove_id == userid:
+        user_groups_query.delete()
+        result = {'status': 'success',
+                  'method': 'remove_user',
+                  'en_type': 'UserGroupMgmt',
+                  'type': 'quit',
+                  'message': 'You have left the group "' + Group.get_name(group_id) + '".'}
+        Notification.add(check_founder.user_id, "GROUPLEAVE", remove_id, "", group_id) 
+        
+      else:
+        result = {'status': 'Error',
+                  'message': 'You cannot expel a member unless you are the founder!'}
+    else:
+      result = {'status': 'Error',
+                'message': 'Unable to find the user to be expelled!'}
+    return result
+    
+  @staticmethod
+  def pass_founder(data, userid):
+    jsonData = json.loads(data)
+    pass_id = long(jsonData['user_id'])
+    role = jsonData['role']
+    group_id = long(jsonData['group_id'])
+    
+    result = {}
+    
+    user_groups_query = UserGroupMgmt.all().filter('group_id', group_id).filter('user_id', pass_id).get()
+    check_founder = UserGroupMgmt.all().filter('group_id', group_id).filter('role', "Founder").get()
+  
+    if user_groups_query and check_founder:
+      if check_founder.user_id == userid:
+        if userid != pass_id:
+          user_groups_query.role = "Founder";
+          check_founder.role = "Member";
+          user_groups_query.put()
+          check_founder.put()
+          
+          
+          Notification.add(pass_id, "GROUPPASSFOUNDER", check_founder.user_id, "", group_id) 
+          result = {'status': 'Success',
+                    'method': 'pass_founder',
+                    'en_type': 'UserGroupMgmt',
+                    'message': 'You have made ' + User.get_name(pass_id) + ' the Founder of the group "' + Group.get_name(group_id) + '".'}
+        else:
+          result = {'status': 'Error',
+                  'message': 'You are already the Founder!'}
+      else:
+        result = {'status': 'Error',
+                  'message': 'You are not the Founder of this group!'}
+    else:
+      result = {'status': 'Error',
+                  'message': 'Unable to find the user to be given the Founder position!'}
+    return result
   @staticmethod
   def get_memberships(userid):
     entities = []
@@ -1147,23 +1469,21 @@ class UserGroupMgmt(db.Model):
     status = str(jsonData['status'])
     u_g = UserGroupMgmt.get_by_id(int(jsonData['u_g']))
     founder = UserGroupMgmt.all().filter('group_id', u_g.group_id).filter('role', 'Founder').get()
-    new_notify = Notification(user_id = founder.user_id,
-                              notification_type = "",
-                              other_user = int(userid),
-                              relevant_id = u_g.group_id)
     if status == "accept":
       u_g.role = "Member"
       u_g.put()
-      new_notify.notification_type = "GROUPACCEPT"
-      
+      Notification.add(founder.user_id, "GROUPACCEPT", int(userid), "", u_g.group_id)
+      Notification.add(int(userid), "GROUPJOINCFM", 0, "", u_g.group_id)  
     else:
       u_g.delete()
-      new_notify.notification_type = "GROUPREJECT"
+      Notification.add(founder.user_id, "GROUPREJECT", int(userid), "", u_g.group_id) 
     
     old_notify = Notification.get_by_id(int(jsonData['n_id']))
     old_notify.delete()
-    new_notify.put()
+    
     result = {'status': 'success',
+              'method': 'accept_reject',
+              'en_type': 'UserGroupMgmt',
               'message': 'You have successfully ' + jsonData['status'] + 'ed the group invitation.'}
     return result
       
@@ -1172,13 +1492,111 @@ class Notification(db.Model):
   notification_date = db.DateTimeProperty(auto_now_add=True)
   notification_type = db.StringProperty()
   other_user = db.IntegerProperty()
-  other_info = db.StringProperty()
+  # other_info = db.StringProperty()
   relevant_id = db.IntegerProperty()
+  message = db.StringProperty()
 
   def to_dict(self):
        d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
        d["id"] = self.key().id()
        return d
+       
+  @staticmethod
+  def add(u_id=-1, type="", o_user = 0, o_info = "", r_id = 0):
+    if u_id != -1 and type != "":
+      #Notification creation
+      o_user_name = User.get_name(o_user)
+      verify = False
+      if type == "GROUPINVITE":
+        u_g = UserGroupMgmt.get_by_id(r_id)
+        if u_g:
+          relevant =  Group.get_name(u_g.group_id)
+          notify = Notification(user_id = u_id,
+                                notification_type = type,
+                                other_user = o_user,
+                                relevant_id = r_id,
+                                message =  o_user_name + " has invited you to the group " + relevant + ".")
+          notify.put()
+          verify = True
+      elif type == "GROUPACCEPT":
+        relevant =  Group.get_name(r_id)
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = o_user,
+                              relevant_id = r_id,
+                              message = o_user_name + " has accepted your invitation to the group " + relevant + ".")
+        notify.put()
+        verify = True
+      elif type == "GROUPREJECT":
+        relevant =  Group.get_name(r_id)
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = o_user,
+                              relevant_id = r_id,
+                              message = o_user_name + " has rejected your invitation to the group " + relevant + ".")
+        notify.put()
+        verify = True
+      elif type == "GROUPLEAVE":
+        relevant =  Group.get_name(r_id)
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = o_user,
+                              relevant_id = r_id,
+                              message = o_user_name + " has left the group " + relevant + ".")
+        notify.put()
+        verify = True
+      elif type == "GROUPJOINCFM":
+        relevant =  Group.get_name(r_id)
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = 0,
+                              relevant_id = r_id,
+                              message = "You have joined the group " + relevant + ".")
+        notify.put()
+        verify = True
+      elif type == "GROUPPASSFOUNDER":
+        relevant =  Group.get_name(r_id)
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = o_user,
+                              relevant_id = r_id,
+                              message = o_user_name + " has made you the Founder of the group " + relevant + ".")
+        notify.put()
+        verify = True
+      elif type == "GROUPEXPEL":
+        relevant =  Group.get_name(r_id)
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = o_user,
+                              relevant_id = r_id,
+                              message = o_user_name + " has kicked you from the group " + relevant + ".")
+        notify.put()
+        verify = True
+      elif type == "GROUPDELETE":
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = o_user,
+                              relevant_id = 0,
+                              message = o_user_name + " has deleted the group " + o_info + ".")
+        notify.put()
+        verify = True
+      elif type == "GROUPDELCANCEL":
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = o_user,
+                              relevant_id = 0,
+                              message = o_user_name + " has cancelled your invite and deleted the group " + o_info + ".")
+        notify.put()
+        verify = True               
+      elif type == "ADMINDELETE":
+        notify = Notification(user_id = u_id,
+                              notification_type = type,
+                              other_user = 0,
+                              relevant_id = 0,
+                              message = "An administrator has deleted your sketch '" + o_info + "'.")
+        notify.put()
+        verify = True
+      return verify
        
   @staticmethod
   def get_entities(user_id=-1, limit=0):
@@ -1196,38 +1614,13 @@ class Notification(db.Model):
         n_date = object.notification_date.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S")
         o_user = User.get_name(object.other_user)
         
-        if object.notification_type == "GROUPINVITE":
-          u_g = UserGroupMgmt.get_by_id(object.relevant_id)
-          relevant =  Group.get_name(u_g.group_id)
-          entity = {'n_date':n_date,
-                  'id': object.key().id(),
-                  'n_message': o_user + " has invited you to the group " + relevant + ".",
-                  'n_type': object.notification_type,
-                  'n_relevant': object.relevant_id}
-          entities.append(entity)
-        elif object.notification_type == "GROUPACCEPT":
-          relevant =  Group.get_name(object.relevant_id)
-          entity = {'n_date':n_date,
-                  'id': object.key().id(),
-                  'n_message': o_user + " has accepted your invitation to the group " + relevant + ".",
-                  'n_type': object.notification_type,
-                  'n_relevant': object.relevant_id}
-          entities.append(entity)
-        elif object.notification_type == "GROUPREJECT":
-          relevant =  Group.get_name(object.relevant_id)
-          entity = {'n_date':n_date,
-                  'id': object.key().id(),
-                  'n_message': o_user + " has rejected your invitation to the group " + relevant + ".",
-                  'n_type': object.notification_type,
-                  'n_relevant': object.relevant_id}
-        elif object.notification_type == "ADMINDELETE":
-          entity = {'n_date':n_date,
-                  'id': object.key().id(),
-                  'n_message': "An administrator has deleted your sketch '" + object.other_info + "'.",
-                  'n_type': object.notification_type,
-                  'n_relevant': 0}
-          entities.append(entity)            
-        #Placeholder for other notification types
+        entity = {'n_date':n_date,
+                'id': object.key().id(),
+                'n_message': object.message,
+                'n_type': object.notification_type,
+                'n_relevant': object.relevant_id,
+                'user_id': object.user_id}
+        entities.append(entity)            
         count += 1
         #Cutoff if limit was defined
         if limit != 0:
@@ -1241,7 +1634,7 @@ class Notification(db.Model):
     return result
       
 class Like(db.Model):
-  sketch_model_id = db.IntegerProperty(required=True)
+  sketch_id = db.IntegerProperty()
   user_id = db.IntegerProperty(required=True)
   created = db.DateTimeProperty(auto_now_add=True) #The time that the model was 
   
@@ -1255,21 +1648,21 @@ class Like(db.Model):
     result = {}
     try:
       jsonData = json.loads(data)
-      sketchModelId = long(jsonData['sketchModelId'])
-      permissions = Permissions.user_access_control(sketchModelId, userid)
+      sketchId = long(jsonData['sketchId'])
+      permissions = Permissions.user_access_control(sketchId, userid)
       
       if bool(permissions['p_view']):
         #Users can only (un)like sketches they can view
         theQuery = Like.all()
-        theQuery.filter('sketch_model_id =', sketchModelId).filter('user_id =', userid)
+        theQuery.filter('sketch_id =', sketchId).filter('user_id =', userid)
         theobject = theQuery.get()
-        data = {'sketchModelId': sketchModelId,
+        data = {'sketchId': sketchId,
                 'userid': userid,
                 'action': ""}
         
         if theobject is None:
           #No existing Like by this user for this sketch - new Like
-          newobject = Like(sketch_model_id = sketchModelId,
+          newobject = Like(sketch_id = sketchId,
                            user_id = long(userid))
                            
           newobject.put()
@@ -1280,18 +1673,23 @@ class Like(db.Model):
           data['action'] = "Dislike"
           
         result = {'status': "success",
+                  'method':"add",
+                  'en_type':"Like",
                   'data': data}
       else:
-        result = {'status': "error"}
+        result = {'status': "error",
+                  'message': "You are not allowed to view this sketch."}
     except:
-      result = {'status': "error"}
+      result = {'status': "error",
+                'message': "There was an error in updating your like.",
+                'submessage': "Please try again later."}
     return result
 
   @staticmethod
-  def check_if_user_likes(sketchModelId = -1, userid = -1):
+  def check_if_user_likes(sketchId = -1, userid = -1):
     try:
       theQuery = Like.all()
-      theQuery.filter('sketch_model_id =', long(sketchModelId)).filter('user_id =', long(userid))
+      theQuery.filter('sketch_id =', long(sketchId)).filter('user_id =', long(userid))
       theobject = theQuery.get()
       if theobject:
         return True
@@ -1300,17 +1698,26 @@ class Like(db.Model):
     except:
       return False
       
+  #Handler wrapper method to call get_entities_by_id via JSON POST
   @staticmethod
-  def get_entities_by_id(sketchModelId, userid = 0):
+  def get_entities_by_id_handler_wrapper(data, userid):
+    jsonData = json.loads(data)
+    model_id = long(jsonData['id'])
+    result = Like.get_entities_by_id(model_id, userid)
+    
+    return result    
+      
+  @staticmethod
+  def get_entities_by_id(sketchId, userid = 0):
     utc = UTC()
     theQuery = Like.all()
     objects = theQuery.run()
     
     entities = []
     for object in objects:
-      if object.sketch_model_id == long(sketchModelId):
+      if object.sketch_id == long(sketchId):
         data = {'id': object.key().id(),
-                'sketch_model_id': object.sketch_model_id,
+                'sketch_id': object.sketch_id,
                 'user_id': object.user_id,
                 'user_name': User.get_name(object.user_id),
                 'created': object.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S")}
@@ -1318,16 +1725,16 @@ class Like(db.Model):
       
     result = {'method':'get_entities_by_id',
               'en_type': 'Like',
-              'is_user_like': Like.check_if_user_likes(sketchModelId, userid),
+              'is_user_like': Like.check_if_user_likes(sketchId, userid),
               'count': len(entities),
               'count_other_users': (len(entities) - 1),
               'entities': entities}
     return result
         
   @staticmethod  
-  def delete_by_sketch(sketch_model_id):
+  def delete_by_sketch(sketch_id):
     theQuery = Like.all()
-    theQuery = theQuery.filter('sketch_model_id =', long(sketch_model_id))
+    theQuery = theQuery.filter('sketch_id =', long(sketch_id))
     objects = theQuery.run()
     count = 0
     for object in objects:
@@ -1335,7 +1742,7 @@ class Like(db.Model):
       count += 1
     result = {'method':'delete_by_sketch',
               'en_type': 'Like',
-              'sketchModelId': sketch_model_id,
+              'sketchId': sketch_id,
               'count': count}
     return result
     
@@ -1376,33 +1783,17 @@ class ActionHandler(webapp2.RequestHandler):
             
         return self.response.out.write(json.dumps(result,default=dthandler)) 
 
-    def add_sketch(self): #/sketch
-        #Check for GET paramenter == model to see if this is an add or list. 
-        #Call Sketch.add(model, data) or
-        #Fetch all models and return a list. 
-                
-        #Todo - Check for method.
-        logging.info(self.request.method)
-        if self.request.method=="POST":
-          logging.info("in POST")
-          logging.info(self.request.body)
-          result = Sketch.add(self.request.body)
-          #logging.info(result)
-          return self.respond(result)
+    def add_sketch(self): #/add/sketch
     
-        else:
-          data = self.request.get("obj")
-          if data: 
-            logging.info("Adding new data: "+data)
-            result = Sketch.add(data)
-            
-          return self.respond(result)
+        auser = self.auth.get_user_by_session()
+        userid = 0
+        if auser:
+          userid = auser['user_id']
+          
+        result = Sketch.add(self.request.body, userid=userid)
+        return self.respond(result)
 
     def delete_sketch(self, model_id):  #/delete/sketch/<model_id>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
 
         auser = self.auth.get_user_by_session()
         userid = 0
@@ -1412,58 +1803,28 @@ class ActionHandler(webapp2.RequestHandler):
         
         return self.respond(result)
           
-    def user_sketch(self, criteria): #/list/sketch/user/<criteria>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
+    def user_sketch(self): #/list/sketch/user
 
         auser = self.auth.get_user_by_session()
         userid = 0
         if auser:
           userid = auser['user_id']
           
-        result = Sketch.get_entities_by_id(criteria=criteria,userid=userid)
+        result = Sketch.get_entities_by_id(self.request.body,userid=userid)
         return self.respond(result)    
           
-    def group_sketch(self, criteria): #/list/sketch/group/<criteria>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
+    def group_sketch(self): #/list/sketch/group
 
         auser = self.auth.get_user_by_session()
         userid = 0
         if auser:
           userid = auser['user_id']
           
-        result = Sketch.get_entity_by_group(criteria,userid=userid)
+        result = Sketch.get_entity_by_group(self.request.body,userid=userid)
         return self.respond(result)    
         
-    def search_sketch(self, criteria): #/list/sketch/<criteria>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
-
-        offset = 0
-        new_offset = self.request.get("offset")
-        if new_offset:
-          offset = int(new_offset)
-
-        auser = self.auth.get_user_by_session()
-        userid = 0
-        if auser:
-          userid = auser['user_id']
-
-        result = Sketch.get_entities(criteria=criteria, userid=userid)
-        return self.respond(result)
       
     def list_sketch(self): #/list/sketch
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
 
         offset = 0
         new_offset = self.request.get("offset")
@@ -1475,113 +1836,59 @@ class ActionHandler(webapp2.RequestHandler):
         if auser:
           userid = auser['user_id']
           
-        result = Sketch.get_entities(userid=userid)
+        result = Sketch.get_entities(self.request.body, userid=userid)
         return self.respond(result)
       
-    def view_sketch(self, sketchId, version): #/get/sketch/view/<sketchId>/<version>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
+    def view_sketch(self): #/get/sketch/view
 
         auser = self.auth.get_user_by_session()
         userid = 0
         if auser:
           userid = auser['user_id']
         
-        result = Sketch.get_entity_by_versioning(sketchId, version, "View", userid=userid)
-        return self.respond(result)     
-
-    def view_latest_sketch(self, sketchId): #/get/sketch/view/<sketchId>/<version>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
+        result = Sketch.get_entity_by_versioning(self.request.body, "View", userid=userid)
+        return self.respond(result)    
+        
+    def edit_sketch(self): #/get/sketch/edit
 
         auser = self.auth.get_user_by_session()
         userid = 0
         if auser:
           userid = auser['user_id']
         
-        result = Sketch.get_entity_by_versioning(sketchId, -1, "View", userid=userid)
-        return self.respond(result)     
-        
-    def edit_latest_sketch(self, sketchId): #/get/sketch/edit/<sketchId>/<version>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
-
-        auser = self.auth.get_user_by_session()
-        userid = 0
-        if auser:
-          userid = auser['user_id']
-        
-        result = Sketch.get_entity_by_versioning(sketchId, -1, "Edit", userid=userid)
-        return self.respond(result) 
-        
-    def edit_sketch(self, sketchId, version): #/get/sketch/edit/<sketchId>/<version>
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
-
-        auser = self.auth.get_user_by_session()
-        userid = 0
-        if auser:
-          userid = auser['user_id']
-        
-        result = Sketch.get_entity_by_versioning(sketchId, version, "Edit", userid=userid)
+        result = Sketch.get_entity_by_versioning(self.request.body, "Edit", userid=userid)
         return self.respond(result) 
         
     def add_group(self):
-        #Check for GET paramenter == model to see if this is an add or list. 
-        #Call Sketch.add(model, data) or
-        #Fetch all models and return a list. 
-                
-        #Todo - Check for method.
-        logging.info(self.request.method)
         if self.request.method=="POST":
-          logging.info("in POST")
-          logging.info(self.request.body)
           result = Group.add(self.request.body)
-          #logging.info(result)
           return self.respond(result)
     
         else:
           data = self.request.get("obj")
           if data: 
-            logging.info("Adding new data: "+data)
             result = Group.add(data)
           return self.respond(result)
 
-    def get_group(self, model_id):
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
+    def get_group(self):
 
-        result = Group.get_entity(model_id)
+        result = Group.get_entity(self.request.body)
         return self.respond(result) 
 
-    def user_group(self, criteria):
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
+    def user_group(self):
 
         offset = 0
         new_offset = self.request.get("offset")
         if new_offset:
           offset = int(new_offset)
 
-        result = Group.get_entities(criteria=criteria)
+        result = Group.get_entities(self.request.body)
         return self.respond(result)
 
-    def check_user_group(self, model_id):
+    def check_user_group(self):
       result = {'status':'error',
                 'message':''}
-      entities = Group.check_users(model_id)
+      entities = Group.check_users(self.request.body)
       result = {'status':'success',
                 'method':'list_user',
                 'en_type': 'User',
@@ -1589,10 +1896,6 @@ class ActionHandler(webapp2.RequestHandler):
       return self.respond(result)
         
     def get_versions(self):
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
 
         offset = 0
         new_offset = self.request.get("offset")
@@ -1603,11 +1906,6 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)
         
     def add_user_group(self):
-        #Check for GET paramenter == model to see if this is an add or list. 
-        #Call Sketch.add(model, data) or
-        #Fetch all models and return a list. 
-                
-        #Todo - Check for method.
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'There was an error in sending the invite.',
@@ -1617,6 +1915,20 @@ class ActionHandler(webapp2.RequestHandler):
           result = UserGroupMgmt.add(self.request.body, userid)
         return self.respond(result)
         
+    def remove_user_group(self):
+        auser = self.auth.get_user_by_session() 
+        if auser:
+          userid = auser['user_id']
+          result = UserGroupMgmt.remove_user(self.request.body, userid)
+        return self.respond(result)   
+        
+    def pass_founder_group(self):
+        auser = self.auth.get_user_by_session() 
+        if auser:
+          userid = auser['user_id']
+          result = UserGroupMgmt.pass_founder(self.request.body, userid)
+        return self.respond(result)        
+        
     def accept_reject_group(self):
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
@@ -1624,6 +1936,15 @@ class ActionHandler(webapp2.RequestHandler):
         if auser:
           userid = auser['user_id']
           result = UserGroupMgmt.accept_reject(self.request.body, userid)
+        return self.respond(result) 
+        
+    def delete_group(self):
+        auser = self.auth.get_user_by_session()
+        result = {'status':'error',
+              'message':'Not authenticated.'}
+        if auser:
+          userid = auser['user_id']
+          result = Group.remove(self.request.body, userid)
         return self.respond(result)      
         
     def get_notification(self, limit):
@@ -1644,7 +1965,6 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)        
           
     def add_comment(self):
-        logging.info(self.request.method)
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'There was an error in adding the comment.',
@@ -1652,28 +1972,22 @@ class ActionHandler(webapp2.RequestHandler):
         if auser:
           userid = auser['user_id']
           if self.request.method=="POST":
-            logging.info("in POST")
-            logging.info(self.request.body)
             result = Comment.add(self.request.body, userid)
       
           else:
             data = self.request.get("obj")
             if data: 
-              logging.info("Adding new data: "+data)
               result = Comment.add(data, userid)
         return self.respond(result)        
         
-    def get_comment(self, model_id):
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
-
-        result = Comment.get_entities_by_id(model_id)
+    def get_comment(self):
+        auser = self.auth.get_user_by_session()
+        if auser:
+          userid = auser['user_id']
+        result = Comment.get_entities_by_id_handler_wrapper(self.request.body)
         return self.respond(result) 
           
     def toggle_like(self):
-        logging.info(self.request.method)
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'There was an error in liking/unliking the sketch.',
@@ -1681,29 +1995,22 @@ class ActionHandler(webapp2.RequestHandler):
         if auser:
           userid = auser['user_id']
           if self.request.method=="POST":
-            logging.info("in POST")
-            logging.info(self.request.body)
             result = Like.like_unlike(self.request.body, userid)
       
           else:
             data = self.request.get("obj")
             if data: 
-              logging.info("Adding new data: "+data)
               result = Like.like_unlike(data, userid)
         return self.respond(result)        
         
-    def get_like(self, model_id):
-        #Check for GET parameter == model to see if this is a get or an edit
-        logging.info("**********************")
-        logging.info(self.request.method)
-        logging.info("**********************")
+    def get_like(self):
         
         auser = self.auth.get_user_by_session()
         if auser:
           userid = auser['user_id']
-          result = Like.get_entities_by_id(model_id, userid)
+          result = Like.get_entities_by_id_handler_wrapper(self.request.body, userid)
         else:
-          result = Like.get_entities_by_id(model_id, 0)
+          result = Like.get_entities_by_id_handler_wrapper(self.request.body, 0)
         return self.respond(result)    
    
         
@@ -1716,28 +2023,28 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/metadata', handler=ActionHandler, handler_method='metadata'),
     webapp2.Route('/delete/sketch/<model_id>', handler=ActionHandler, handler_method='delete_sketch'), 
     webapp2.Route('/add/sketch', handler=ActionHandler, handler_method='add_sketch'), # Add Sketch
-    webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), # List Sketch
-    webapp2.Route('/list/sketch/<criteria>', handler=ActionHandler, handler_method='search_sketch'), # List Sketch That Meets <criteria>
-    webapp2.Route('/list/sketch/user/<criteria>', handler=ActionHandler, handler_method='user_sketch'), # List Sketch By User
-    webapp2.Route('/list/sketch/group/<criteria>', handler=ActionHandler, handler_method='group_sketch'), # List Sketch By Group
-    webapp2.Route('/get/sketch/view/<sketchId>', handler=ActionHandler, handler_method='view_latest_sketch'), # Get Sketch (View)
-    webapp2.Route('/get/sketch/view/<sketchId>/<version>', handler=ActionHandler, handler_method='view_sketch'), # Get Sketch (View)
-    webapp2.Route('/get/sketch/edit/<sketchId>', handler=ActionHandler, handler_method='edit_latest_sketch'), # Get Sketch (Edit)
-    webapp2.Route('/get/sketch/edit/<sketchId>/<version>', handler=ActionHandler, handler_method='edit_sketch'), # Get Sketch (Edit)
-    webapp2.Route('/group', handler=ActionHandler, handler_method='add_group'), # Add Group
-    webapp2.Route('/get/group/<model_id>', handler=ActionHandler, handler_method='get_group'), # Get Group
-    webapp2.Route('/list/group/<criteria>', handler=ActionHandler, handler_method='user_group'), # 
-    webapp2.Route('/listuser/group/<model_id>', handler=ActionHandler, handler_method='check_user_group'), #
+    webapp2.Route('/list/sketch', handler=ActionHandler, handler_method='list_sketch'), # List/Search Sketch
+    webapp2.Route('/list/sketch/user', handler=ActionHandler, handler_method='user_sketch'), # List Sketch By User
+    webapp2.Route('/list/sketch/group', handler=ActionHandler, handler_method='group_sketch'), # List Sketch By Group
+    webapp2.Route('/get/sketch/view', handler=ActionHandler, handler_method='view_sketch'), # Get Sketch (View)
+    webapp2.Route('/get/sketch/edit', handler=ActionHandler, handler_method='edit_sketch'), # Get Sketch (Edit)
+    webapp2.Route('/add/group', handler=ActionHandler, handler_method='add_group'), # Add Group
+    webapp2.Route('/get/group', handler=ActionHandler, handler_method='get_group'), # Get Group
+    webapp2.Route('/list/group', handler=ActionHandler, handler_method='user_group'), # 
+    webapp2.Route('/listuser/group', handler=ActionHandler, handler_method='check_user_group'), #
     webapp2.Route('/adduser/group', handler=ActionHandler, handler_method='add_user_group'), # Invite User To Group
+    webapp2.Route('/removeuser/group', handler=ActionHandler, handler_method='remove_user_group'), # Expel User To Group/Leave Group
+    webapp2.Route('/passfounder/group', handler=ActionHandler, handler_method='pass_founder_group'), # Pass Group Founder Position
     webapp2.Route('/acceptreject/group', handler=ActionHandler, handler_method='accept_reject_group'), # Accept/Reject Group Invite
+    webapp2.Route('/delete/group', handler=ActionHandler, handler_method='delete_group'), # Delete Group
     webapp2.Route('/get/notification/<limit>', handler=ActionHandler, handler_method='get_notification'), # Get Notifications (Menu)
     webapp2.Route('/get/notification', handler=ActionHandler, handler_method='get_all_notification'), # Get All Notifications
     
     webapp2.Route('/add/comment', handler=ActionHandler, handler_method='add_comment'), # Add Comment
-    webapp2.Route('/get/comment/<model_id>', handler=ActionHandler, handler_method='get_comment'), # Get Comment For Sketch
+    webapp2.Route('/get/comment', handler=ActionHandler, handler_method='get_comment'), # Get Comment For Sketch
     
     webapp2.Route('/toggle/like', handler=ActionHandler, handler_method='toggle_like'), # Add Comment
-    webapp2.Route('/get/like/<model_id>', handler=ActionHandler, handler_method='get_like'), # Get Comment For Sketch
+    webapp2.Route('/get/like', handler=ActionHandler, handler_method='get_like'), # Get Comment For Sketch
     
     webapp2.Route('/list/version', handler=ActionHandler, handler_method='get_versions') # Get Versions
     ],

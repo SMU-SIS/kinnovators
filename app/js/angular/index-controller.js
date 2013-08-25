@@ -49,8 +49,8 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
             $scope.get_notification();            
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
-            $scope.waiting = "Ready";
           }
+          $scope.waiting = "Ready";
     });
   }
   
@@ -61,7 +61,6 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
     $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
     {"remote_url":$scope.remote_url,"limit":3}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Loading";   
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
         if ($scope.smallnotifications.entities !== undefined) {
@@ -69,11 +68,8 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
             $scope.notify = "You have pending notification(s).";
           }
         }
-        $scope.waiting = "Ready";
      });  
   };  
-  
-  
 
   
   $scope.accept = {};

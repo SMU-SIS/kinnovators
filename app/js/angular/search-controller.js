@@ -21,9 +21,7 @@ function SearchController($scope,$resource,sharedProperties, sharedFunctions){
   };
   
   $scope.search = "";
-  $scope.search_types = [{"name":"Sketch Name", "id": "name"},
-                          {"name":"Sketch Owner", "id": "owner"}]
-  $scope.selected_search = {"name":"Sketch Name", "id": "name"};
+  $scope.search_notice = "";
   $scope.predicate_users = '-created';
   
   //Replace this url with your final URL from the SingPath API path. 
@@ -67,7 +65,6 @@ function SearchController($scope,$resource,sharedProperties, sharedFunctions){
     $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
     {"remote_url":$scope.remote_url,"limit":3}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Updating";
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
         if ($scope.smallnotifications.entities !== undefined) {
@@ -75,9 +72,8 @@ function SearchController($scope,$resource,sharedProperties, sharedFunctions){
             $scope.notify = "You have pending notification(s).";
           }
         }
-        $scope.waiting = "Ready";
      });  
-  };
+  };  
 
 
   $scope.accept = {};
@@ -126,16 +122,45 @@ function SearchController($scope,$resource,sharedProperties, sharedFunctions){
     $scope.heading = "";
     $scope.message = "";
     $scope.submessage = "";
-  }  
+  }
+  
+  $scope.search_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
+  
+  $scope.new_search = function() {
+    $scope.search_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
+    $scope.searchlist();
+  }
+  
+  $scope.paginate_back = function() {
+    
+  }
+  
+  $scope.paginate_forward = function() {
+    if ($scope.search_pagination.next_offset > 
+        $scope.search_pagination.offset) {
+      $scope.search_pagination.offset = $scope.search_pagination.next_offset;
+      $scope.searchlist();
+    }
+  }
+  
   $scope.searchlist = function(){
-    $scope.SearchResource = $resource('http://:remote_url/list/sketch/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.search}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Loading";   
-    $scope.SearchResource.get(function(response) { 
-        $scope.searchitems = response;
-        $scope.waiting = "Ready";
-    });
+    if ($scope.search !== "") {
+      $scope.searchmeta = {};
+      $scope.searchmeta.data = {"criteria":$scope.search,
+                                "show":'latest',
+                                "limit":$scope.search_pagination.limit,
+                                "offset":$scope.search_pagination.offset};
+      $scope.SearchResource = $resource('http://:remote_url/list/sketch',
+               {"remote_url":$scope.remote_url}, 
+               {'save': {method: 'POST', params:{} }});
+      $scope.waiting = "Loading";   
+      var searchmeta = new $scope.SearchResource($scope.searchmeta.data);
+      searchmeta.$save(function(response) { 
+          $scope.searchitems = response;
+          $scope.search_pagination.next_offset = $scope.searchitems.next_offset;$scope.search_notice = $scope.search;
+          $scope.waiting = "Ready";
+      });
+    }
   };
   
   $scope.getuser();

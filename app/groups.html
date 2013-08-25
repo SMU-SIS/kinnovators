@@ -74,11 +74,10 @@
         }
         e = document.getElementById('testdiv');
         scope = angular.element(e).scope();
-        if (query_string.id !== undefined) {
+        if (query_string.id !== undefined && query_string.id !== "") {
           scope.$apply(function() {
               scope.setTest(query_string.id);
               scope.get_group();
-              scope.list();
           });
         } else {
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
@@ -124,10 +123,10 @@
             <br/>
             <br/>
           </div>
-          <div class="controls">
-            <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
-          </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
       </div>
     </div>          
 
@@ -154,9 +153,10 @@
 <!--                 <b class="caret"></b> -->
                 <i class="icon-list-alt icon-white"></i>
               </a>
-              <ul class="dropdown-menu" ui-if="!!smallnotifications.entities.length">
+              <ul class="dropdown-menu">
                 <li>
-                  <table class="table table-striped">
+                  <a ui-if="!smallnotifications.entities.length"><span>You have no new notifications.</span></a>
+                  <table class="table table-striped" ui-if="!!smallnotifications.entities.length">
                     <tr ng-repeat="notification in smallnotifications.entities">
                       <td>
                         <span>{{notification.n_date}}</span>
@@ -181,7 +181,7 @@
                     Show All Notifications
                   </a>
                 </li>      
-              </ul>              
+              </ul>                         
             </li>
           </ul>           
           <p class="navbar-search pull-right">
@@ -204,7 +204,7 @@
     </div>
     
     <!-- Main Body -->
-    <div class="container-fluid">
+    <div class="container-fluid" id="wrap">
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
@@ -227,31 +227,92 @@
           <div class="row-fluid">
             <div class="row-fluid">
               <span id="testdiv" ng-model="test"></span>
-              <h2 ng-cloak>{{group_name}}</h2>
               <div class="row-fluid">
+                <div class="span10">
+                  <h2 ng-cloak>{{group_name}}</h2>
+                </div>
+                <div class="span2">
+                  <button class="btn btn-inverse btn-small" style="float:right" ui-if="!founder && belong" ng-click="leavegroup()" ng-cloak>Leave Group</button>
+                  <button class="btn btn-inverse btn-small" style="float:right" ui-if="founder && belong" ng-click="deletegroup()" ng-cloak>Delete Group</button>
+                </div>
               </div>
-              
             </div>
-            
             <div class="tabbable">
               <ul class="nav nav-tabs">
                 <li class="active">
-                  <a href="#GroupMembers" data-toggle="tab">Group Members</a>
+                  <a href="#GroupSketches" data-toggle="tab">Group Sketches</a>
                 </li>
                 <li>
-                  <a href="#GroupSketches" data-toggle="tab">Group Sketches</a>
+                  <a href="#GroupMembers" data-toggle="tab">Group Members</a>
                 </li>
               </ul>
               <div class="tab-content" id="main">
-                <!-- Group Members Pane -->
-                <div class="tab-pane active" id="GroupMembers">
+                <!-- Group Sketches Pane -->
+                <div class="tab-pane active" id="GroupSketches">
                   <div class="row-fluid">
-                      <div class="span6">
-                        <h2>Group Members</h2>
-                      </div>
-                      <div class="span6">
-                        <button class="btn btn-inverse btn-small" data-toggle="modal" href="#AddMember" ng-click="groupuserlist()" ui-if="founder">Add Member</button> 
-                      </div>
+                    <h2>Group Sketches</h2>
+                    <span ui-if="!items.entities.length" ng-cloak><em>No sketches were found for this group.</em></span>
+                    <ul class="unstyled" ui-if="!!items.entities.length"  ng-cloak>
+                      <li ng-repeat="files in items.entities | orderBy:predicate_users:reverse | filter:filter">
+                        <div class="well well-small">
+                          <div class="row-fluid">
+                            <div class="span3">
+                              <a href="view.html?id={{files.data.sketchId}}"  title="View this sketch">
+                                <img src="data:image/png;base64,{{files.data.thumbnailData}}" alt="Red dot" ui-if="!!files.data.thumbnailData">
+                                <div class="well well-small" ui-if="!files.data.thumbnailData">
+                                  <span>No preview available</span>
+                                </div>
+                              </a>
+                            </div>
+                            <div class="span9">
+                              <div class="row-fluid">
+                                <div class="span6">
+                                  <a href="view.html?id={{files.data.sketchId}}"  title="View this sketch">
+                                    <h4>{{files.data.fileName}}</h4>
+                                  </a>
+                                </div>
+                                <div class="span6">
+                                  <span class="label">
+                                    Likes: {{files.data.like}}
+                                  </span>
+                                  <span class="label">
+                                    Comments: {{files.data.comment}}
+                                  </span>
+                                </div>
+                              </div>
+                              <em>
+                                <span ui-if="files.data.changeDescription.length > 50" title="{{files.data.changeDescription}}" ng-cloak>
+                                  {{files.data.changeDescription.substring(0, 49)}}...
+                                </span>
+                                <span ui-if="0 < files.data.changeDescription.length <= 50" ng-cloak>
+                                  {{files.data.changeDescription}}
+                                </span>
+                                <span ui-if="files.data.changeDescription.length == 0" ng-cloak>
+                                  No description given
+                                </span>
+                              </em>
+                              <br>
+                              Created by 
+                              <a href="profile.html?id={{files.data.owner_id}}" ui-if="files.data.owner_id != 0">{{files.data.owner}}</a>
+                              <span ui-if="files.data.owner_id == 0">{{files.data.owner}}</span> 
+                              on {{tzformat(files.created)}}
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Group Members Pane -->
+                <div class="tab-pane" id="GroupMembers">
+                  <div class="row-fluid">
+                    <div class="span10">
+                      <h2>Group Members</h2>
+                    </div>
+                    <div class="span2">
+                      <button class="btn btn-inverse btn-small" style="float:right" data-toggle="modal" href="#AddMember" ui-if="founder" ng-cloak>Add Member</button> 
+                    </div>
                     <table class="table table-bordered table-striped" ui-if="!!u_groups.length"  ng-cloak>
                       <thead>
                         <th>
@@ -259,6 +320,9 @@
                         </th>
                         <th>
                           Role
+                        </th>
+                        <th ui-if="founder">
+                          Action
                         </th>
                       </thead>
                       <tbody>
@@ -270,71 +334,41 @@
                             </a>
                           </td>
                           <td>{{users.role}}</td>
+                          <td ui-if="founder">
+                            <button class="btn btn-danger btn-small" ui-if="users.role == 'Member' && founder" ng-click="kickgroup(users)">Kick Out</button>
+                            <button class="btn btn-info btn-small" ui-if="users.role == 'Member' && founder" ng-click="passfounder(users)">Pass Ownership</button>
+                          </td>
                         </tr>
                       </tbody>
                     </table>
                   </div>                
                 </div>
-                <!-- Group Sketches Pane -->
-                <div class="tab-pane" id="GroupSketches">
-                  <div class="row-fluid">
-                    <h2>Group Sketches</h2>
-                    <table class="table table-bordered table-striped" ui-if="!!items.entities.length"  ng-cloak>
-                      <thead>
-                        <th>
-                        </th>
-                        <th>
-                          <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
-                          </a>
-                        </th>
-                        <th>Sketch Description</th>
-                        <th>
-                          <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">Sketch Date
-                          </a>
-                        </th>
-                        <th>
-                          Action
-                        </th>
-                      </thead>
-                      <tbody>
-                        <tr ng-repeat="files in items.entities | orderBy:predicate_users:reverse">
-                          <td>
-                            <img src="data:image/png;base64,{{files.data.thumbnailData}}" alt="Red dot" ui-if="!!files.data.thumbnailData">
-                            <div class="well well-small" ui-if="!files.data.thumbnailData">
-                              <span>No preview available</span>
-                            </div>
-                          </td>
-                          <td>{{files.data.fileName}}</td>                  
-                          <td ui-if="files.data.changeDescription.length > 50" title="{{files.data.changeDescription}}" ng-cloak>
-                            {{files.data.changeDescription.substring(0, 49)}}...
-                          </td>
-                          <td ui-if="files.data.changeDescription.length <= 50" ng-cloak>
-                            {{files.data.changeDescription}}
-                          </td>
-                          <td>{{tzformat(files.created)}}</td>
-                          <td ng-cloak>
-                            <a class="btn btn-info btn-small" href="view.html?id={{files.data.sketchId}}&version={{files.data.version}}">View</a>
-                            <a class="btn btn-success btn-small" ui-if="files.data.p_edit" href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}"  title="Edit this sketch">Edit</a>
-                            <a class="btn btn-success btn-small disabled" ui-if="!files.data.p_edit"  title="You are not allowed to edit this sketch"><del>Edit</del></a>    
-                            <a class="btn btn-danger btn-small disabled" ui-if="belong"><del>Delete</del></a>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-                
                 <!--Add Member Modal-->
                 <div class="modal hide fade" id="AddMember" style="display:none" ui-if="founder">
                   <div class="modal-header">
-                    <a class="close" data-dismiss="modal">x</a>
+                    <input type="submit" class="close" value="x" data-dismiss="modal"/>
                     <h3 id="Login">Add Member</h3>
                   </div>
                   <div class="modal-body">
                     <div class="control-group">
+                      <label class="control-label" for="UserName">Search by Username:</label>
+                      <input type="text" ng-model="groupmeta.data.criteria"/> 
+                      <input type="submit" class="button btn-inverse" ng-click="groupuserlist()" value="Search"/>
+                      <br/>
                       <label class="control-label" for="UserName">Select a User:</label>
                       <div class="controls">
-                        <select ng-model="usertoadd.data.user_id" ng-options="userfound.id as userfound.u_name for userfound in usersfound.entities" ng-cloak></select>
+                        <select ng-model="useradd" ng-options="userfound as userfound.u_name for userfound in usersfound.entities" ng-cloak></select>
+                        <button class="btn btn-small" ng-click="includemember(useradd)">Add</button>
+                        <br/>
+                        {{added}}
+                      </div>
+                      <div class="controls">
+                        <ul>
+                          <li ng-repeat="u_add in usertoadd.data.users">
+                            {{u_add.u_name}}
+                            <button ng-click="unincludemember(u_add)">Remove</button>
+                          </li>
+                        </ul>
                       </div>
                       <div class="controls">
                         <input type="submit" ng-click="addmember()" value="Submit" data-dismiss="modal"/>
@@ -369,6 +403,7 @@
     <script src="lib/angular/angular-resource.min.js"></script>
     <script src="js/angular/groups-controller.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/bootbox/bootbox.min.js"></script>
     <script src="js/bootstrap/bootstrap-transition.js"></script>
     <script src="js/bootstrap/bootstrap-alert.js"></script>
     <script src="js/bootstrap/bootstrap-modal.js"></script>

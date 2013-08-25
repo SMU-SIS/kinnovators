@@ -22,10 +22,11 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
   };
   //Sketch
   $scope.sketchModelId = "";  //Placeholder value for sketchId (identifies all sub-versions of the same sketch)
-  $scope.version = "";  //Placeholder value for version (identifies version of sketch - starts at "1" unless existing sketch is loaded).
   $scope.fileData = "";  //Placeholder value for fileData (saved data)
   $scope.fileName = "";  //Placeholder value for fileName (name file is saved under)
   $scope.changeDescription = ""; //Placeholder value for changeDescription (change description for file edits)
+  
+  $scope.leave = false;
   $scope.test = -1;
   $scope.version = -1;
   $scope.heading = "";
@@ -62,15 +63,14 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
                         {'remote_url':$scope.remote_url},
                         {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                            });  
-    $scope.waiting = "Loading";          
+    $scope.waiting = "Loading";       
     $scope.UserResource.get(function(response) {
           var result = response;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
-            $scope.get_notification();            
+            $scope.get_notification();              
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
-            $scope.waiting = "Ready";
           }
     });
   }
@@ -100,44 +100,50 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
   
   
   $scope.get_sketch = function() {
-    $scope.getSketch = $resource('http://:remote_url/get/sketch/view/:id/:version', 
-             {"remote_url":$scope.remote_url,"id":$scope.test,"version":$scope.version}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Loading";      
-    $scope.getSketch.get(function(response) {
-        var check = response.success
-        if (check !== "no") {
+    $scope.sketchmeta = {};
+    $scope.sketchmeta.data = {'id':$scope.test, 'version':$scope.version};
+    $scope.SketchResource = $resource('http://:remote_url/get/sketch/view', 
+             {"remote_url":$scope.remote_url}, 
+             {'save': {method: 'POST', params:{} }});
+    $scope.waiting = "Loading";
+    var sketchmeta = new $scope.SketchResource($scope.sketchmeta.data);
+    sketchmeta.$save(function(response) {
+        var check = response.status;
+        if (check !== "Error" || check !== "Forbidden") {
           $scope.item = response;
           $scope.fileData = $scope.item.data.fileData;
           $scope.sketchModelId = $scope.item.id;
           loadKSketchFile($scope.fileData);
-          if (check === "yes") {
-            $scope.getComments();
-            $scope.getLikes();
-          } else if (check === "version"){
+          $scope.getComments();
+          $scope.getLikes();
+          if ($scope.item.data.ismatching === "False" || $scope.item.data.ismatching === false){
             $scope.waiting = "Error";
             $scope.heading = "Hmm...";
             $scope.message = "We couldn't find that version of the sketch you wanted.";
             $scope.submessage = "The latest existing version has been loaded instead.";            
+          } else {
+            $scope.waiting = "Ready";
           }
         }
         else {
-          if (response.id === "Forbidden") {
+          if (check === "Forbidden") {
             $scope.waiting = "Error";
             $scope.heading = "Access Denied";
             $scope.message = "You have not been granted permission to view this sketch.";
+            $scope.leave = true;
           } else {
             $scope.waiting = "Error";
             $scope.heading = "Oops...!";
             $scope.message = "We're sorry, but the sketch you wanted does not exist.";
             $scope.submessage = "Perhaps the URL that you entered was broken?";
+            $scope.leave = true;
           }
         }
       });  
   }
   
   $scope.acknowledge = function() {
-    if ($scope.heading === "Access Denied" || $scope.heading === "Oops...!") {
+    if ($scope.leave === true) {
       if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
       {
         var referLink = document.createElement("a");
@@ -153,11 +159,11 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
       $scope.submessage = "";
     }
   }
+  
   $scope.get_notification = function() {
     $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
     {"remote_url":$scope.remote_url,"limit":3}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Loading";   
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
         if ($scope.smallnotifications.entities !== undefined) {
@@ -165,7 +171,6 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
             $scope.notify = "You have pending notification(s).";
           }
         }
-        $scope.waiting = "Ready";
      });  
   };  
   
@@ -213,24 +218,20 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
   };
 
   $scope.comment = {};
-	$scope.comment.data = {"sketchModelId":$scope.sketchModelId, "content":"", "replyToId":-1};    
+	$scope.comment.data = {"sketchId":$scope.test, "version":$scope.version, "content":"", "replyToId":-1};    
   
   $scope.addComment = function() {
-    $scope.comment.data.sketchModelId = $scope.sketchModelId;
+    $scope.comment.data.sketchId = $scope.test;
+    $scope.comment.data.version = $scope.version;
     if ($scope.comment.data.content.length > 0) {
       $scope.AddCommentResource = $resource('http://:remote_url/add/comment', 
                     {"remote_url":$scope.remote_url}, 
                     {'save': { method: 'POST',    params: {} }});
-      $scope.waiting = "Loading";   
       var add_comment = new $scope.AddCommentResource($scope.comment.data);
       add_comment.$save(function(response) { 
               var result = response;
-              $scope.comment.data = {"sketchModelId":$scope.sketchModelId, "content":"", "replyToId":-1};    
-              if (result.status === 'success') {
-                $scope.waiting = "Error";
-                $scope.heading = "Success!";
-                $scope.message = result.message;
-              } else {
+              $scope.comment.data = {"sketchId":$scope.test, "version":$scope.version, "content":"", "replyToId":-1};    
+              if (result.status !== 'success') {
                 $scope.waiting = "Error";
                 $scope.heading = "Oops...!"
                 $scope.message = result.message;
@@ -242,34 +243,31 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
   }
   
   $scope.getComments = function() {
-     $scope.GetCommentResource = $resource('http://:remote_url/get/comment/:model_id', 
-             {"remote_url":$scope.remote_url,"model_id":$scope.sketchModelId}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Loading";   
-    $scope.GetCommentResource.get(function(response) { 
-        $scope.comments = response;           
-        $scope.waiting = "Ready";
+    $scope.commentmeta = {};
+    $scope.commentmeta.data = {"id":$scope.test};
+    $scope.GetCommentResource = $resource('http://:remote_url/get/comment', 
+                  {"remote_url":$scope.remote_url}, 
+                  {'save': { method: 'POST',    params: {} }});
+    var commentmeta = new $scope.GetCommentResource($scope.commentmeta.data);
+    commentmeta.$save(function(response) { 
+        $scope.comments = response;     
      });               
   }
 
   $scope.like = {};
-	$scope.like.data = {"sketchModelId":$scope.sketchModelId};    
+	$scope.like.data = {"sketchId":$scope.test, "version":$scope.version};    
   
   $scope.toggleLike = function() {
-    $scope.like.data.sketchModelId = $scope.sketchModelId;
+    $scope.like.data.sketchId = $scope.test;
+    $scope.like.data.version = $scope.version;
     $scope.ToggleLikeResource = $resource('http://:remote_url/toggle/like', 
                   {"remote_url":$scope.remote_url}, 
                   {'save': { method: 'POST',    params: {} }});
-    $scope.waiting = "Loading";   
     var toggle_like = new $scope.ToggleLikeResource($scope.like.data);
     toggle_like.$save(function(response) { 
             var result = response;
-            $scope.like.data = {"sketchModelId":$scope.sketchModelId};  
-            if (result.status === 'success') {
-              $scope.waiting = "Error";
-              $scope.heading = "Success!";
-              $scope.message = result.message;
-            } else {
+            $scope.like.data = {"sketchId":$scope.test, "version":$scope.version};    
+            if (result.status !== 'success') {
               $scope.waiting = "Error";
               $scope.heading = "Oops...!"
               $scope.message = result.message;
@@ -280,13 +278,14 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
   }
   
   $scope.getLikes = function() {
-     $scope.GetLikeResource = $resource('http://:remote_url/get/like/:model_id', 
-             {"remote_url":$scope.remote_url,"model_id":$scope.sketchModelId}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Loading";   
-    $scope.GetLikeResource.get(function(response) { 
-        $scope.likes = response;           
-        $scope.waiting = "Ready";
+    $scope.likemeta = {};
+    $scope.likemeta.data = {"id":$scope.test};
+    $scope.GetLikeResource = $resource('http://:remote_url/get/like', 
+            {"remote_url":$scope.remote_url}, 
+            {'save': {method: 'POST', params:{} }});
+    var likemeta = new $scope.GetLikeResource($scope.likemeta.data);
+    likemeta.$save(function(response) { 
+        $scope.likes = response;       
      });               
   }  
   

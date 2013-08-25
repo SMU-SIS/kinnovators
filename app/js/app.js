@@ -18,9 +18,9 @@
   });
   myApp.factory('sharedFunctions', function($window) {
     return{
-      simpleSearch: function(search, search_type) {
+      simpleSearch: function(search) {
         if (search.replace(/^\s+|\s+$/g,'') !== "") {
-          var searchUrl = "search.html?query=" + search.replace(/^\s+|\s+$/g,'') +"&type="+search_type;
+          var searchUrl = "search.html?query=" + search.replace(/^\s+|\s+$/g,'');
           window.location.href=searchUrl;
         }
         return searchUrl

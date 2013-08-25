@@ -8,8 +8,14 @@
       padding-top: 60px;
       padding-bottom: 40px;
       overflow-y: scroll;
+      height: 100%;
+      margin: 0;
     }
 
+    .modal.fade.in{
+      top: 35%;
+    }
+    
     #comment_img {
       width: 50px;
     }
@@ -18,14 +24,18 @@
       min-width: 270px;
     }
     
-    .item{
-      min-height: 300px;
+    footer {
+      width: 97.5%;
+      height: 16px;
+      position: absolute;
+      bottom: 0;
     }
     
     #group_permissions {
-      width: 300px;
+      width: 350px;
       height: 350px;
       overflow-y: scroll;
+      padding-right: -75px;
     }
     
     /*LoadingDiv*/
@@ -50,6 +60,10 @@
       height: expression(document.body.scrollHeight &gt; document.body.offsetHeight ? document.body.scrollHeight : document.body.offsetHeight + 'px');
     }
     
+    .item{
+      min-height: 300px;
+    }
+    
     #Loading {
       top: 50%;
       width: 200px;
@@ -67,7 +81,7 @@
       width: 100%;
       height: 100%;
       _height: expression(document.body.offsetHeight + "px");
-      background-color: rgba(216, 216, 216, 0.5);
+      background-color: rgba(0, 0, 0, 0.8);
     }
     
     #main {
@@ -75,7 +89,7 @@
     }
 
     #mainbody{
-      min-height:480px;
+      padding-bottom:16px;
     }
         
     #Message {
@@ -127,6 +141,7 @@
     }
 
     #SaveSketch{
+      top: 10%;
       height: auto;
       width: auto;
     }
@@ -140,6 +155,7 @@
     }	  	  
 
     #SaveAsSketch{
+      top: 10%;
       height: auto;
       width: auto;
     }
@@ -209,7 +225,12 @@
     #visibleTextData { 
       /*display: none;*/
     }
-
+    
+    #wrap {
+      min-height:100%;
+      position:relative;
+    }
+    
     /*Responsive*/
     
     @media (min-width: 980px) {

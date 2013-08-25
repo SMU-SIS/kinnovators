@@ -114,10 +114,10 @@
             <br/>
             <br/>
           </div>
-          <div class="controls">
-            <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
-          </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
       </div>
     </div>          
   
@@ -144,9 +144,10 @@
 <!--                 <b class="caret"></b> -->
                 <i class="icon-list-alt icon-white"></i>
               </a>
-              <ul class="dropdown-menu" ui-if="!!smallnotifications.entities.length">
+              <ul class="dropdown-menu">
                 <li>
-                  <table class="table table-striped">
+                  <a ui-if="!smallnotifications.entities.length"><span>You have no new notifications.</span></a>
+                  <table class="table table-striped" ui-if="!!smallnotifications.entities.length">
                     <tr ng-repeat="notification in smallnotifications.entities">
                       <td>
                         <span>{{notification.n_date}}</span>
@@ -171,12 +172,12 @@
                     Show All Notifications
                   </a>
                 </li>      
-              </ul>              
+              </ul>                           
             </li>
           </ul>          
-          <p class="navbar-search pull-right">
+          <!-- <p class="navbar-search pull-right">
             <input type="text" ng-model="search" onkeypress="searchKeyPress(event);" class="search-query" placeholder="Search by sketch name or owner">
-            <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="searchlist()" value=">>">
+            <input type="submit" id="searchbutton" class="btn btn-inverse btn-small" ng-click="new_search()" value=">>">
             <script>
               function searchKeyPress(e)
               {
@@ -188,14 +189,14 @@
                   }
               }
             </script>
-          </p>
+          </p> -->
         </div>
       </div>
     </div>
     
     
     <!-- Main Body -->
-    <div class="container-fluid">
+    <div class="container-fluid" id="wrap">
       <div class="row-fluid" id="mainbody">
         
         <!-- Navigation Sidebar (Access separate panes). -->
@@ -214,17 +215,16 @@
         <!-- Main Body -->
         <div class="span10">
           <!-- Stuff goes here. -->
-          <div class="span6">
-            <table class="table">
-              <tr>
-                <td>
-                  <input type="text" id="search" onkeypress="searchKeyPress(event);" ng-model="search" placeholder="Search by sketch name or owner">
-                </td>
-                <td>
-                  <button id="searchbutton" class="btn btn-inverse" ng-click="searchlist()">Go</button>
-                </td>
-              </tr>
-            </table>
+          <div class="row-fluid">
+            <div class="span6">
+              <div class="form-inline">
+                <input type="text" id="search" onkeypress="searchKeyPress(event);" ng-model="search" placeholder="Search by sketch name or owner">
+                <button id="searchbutton" class="btn btn-inverse" ng-click="new_search()">Go</button>
+              </div>
+            </div>
+            <div class="span6">
+              <button class="btn btn-info" style="float:right" ui-if="search_pagination.next_offset != 0" ng-click="paginate_forward()" ng-cloak>More Results</button>
+            </div>
           </div>
           <span id="testdiv" ng-model="test" hidden></span>
           <script>
@@ -237,62 +237,64 @@
                     document.getElementById('searchbutton').click();
                 }
             }
-          </script>		  
-          <table class="table table-bordered table-striped" ui-if="!!searchitems.entities.length"  ng-cloak>
-            <thead>
-              <th>
-              </th>  
-              <th>
-                <a href="" ng-click="predicate_users = 'data.fileName'; reverse=!reverse">Sketch Name
-                </a>
-              </th>
-              <th>
-                <a href="" ng-click="predicate_users = 'data.version'; reverse=!reverse">Sketch Version
-                </a>
-              </th>
-              <th>Sketch Description</th>
-              <th>
-                <a href="" ng-click="predicate_users = 'data.owner'; reverse=!reverse">File Owner
-                </a>
-              </th>              
-              <th>
-                <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">Sketch Date
-                </a>
-              </th>
-              <th>
-                Action
-              </th>
-            </thead>
-            <tbody>
-              <tr ng-repeat="files in searchitems.entities | orderBy:predicate_users:reverse">
-                <td>
-                  <img src="data:image/png;base64,{{files.data.thumbnailData}}" alt="Red dot" ui-if="!!files.data.thumbnailData">
-                  <div class="well well-small" ui-if="!files.data.thumbnailData">
-                    <span>No preview available</span>
+          </script>
+          <hr/>
+          <span ui-if="!searchitems.entities.length && search_notice.length > 0" ng-cloak>
+            <em>
+              There are no animations or usernames containing "{{search_notice}}".
+            </em>
+          </span>
+          <ul class="unstyled" ui-if="!!searchitems.entities.length"  ng-cloak>
+            <li ng-repeat="files in searchitems.entities | orderBy:predicate_users:reverse | filter:filter">
+              <div class="well well-small">
+                <div class="row-fluid">
+                  <div class="span3">
+                    <a href="view.html?id={{files.data.sketchId}}"  title="View this sketch">
+                      <img src="data:image/png;base64,{{files.data.thumbnailData}}" alt="Red dot" ui-if="!!files.data.thumbnailData">
+                      <div class="well well-small" ui-if="!files.data.thumbnailData">
+                        <span>No preview available</span>
+                      </div>
+                    </a>
                   </div>
-                </td>
-                <td>{{files.data.fileName}}</td>
-                <td>{{files.data.version}}</td>                
-                <td ui-if="files.data.changeDescription.length > 50" title="{{files.data.changeDescription}}" ng-cloak>
-                  {{files.data.changeDescription.substring(0, 49)}}...
-                </td>
-                <td ui-if="files.data.changeDescription.length <= 50" ng-cloak>
-                  {{files.data.changeDescription}}
-                </td>
-                <td ui-if="User.u_login">
-                  <a href="profile.html?id={{files.data.owner_id}}" ui-if="files.data.owner_id != 0">{{files.data.owner}}</a>
-                  <span ui-if="files.data.owner_id == 0">{{files.data.owner}}</span>
-                </td>
-                <td ui-if="!User.u_login">{{files.data.owner}}</td>
-                <td>{{tzformat(files.created)}}</td>
-                <td ng-cloak>
-                  <a class="btn btn-info btn-small" href="view.html?id={{files.data.sketchId}}&version={{files.data.version}}"  title="View this sketch">View</a>
-                  <a class="btn btn-success btn-small" ui-if="files.data.p_edit" href="sketch.html?id={{files.data.sketchId}}&version={{files.data.version}}"  title="Edit this sketch">Edit</a>
-                  <a class="btn btn-success btn-small disabled" ui-if="!files.data.p_edit"  title="You are not allowed to edit this sketch"><del>Edit</del></a>                     
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <div class="span9">
+                    <div class="row-fluid">
+                      <div class="span6">
+                        <a href="view.html?id={{files.data.sketchId}}"  title="View this sketch">
+                          <h4>{{files.data.fileName}}</h4>
+                        </a>
+                      </div>
+                      <div class="span6">
+                        <span class="label">
+                          Likes: {{files.data.like}}
+                        </span>
+                        <span class="label">
+                          Comments: {{files.data.comment}}
+                        </span>
+                      </div>
+                    </div>
+                    <em>
+                      <span ui-if="files.data.changeDescription.length > 50" title="{{files.data.changeDescription}}" ng-cloak>
+                        {{files.data.changeDescription.substring(0, 49)}}...
+                      </span>
+                      <span ui-if="0 < files.data.changeDescription.length <= 50" ng-cloak>
+                        {{files.data.changeDescription}}
+                      </span>
+                      <span ui-if="files.data.changeDescription.length == 0" ng-cloak>
+                        No description given
+                      </span>
+                    </em>
+                    <br>
+                    Created by 
+                    <a href="profile.html?id={{files.data.owner_id}}" ui-if="files.data.owner_id != 0">{{files.data.owner}}</a>
+                    <span ui-if="files.data.owner_id == 0">{{files.data.owner}}</span> 
+                    on {{tzformat(files.created)}}
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ul>
+          <hr/>
+          <button class="btn btn-info" style="float:right" ui-if="search_pagination.next_offset != 0" ng-click="paginate_forward()" ng-cloak>More Results</button>
         </div><!--/span-->
       </div><!--/row-->
       
@@ -315,6 +317,7 @@
     <script src="lib/angular/angular-resource.min.js"></script>
     <script src="js/angular/search-controller.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/bootbox/bootbox.min.js"></script>
     <script src="js/bootstrap/bootstrap-transition.js"></script>
     <script src="js/bootstrap/bootstrap-alert.js"></script>
     <script src="js/bootstrap/bootstrap-modal.js"></script>

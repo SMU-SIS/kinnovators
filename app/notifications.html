@@ -84,10 +84,10 @@
             <br/>
             <br/>
           </div>
-          <div class="controls">
-            <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
-          </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <input type="submit"  ng-click="acknowledge()" value="Ok" data-dismiss="modal"/>
       </div>
     </div>        
 
@@ -115,9 +115,12 @@
 <!--                 <b class="caret"></b> -->
                 <i class="icon-list-alt icon-white"></i>
               </a>
-              <ul class="dropdown-menu" ui-if="!!notifications.entities.length">
+              <ul class="dropdown-menu" >
                 <li>
-                  <table class="table table-striped">
+                  <a ui-if="!notifications.entities.length">
+                  <span>You have no new notifications.</span>
+                  </a>
+                  <table class="table table-striped" ui-if="!!notifications.entities.length">
                     <tr ng-repeat="notification in notifications.entities |  limitTo:3">
                       <td>
                         <span>{{notification.n_date}}</span>
@@ -164,7 +167,7 @@
       </div>
     </div>
     <!-- Main Body -->
-    <div class="container-fluid">
+    <div class="container-fluid" id="wrap">
         
       <div class="row-fluid" id="mainbody">
         
@@ -187,7 +190,19 @@
             <span id="testdiv" ng-model="test" hidden></span>        
             <div class="container-fluid" ng-show="User.id" ng-cloak id="userNotifications">
               <h2>Notifications</h2>
+              <span ui-if="!notifications.entities.length">You have no notifications.</span>
               <table class="table table-bordered table-striped" ui-if="!!notifications.entities.length"  ng-cloak>
+                <thead>
+                  <th>
+                    Date
+                  </th>
+                  <th>
+                    Message
+                  </th>
+                  <th>
+                    Action
+                  </th>
+                </thead>
                 <tbody>
                   <tr ng-repeat="notification in notifications.entities">
                     <td>
@@ -231,6 +246,7 @@
     <script src="lib/angular/angular-resource.min.js"></script>
     <script src="js/angular/notifications-controller.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/bootbox/bootbox.min.js"></script>
     <script src="js/bootstrap/bootstrap-transition.js"></script>
     <script src="js/bootstrap/bootstrap-alert.js"></script>
     <script src="js/bootstrap/bootstrap-modal.js"></script>

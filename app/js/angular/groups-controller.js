@@ -26,6 +26,7 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
   $scope.test = "-";
   $scope.belong = false;
   $scope.founder = false;
+  $scope.leave = false;
   
   $scope.group_name = "-";
   $scope.u_groups = [];
@@ -50,7 +51,7 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
                           {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                              }
                       );
-                          
+                      
   $scope.getuser = function(){
     $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
@@ -61,7 +62,7 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
           var result = response;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
-            $scope.get_notification();
+            $scope.get_notification();             
           } else {
             $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
             if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
@@ -74,28 +75,50 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
             else { window.location.replace("index.html");}
           }
     });
-  }	
+  }
     
+  $scope.groupmeta = {};
+  $scope.groupmeta.data = {'id':$scope.test, 'criteria': ""};
+  
   $scope.setTest = function(test) {
     $scope.test = test;
+    $scope.groupmeta.data.id = $scope.test;
   }
   
+  
   $scope.get_group = function() {
-    $scope.getGroup = $resource('http://:remote_url/get/group/:id', 
-             {"remote_url":$scope.remote_url,"id":$scope.test}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.GroupResource = $resource('http://:remote_url/get/group', 
+             {"remote_url":$scope.remote_url}, 
+             {'save': {method: 'POST', params:{} }});
     $scope.waiting = "Loading";   
-    $scope.getGroup.get(function(response) { 
+    var groupmeta = new $scope.GroupResource($scope.groupmeta.data);
+    groupmeta.$save(function(response) {
         var thisgroup = response;
-        $scope.setGroup(thisgroup.group_name, thisgroup.u_groups);
-        for (var i = 0; i < thisgroup.u_groups.length; i++) {
-          var u_g = thisgroup.u_groups[i]
-          if (u_g.user_id === $scope.User.id) {
-            $scope.belong = true;
-            if (u_g.role === "Founder") {
-              $scope.founder = true;
+        if (thisgroup.status === "success") {
+          $scope.setGroup(thisgroup.group_name, thisgroup.u_groups);
+          for (var i = 0; i < thisgroup.u_groups.length; i++) {
+            var u_g = thisgroup.u_groups[i]
+            if (u_g.user_id === $scope.User.id) {
+              if (u_g.role === "Founder") {
+                $scope.belong = true;
+                $scope.founder = true;
+              } else if (u_g.role === "Member") {
+                $scope.belong = true;
+                $scope.founder = false;
+              } else {
+                $scope.belong = false;
+                $scope.founder = false;
+              }
+              break;
             }
           }
+          $scope.list();
+        } else {
+          $scope.waiting = "Error";
+          $scope.heading = "Oops...!";
+          $scope.message = thisgroup.message;
+          $scope.submessage = thisgroup.submessage;
+          $scope.leave = true;
         }
       });  
   }
@@ -107,23 +130,57 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
   
 
   $scope.groupuserlist = function() {
-    $scope.GroupUserListResource = $resource('http://:remote_url/listuser/group/:id',
-    {"remote_url":$scope.remote_url,"id":$scope.test}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.useradd = undefined;
+    $scope.added = "";
+    $scope.GroupUserListResource = $resource('http://:remote_url/listuser/group',
+             {"remote_url":$scope.remote_url}, 
+             {'save': {method: 'POST', params:{} }});
     $scope.waiting = "Loading";
-    $scope.GroupUserListResource.get(function(response) { 
+    var groupuserlistmeta = new $scope.GroupUserListResource($scope.groupmeta.data);
+    groupuserlistmeta.$save(function(response) {
         var result = response;
         if (result.status === "success") {
           $scope.usersfound = result;
+          if ($scope.usersfound.entities.length > 0) {
+            $scope.useradd = $scope.usersfound.entities[0];
+          } else {
+            $scope.added = "No user(s) found!";
+          }
         }
         $scope.waiting = "Ready";
      });  
   }  
 
   $scope.usertoadd = {};
-  $scope.usertoadd.data = {"user_id": 0, "group_id":$scope.test};
+  $scope.usertoadd.data = {"group_id":$scope.test, "users": []};
+  $scope.useradd = undefined;
+  
+  $scope.includemember = function(useradd) {
+    if (useradd == undefined) return;
+    var check_add = false;
+    for (var i = 0; i < $scope.usertoadd.data.users.length; i++) {
+      var add = $scope.usertoadd.data.users[i];
+      if (useradd.id === add.id) {
+        $scope.added = "You cannot add the same user twice!";
+        check_add = true;
+        break;
+      }
+    }
+    if (!check_add) {
+      $scope.usertoadd.data.users.push(useradd);
+      $scope.useradd = $scope.usersfound.entities[0];
+      $scope.added = "";
+    }
+  }
+  
+  $scope.unincludemember = function(id) {
+    var index = $scope.usertoadd.data.users.indexOf(id);
+    $scope.usertoadd.data.users.splice(index, 1);
+    $scope.added = "";
+  }
   
   $scope.addmember = function() {
+    $scope.added = "";
     $scope.usertoadd.data.group_id = $scope.test;
     $scope.AddMemberResource = $resource('http://:remote_url/adduser/group', 
                   {"remote_url":$scope.remote_url}, 
@@ -133,12 +190,15 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
     var addgroup = new $scope.AddMemberResource($scope.usertoadd.data);
     addgroup.$save(function(response) { 
             var result = response;
-            $scope.usertoadd.data = {"user_id": 0, "group_id":$scope.test};
+            $scope.usertoadd.data = {"users": [], "group_id":$scope.test};
             $scope.get_group();
             if (result.status === 'success') {
               $scope.waiting = "Error";
               $scope.heading = "Success!";
               $scope.message = "You have sent out the invite.";
+              for (var i = 0; i < result.invited; i++) {
+                $scope.submessage += result.invited[i] + "\n";
+              }
             } else {
               $scope.waiting = "Error";
               $scope.heading = "Oops...!"
@@ -147,14 +207,120 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
             }
           }); 
   }
+  
+  $scope.passfounder = function(id) {
+    if ($scope.founder == true && $scope.belong == true) {
+      bootbox.confirm("Do you really wish to make " + id.user + " the Founder?", function(foundAlert) {
+        if (foundAlert === true) {
+          $scope.passfounder = {};
+          $scope.passfounder.data = id;
+          $scope.PassFounderResource = $resource('http://:remote_url/passfounder/group', 
+                        {"remote_url":$scope.remote_url}, 
+                        {'save': { method: 'POST',    params: {} }});
+          $scope.waiting = "Saving";
+          var passfounder = new $scope.PassFounderResource($scope.passfounder.data);
+          passfounder.$save(function(response) { 
+                  var result = response;
+                  $scope.usertoremove = {};
+                  $scope.get_group();
+                  $scope.waiting = "Error";
+                  $scope.heading = "Success!";
+                  $scope.message = result.message;
+                  $scope.submessage = result.submessage;
+                }); 
+          
+        }
+      });
+    }
+  }
 
+  $scope.leavegroup = function() {
+    if ($scope.founder == false && $scope.belong == true) {
+      bootbox.confirm("Do you really wish to leave '" + $scope.group_name + "'?", function(leaveAlert) {
+        if (leaveAlert === true) {
+          var usertoremove = {'user_id': $scope.User.id,
+                              'group_id': $scope.test,
+                              'role': 'Member'}
+          $scope.removemember(usertoremove);
+        }
+      });
+    }
+  }
+  
+  $scope.kickgroup = function(id) {
+    if ($scope.founder == true && $scope.belong == true) {
+      bootbox.confirm("Do you really wish to kick " + id.user + "?", function(kickAlert) {
+        if (kickAlert === true) {
+          $scope.removemember(id);
+        }
+      });
+    }
+  }
+  
+  $scope.removemember = function(id) {
+    $scope.usertoremove = {};
+    $scope.usertoremove.data = id;
+    $scope.RemoveMemberResource = $resource('http://:remote_url/removeuser/group', 
+                  {"remote_url":$scope.remote_url}, 
+                  {'save': { method: 'POST',    params: {} }});
+    $scope.waiting = "Saving";
+    var removegroup = new $scope.RemoveMemberResource($scope.usertoremove.data);
+    removegroup.$save(function(response) { 
+            var result = response;
+            $scope.usertoremove = {};
+            $scope.get_group();
+            if (result.status === 'success') {
+              $scope.waiting = "Error";
+              $scope.heading = "Success!";
+              $scope.message = result.message;
+              if (result.type === 'quit') {
+                $scope.leave = true;
+              }
+            } else {
+              $scope.waiting = "Error";
+              $scope.heading = "Oops...!"
+              $scope.message = result.message;
+              $scope.submessage = result.submessage;
+            }
+          }); 
+ 
+  }
+  
+  $scope.deletegroup = function() {
+    if ($scope.founder == true && $scope.belong == true) {
+      bootbox.confirm("Do you really wish to delete this group?", function(groupAlert) {
+        if (groupAlert === true) {
+          $scope.DeleteGroupResource = $resource('http://:remote_url/delete/group', 
+                        {"remote_url":$scope.remote_url}, 
+                        {'save': { method: 'POST',    params: {} }});
+          $scope.waiting = "Saving";
+          var deletegroup = new $scope.DeleteGroupResource($scope.groupmeta.data);
+          deletegroup.$save(function(response) { 
+              var result = response;
+              if (result.status === 'success') {
+                $scope.waiting = "Error";
+                $scope.heading = "Success!";
+                $scope.message = result.message;
+                $scope.leave = true;
+              } else {
+                $scope.waiting = "Error";
+                $scope.heading = "Oops...!"
+                $scope.message = result.message;
+                $scope.submessage = result.submessage;
+              }
+            }); 
+        }
+      });
+    }
+  }
   
   $scope.list = function(){
-    $scope.ListResource = $resource('http://:remote_url/list/sketch/group/:criteria',
-    {"remote_url":$scope.remote_url,"criteria":$scope.test}, 
-             {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
+    $scope.ListResource = $resource('http://:remote_url/list/sketch/group',
+             {"remote_url":$scope.remote_url}, 
+             {'save': {method: 'POST', params:{} }});
     $scope.waiting = "Loading";
-    $scope.ListResource.get(function(response) { 
+    var listmeta = new $scope.ListResource($scope.groupmeta.data);
+    listmeta.$save(function(response) {
         $scope.items = response;
         $scope.waiting = "Ready";
      });  
@@ -162,17 +328,27 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
     
   
   $scope.acknowledge = function() {
-    $scope.waiting = "Ready";
-    $scope.heading = "";
-    $scope.message = "";
-    $scope.submessage = "";
+    if ($scope.leave === true) {
+      if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
+      {
+        var referLink = document.createElement("a");
+        referLink.href = "index.html";
+        document.body.appendChild(referLink);
+        referLink.click();
+      }
+      else { window.location.replace("index.html");} 
+    } else {
+      $scope.waiting = "Ready";
+      $scope.heading = "";
+      $scope.message = "";
+      $scope.submessage = "";
+    }
   }
   
   $scope.get_notification = function() {
     $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
     {"remote_url":$scope.remote_url,"limit":3}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.waiting = "Loading";
     $scope.NotificationResource.get(function(response) { 
         $scope.smallnotifications = response;
         if ($scope.smallnotifications.entities !== undefined) {
@@ -180,7 +356,6 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
             $scope.notify = "You have pending notification(s).";
           }
         }
-        $scope.waiting = "Ready";
      });  
   };  
   
