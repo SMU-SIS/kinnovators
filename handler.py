@@ -108,11 +108,6 @@ class ActionHandler(webapp2.RequestHandler):
     #Handler for searching for Sketches      
     def list_sketch(self): #/list/sketch
 
-        offset = 0
-        new_offset = self.request.get("offset")
-        if new_offset:
-          offset = int(new_offset)
-
         auser = self.auth.get_user_by_session()
         userid = 0
         if auser:

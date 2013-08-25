@@ -157,7 +157,8 @@ function SearchController($scope,$resource,sharedProperties, sharedFunctions){
       var searchmeta = new $scope.SearchResource($scope.searchmeta.data);
       searchmeta.$save(function(response) { 
           $scope.searchitems = response;
-          $scope.search_pagination.next_offset = $scope.searchitems.next_offset;$scope.search_notice = $scope.search;
+          $scope.search_pagination.next_offset = $scope.searchitems.next_offset;
+          $scope.search_notice = $scope.search;
           $scope.waiting = "Ready";
       });
     }

@@ -74,10 +74,14 @@
         }
         e = document.getElementById('testdiv');
         scope = angular.element(e).scope();
-        if (query_string.query !== undefined) {
+        if (query_string.query !== undefined && query_string.query !== "") {
           scope.$apply(function() {
               scope.setTest(unescape(query_string.query));
               scope.searchlist();
+          });
+        } else {
+          scope.$apply(function() {
+              scope.acknowledge();
           });
         }
       }
@@ -245,6 +249,11 @@
             }
           </script>
           <hr/>
+          <span ui-if="search_notice.length == 0" ng-cloak>
+            <em>
+              Please enter a search string.
+            </em>
+          </span>
           <span ui-if="!searchitems.entities.length && search_notice.length > 0" ng-cloak>
             <em>
               There are no animations or usernames containing "{{search_notice}}".
