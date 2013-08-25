@@ -195,7 +195,6 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
     addgroup.$save(function(response) { 
             var result = response;
             $scope.usertoadd.data = {"users": [], "group_id":$scope.test};
-            $scope.get_group();
             if (result.status === 'success') {
               $scope.waiting = "Error";
               $scope.heading = "Success!";
@@ -226,7 +225,6 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
           passfounder.$save(function(response) { 
                   var result = response;
                   $scope.usertoremove = {};
-                  $scope.get_group();
                   $scope.waiting = "Error";
                   $scope.heading = "Success!";
                   $scope.message = result.message;
@@ -272,7 +270,6 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
     removegroup.$save(function(response) { 
             var result = response;
             $scope.usertoremove = {};
-            $scope.get_group();
             if (result.status === 'success') {
               $scope.waiting = "Error";
               $scope.heading = "Success!";
@@ -370,6 +367,7 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
       $scope.heading = "";
       $scope.message = "";
       $scope.submessage = "";
+      $scope.get_group();
     }
   }
   
