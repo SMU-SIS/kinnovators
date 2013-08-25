@@ -26,7 +26,7 @@ class Notification(db.Model):
   notification_type = db.StringProperty() #Type of Notification
   other_user = db.IntegerProperty() #The other User involved in the Notification (if applicable)
   # other_info = db.StringProperty()
-  relevant_id = db.IntegerProperty() #Relevant information for the Notificaiton
+  relevant_id = db.IntegerProperty() #Relevant information for the Notification
   message = db.StringProperty() #Notification message
 
   def to_dict(self):
