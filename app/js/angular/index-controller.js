@@ -22,6 +22,7 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
 
   $scope.search = "";
   $scope.notify = "You have no new notification(s).";
+  $scope.notify_icon = "icon-list-alt";
   
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
@@ -57,19 +58,28 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
   $scope.setData = function(fileData) {
     $scope.fileData = fileData;
   }
+  
   $scope.get_notification = function() {
-    $scope.NotificationResource = $resource('http://:remote_url/get/notification/:limit',
-    {"remote_url":$scope.remote_url,"limit":3}, 
+    $scope.AllNotificationResource = $resource('http://:remote_url/get/notification',
+    {"remote_url":$scope.remote_url}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
-    $scope.NotificationResource.get(function(response) { 
-        $scope.smallnotifications = response;
-        if ($scope.smallnotifications.entities !== undefined) {
-          if ($scope.smallnotifications.entities.length > 0) {
-            $scope.notify = "You have pending notification(s).";
+    $scope.waiting = "Loading";   
+    $scope.AllNotificationResource.get(function(response) { 
+        $scope.notifications = response;
+        if ($scope.notifications.entities !== undefined) {
+          if ($scope.notifications.entities.length > 0) {
+            $scope.notify_icon = "icon-list-alt";
+            for (var i = 0; i < $scope.notifications.entities.length; i++) {
+              if ($scope.notifications.entities[i].n_type === 'GROUPINVITE') {
+                $scope.notify = "You have notification(s) that require your attention.";
+                $scope.notify_icon = "icon-list-alt icon-white";
+                break;
+              }
+            }
           }
         }
      });  
-  };  
+  }  
 
   
   $scope.accept = {};

@@ -254,13 +254,15 @@
             <li class="dropdown"  ui-if="User.u_login">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="{{notify}}">
 <!--                 <b class="caret"></b> -->
-                <i class="icon-list-alt icon-white"></i>
+                <i ng-class="notify_icon"></i>
               </a>
               <ul class="dropdown-menu">
                 <li>
-                  <a ui-if="!smallnotifications.entities.length"><span>You have no new notifications.</span></a>
-                  <table class="table table-striped" ui-if="!!smallnotifications.entities.length">
-                    <tr ng-repeat="notification in smallnotifications.entities">
+                  <a ui-if="!notifications.entities.length">
+                  <span>You have no new notifications.</span>
+                  </a>
+                  <table class="table table-striped" ui-if="!!notifications.entities.length">
+                    <tr ng-repeat="notification in notifications.entities |  limitTo:3">
                       <td>
                         <span>{{notification.n_date}}</span>
                       </td>

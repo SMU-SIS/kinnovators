@@ -22,6 +22,7 @@ function NotificationsController($scope,$resource,sharedProperties, sharedFuncti
 
   $scope.search = "";
   $scope.notify = "You have no new notification(s).";
+  $scope.notify_icon = "icon-list-alt";
   
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
@@ -100,7 +101,14 @@ function NotificationsController($scope,$resource,sharedProperties, sharedFuncti
         $scope.notifications = response;
         if ($scope.notifications.entities !== undefined) {
           if ($scope.notifications.entities.length > 0) {
-            $scope.notify = "You have pending notification(s).";
+            $scope.notify_icon = "icon-list-alt";
+            for (var i = 0; i < $scope.notifications.entities.length; i++) {
+              if ($scope.notifications.entities[i].n_type === 'GROUPINVITE') {
+                $scope.notify = "You have notification(s) that require your attention.";
+                $scope.notify_icon = "icon-list-alt icon-white";
+                break;
+              }
+            }
           }
         }
         $scope.waiting = "Ready";
