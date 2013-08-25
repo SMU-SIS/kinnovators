@@ -234,7 +234,7 @@ function ProfileController($scope,$resource,sharedProperties, sharedFunctions){
     $scope.GroupListResource = $resource('http://:remote_url/list/group',
              {"remote_url":$scope.remote_url}, 
              {'save': {method: 'POST', params:{} }});
-    $scope.waiting = "Saving";
+    $scope.waiting = "Loading";  
     var groupmeta = new $scope.GroupListResource($scope.groupmeta.data);
     groupmeta.$save(function(response) {
         $scope.groups = response;

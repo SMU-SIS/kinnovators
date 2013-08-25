@@ -144,7 +144,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result) 
      
     #Handler for creating a Group     
-    def add_group(self):
+    def add_group(self): #/add/group
         if self.request.method=="POST":
           result = Group.add(self.request.body)
           return self.respond(result)
@@ -156,13 +156,13 @@ class ActionHandler(webapp2.RequestHandler):
           return self.respond(result)
 
     #Handler for getting a Group         
-    def get_group(self):
+    def get_group(self): #/get/group
 
         result = Group.get_entity(self.request.body)
         return self.respond(result) 
 
     #Handler for getting Groups for a particular User
-    def user_group(self):
+    def user_group(self): #/list/group
 
         offset = 0
         new_offset = self.request.get("offset")
@@ -173,7 +173,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)
 
     #Handler for getting Users in a particular Group       
-    def check_user_group(self):
+    def check_user_group(self):  #/listuser/group
       result = {'status':'error',
                 'message':''}
       entities = UserGroupMgmt.check_users(self.request.body)
@@ -182,20 +182,10 @@ class ActionHandler(webapp2.RequestHandler):
                 'en_type': 'User',
                 'entities': entities}
       return self.respond(result)
-        
-    #Handler for getting Sketches/Users by app version
-    def get_versions(self):
 
-        offset = 0
-        new_offset = self.request.get("offset")
-        if new_offset:
-          offset = int(new_offset)
-
-        result = AppVersionCount.retrieve_by_version()
-        return self.respond(result)
         
     #Handler for inviting a User to a Group        
-    def add_user_group(self):
+    def add_user_group(self):  #/adduser/group
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'There was an error in sending the invite.',
@@ -206,7 +196,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)
         
     #Handler for removing a User/quitting from a Group                
-    def remove_user_group(self):
+    def remove_user_group(self):  #/removeuser/group
         auser = self.auth.get_user_by_session() 
         if auser:
           userid = auser['user_id']
@@ -214,7 +204,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)   
         
     #Handler for passing ownership of a Group to another User        
-    def pass_founder_group(self):
+    def pass_founder_group(self):  #/passfounder/group
         auser = self.auth.get_user_by_session() 
         if auser:
           userid = auser['user_id']
@@ -222,7 +212,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)        
         
     #Handler for accepting/rejecting a Group invite               
-    def accept_reject_group(self):
+    def accept_reject_group(self):  #/acceptreject/group
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'Not authenticated.'}
@@ -232,7 +222,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result) 
         
     #Handler for deleting a Group        
-    def delete_group(self):
+    def delete_group(self):  #/delete/group
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'Not authenticated.'}
@@ -242,7 +232,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)      
         
     #Handler for getting latest Notifications
-    def get_notification(self, limit):
+    def get_notification(self, limit):  #/get/notification/<limit>
         auser = self.auth.get_user_by_session()
         result = {}
         if auser:
@@ -251,7 +241,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)
         
     #Handler for getting all Notifications
-    def get_all_notification(self):
+    def get_all_notification(self):  #/get/notification
         auser = self.auth.get_user_by_session()
         result = {}
         if auser:
@@ -260,7 +250,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)        
           
     #Handler for adding a Comment to a Sketch
-    def add_comment(self):
+    def add_comment(self):  #/add/comment
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'There was an error in adding the comment.',
@@ -277,7 +267,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)        
         
     #Handler for getting Comments for a Sketch               
-    def get_comment(self):
+    def get_comment(self):  #/get/comment
         auser = self.auth.get_user_by_session()
         if auser:
           userid = auser['user_id']
@@ -285,7 +275,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result) 
           
     #Handler for Liking/Unliking a Sketch                  
-    def toggle_like(self):
+    def toggle_like(self):  #/toggle/like
         auser = self.auth.get_user_by_session()
         result = {'status':'error',
               'message':'There was an error in liking/unliking the sketch.',
@@ -302,7 +292,7 @@ class ActionHandler(webapp2.RequestHandler):
         return self.respond(result)        
         
     #Handler for getting Likes for a sketch                
-    def get_like(self):
+    def get_like(self):  #/get/like
         
         auser = self.auth.get_user_by_session()
         if auser:
@@ -310,7 +300,18 @@ class ActionHandler(webapp2.RequestHandler):
           result = Like.get_entities_by_id_handler_wrapper(self.request.body, userid)
         else:
           result = Like.get_entities_by_id_handler_wrapper(self.request.body, 0)
-        return self.respond(result)    
+        return self.respond(result)            
+        
+    #Handler for getting Sketches/Users by app version
+    def get_versions(self):  #/list/version
+
+        offset = 0
+        new_offset = self.request.get("offset")
+        if new_offset:
+          offset = int(new_offset)
+
+        result = AppVersionCount.retrieve_by_version()
+        return self.respond(result)
    
 #Configuration and URI mapping
 webapp2_config = {}

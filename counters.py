@@ -138,7 +138,7 @@ class AppVersionCount(db.Model):
             'sketch_count': object.sketch_count,
             'original_count': object.original_count}
             
-      appuser_query = AppUserCount.all().filter('app_version', float(object.app_version)).get()
+      appuser_query = AppUserCount.get_counter(float(object.app_version))
       if appuser_query:
         entity['user_count'] = int(appuser_query.user_count)
       total_user_count += appuser_query.user_count
@@ -159,6 +159,33 @@ class AppVersionCount(db.Model):
               'entities': entities,
               'total': total}  
     return result
+        
+#Counter increment for Users for a particular App version
+class AppUserCount(db.Model):
+  app_version = db.FloatProperty()
+  user_count = db.IntegerProperty()
+  
+
+  def to_dict(self):
+       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
+       d["id"] = self.key().id()
+       return d  
+          #Gets counter
+  @staticmethod
+  def get_counter(appver = 1.0):
+    return AppUserCount.all().filter('app_version', appver).get()
+  
+  #Increments counter before retrieving it
+  @staticmethod
+  def get_and_increment_counter(appver = 1.0):
+    appUserCount = AppUserCount.all().filter('app_version', appver).get()
+    if appUserCount:
+      appUserCount.user_count += 1
+      appUserCount.put()
+    else:
+      appUserCount = AppUserCount(app_version=appver,user_count = 1)
+      appUserCount.put()
+    return appUserCount
     
 #Imports placed below to avoid circular imports
-from rpx import AppUserCount, UTC
+from rpx import UTC

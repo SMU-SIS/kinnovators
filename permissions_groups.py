@@ -176,38 +176,36 @@ class Sketch_Groups(db.Model):
   #Gets Groups that are linked to a Sketch
   @staticmethod
   def get_groups_for_sketch(sketch_id=0):
-    theQuery = Sketch_Groups.all()
+    theQuery = Sketch_Groups.all().filter('sketch_id', sketch_id)
     objects = theQuery.run()
     
     entities = []
     for object in objects:
-      if object.sketch_id == sketch_id:
-        data = {'group_name': Group.get_name(object.group_id)}
-        entity = {'object_id': object.key().id(),
-                  'sketch_id': object.sketch_id,
-                  'id': object.group_id,
-                  'data':data,
-                  'edit': object.edit,
-                  'comment':object.comment}
-        entities.append(entity)
+      data = {'group_name': Group.get_name(object.group_id)}
+      entity = {'object_id': object.key().id(),
+                'sketch_id': object.sketch_id,
+                'id': object.group_id,
+                'data':data,
+                'edit': object.edit,
+                'comment':object.comment}
+      entities.append(entity)
     return entities    
   
   #Gets Sketches for a particular Group
   @staticmethod
   def get_sketches_for_group(group_id=0):
-    theQuery = Sketch_Groups.all()
+    theQuery = Sketch_Groups.all().filter('group_id', group_id)
     objects = theQuery.run()
     
     entities = []
     for object in objects:
-      if object.group_id == group_id:
-        data = {'id': object.key().id(),
-                'sketch_id': object.sketch_id,
-                'group_id': object.group_id,
-                'group_name': Group.get_name(object.group_id),
-                'edit': object.edit,
-                'comment':object.comment}
-        entities.append(data)
+      data = {'id': object.key().id(),
+              'sketch_id': object.sketch_id,
+              'group_id': object.group_id,
+              'group_name': Group.get_name(object.group_id),
+              'edit': object.edit,
+              'comment':object.comment}
+      entities.append(data)
     return entities
   
   #Deletes Sketch_Groups by Sketch. Called when a Sketch is deleted.

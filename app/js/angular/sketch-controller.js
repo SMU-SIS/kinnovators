@@ -13,6 +13,12 @@ function SketchController($scope,$resource,sharedProperties,sharedFunctions){
 
   $scope.search = "";
   $scope.showdetails = false;
+
+  $scope.editor_location = "swf/v2/KSketch2_Web.swf";
+  $scope.get_editor = function() {
+    return $scope.editor_location;
+  }
+  
   
   //Date (Time Zone) Format
   $scope.tzformat = function(utc_date) {
@@ -220,7 +226,7 @@ function SketchController($scope,$resource,sharedProperties,sharedFunctions){
       $scope.GroupListResource = $resource('http://:remote_url/list/group',
                {"remote_url":$scope.remote_url}, 
                {'save': {method: 'POST', params:{} }});
-      $scope.waiting = "Saving";
+      $scope.waiting = "Loading";  
       var groupmeta = new $scope.GroupListResource($scope.groupmeta.data);
       groupmeta.$save(function(response) {
           $scope.groups = response;
@@ -277,8 +283,19 @@ function SketchController($scope,$resource,sharedProperties,sharedFunctions){
     $scope.waiting = "Loading";      
     var sketchmeta = new $scope.SketchResource($scope.sketchmeta.data);
     sketchmeta.$save(function(response) {
-        var check = response.success
-        if (check !== "Error" || check !== "Forbidden") {
+        var check = response.status
+        if (check === "Forbidden") {
+          $scope.waiting = "Error";
+          $scope.heading = "Access Denied";
+          $scope.message = "You have not been granted permission to edit this sketch.";
+          $scope.leave = true;
+        } else if (check === "Error") {
+          $scope.waiting = "Error";
+          $scope.heading = "Oops...!";
+          $scope.message = "We're sorry, but the sketch you wanted does not exist.";
+          $scope.submessage = "Perhaps the URL that you entered was broken?";
+          $scope.leave = true;
+        } else {
           var rsketch = response.data;
           $scope.setMeta(rsketch.sketchId, rsketch.version, rsketch.owner, rsketch.owner_id, rsketch.fileName);
           $scope.setPermissions(rsketch.p_public.p_view, rsketch.p_public.p_edit, rsketch.p_public.p_comment, rsketch.groups);
@@ -301,21 +318,7 @@ function SketchController($scope,$resource,sharedProperties,sharedFunctions){
             $scope.waiting = "Ready";
           } 
         }
-        else {
-          if (check === "Forbidden") {
-            $scope.waiting = "Error";
-            $scope.heading = "Access Denied";
-            $scope.message = "You have not been granted permission to view this sketch.";
-            $scope.leave = true;
-          } else {
-            $scope.waiting = "Error";
-            $scope.heading = "Oops...!";
-            $scope.message = "We're sorry, but the sketch you wanted does not exist.";
-            $scope.submessage = "Perhaps the URL that you entered was broken?";
-            $scope.leave = true;
-          }
-        }
-      });  
+    });  
   }
   
   $scope.acknowledge = function() {

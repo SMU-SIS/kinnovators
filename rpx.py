@@ -181,7 +181,8 @@ class User(db.Model):
                   'u_name': user.display_name,
                   'u_realname': user.real_name,
                   'g_hash': g_hash,
-                  'u_isadmin': user.is_admin}
+                  'u_isadmin': user.is_admin,
+                  'u_isactive': user.is_active}
     else:
       result['message'] = "Unable to retrieve selected user."
     return result
@@ -344,18 +345,6 @@ class User(db.Model):
               'submessage': 'Only the original user or an administrator may do so.'}
               
     return result
-    
-#Counter increment for Users for a particular App version
-class AppUserCount(db.Model):
-  app_version = db.FloatProperty()
-  user_count = db.IntegerProperty()
-  
-
-  def to_dict(self):
-       d = dict([(p, unicode(getattr(self, p))) for p in self.properties()])
-       d["id"] = self.key().id()
-       return d  
-        
 
 #Basic URI Handler for auth
 class BaseHandler(webapp2.RequestHandler):
@@ -437,13 +426,7 @@ class RPXTokenHandler(BaseHandler):
               logging.info('New user created in the DS')
               
               #update AppUserCount when adding
-              appUserCount = AppUserCount.all().filter('app_version', appver).get()
-              if appUserCount:
-                appUserCount.user_count += 1
-                appUserCount.put()
-              else:
-                appUserCount = AppUserCount(app_version=appver,user_count = 1)
-                appUserCount.put()   
+              AppUserCount.get_and_increment_counter(appver)
             
             userid = user.get_id()
             if not user.logincount:
@@ -610,3 +593,6 @@ application = webapp2.WSGIApplication([
     webapp2.Route('/user/janrain', handler=RPXTokenHandler)],
     config=webapp2_config,
     debug=True)
+    
+#Imports placed below to avoid circular imports
+from counters import AppUserCount

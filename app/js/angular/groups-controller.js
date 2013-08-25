@@ -78,7 +78,10 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
   }
     
   $scope.groupmeta = {};
-  $scope.groupmeta.data = {'id':$scope.test, 'criteria': ""};
+  $scope.groupmeta.data = {'id':$scope.test,
+                          'criteria': "",
+                          'limit': 5,
+                          'offset': 0};
   
   $scope.setTest = function(test) {
     $scope.test = test;
@@ -313,8 +316,31 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
       });
     }
   }
+      
+  $scope.group_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
+  
+  $scope.more_sketch = function() {
+    $scope.group_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
+    $scope.list();
+  }
+  
+  $scope.paginate_back = function() {
+    
+  }
+  
+  $scope.paginate_forward = function() {
+    if ($scope.group_pagination.next_offset > 
+        $scope.group_pagination.offset) {
+      $scope.group_pagination.offset = $scope.group_pagination.next_offset;
+      $scope.list();
+    }
+  }
   
   $scope.list = function(){
+    $scope.groupmeta.data = {'id':$scope.test,
+                            'criteria': "",
+                            'limit': $scope.group_pagination.limit,
+                            'offset': $scope.group_pagination.offset};
     $scope.ListResource = $resource('http://:remote_url/list/sketch/group',
              {"remote_url":$scope.remote_url}, 
              {'save': {method: 'POST', params:{} }});
@@ -322,6 +348,7 @@ function GroupsController($scope,$resource,sharedProperties, sharedFunctions){
     var listmeta = new $scope.ListResource($scope.groupmeta.data);
     listmeta.$save(function(response) {
         $scope.items = response;
+        $scope.group_pagination.next_offset = $scope.items.next_offset;
         $scope.waiting = "Ready";
      });  
   };

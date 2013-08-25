@@ -108,6 +108,15 @@
         }
       
       }
+      
+      function get_location() {
+        e = document.getElementById('testdiv');
+        scope = angular.element(e).scope();
+        scope.$apply(function() {
+            return scope.get_player();
+        });
+      }
+      
       //Function receives an xml string from anywhere
       //and asks the flash object to load it	
       function loadKSketchFile(fileData) {
@@ -125,41 +134,14 @@
         }
         else
         {
-          bootbox.alert('the swf object does not exist! Unable to save');
+          bootbox.alert('The player does not exist! Unable to open the Sketch.');
         }	
       }
     </script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
     
-    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
-    
-    <script type="text/javascript">
-      // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
-      //var swfVersionStr = "11.1.0";
-      var swfVersionStr = "10.2.0";
-      // To use express install, set to playerProductInstall.swf, otherwise the empty string. 
-      var xiSwfUrlStr = "swf/playerProductInstall.swf";
-      var flashvars = {};
-      var params = {};
-      params.quality = "high";
-      params.bgcolor = "#ffffff";
-      params.allowScriptAccess = "sameDomain";
-      params.allowfullscreen = "true";
-      var attributes = {};
-      attributes.id = "KSketch_Player";
-      attributes.name = "KSketch_Player";
-      attributes.align = "middle";
-      swfobject.embedSWF(
-        "swf/v1/KSketch2_Web.swf", "flashContent", 
-        "100%", "406", 
-        swfVersionStr, xiSwfUrlStr, 
-        flashvars, params, attributes);
-      // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
-      swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
-    </script>
-    
-    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+
     
     <script src="https://apis.google.com/js/client.js?onload=OnLoadCallback"></script>
     
@@ -210,13 +192,19 @@
     <!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
-        <div class="container-fluid" ng-cloak>
+        <div class="container-fluid" ng-show="waiting=='Ready'" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link">
+                <span id="heading">
+                  Hello, {{User.u_name}}
+                  <span ui-if="User.u_isadmin"> (Admin)</span>
+                  !
+                </span>
+              </a>
               <a ng-hide="User.u_login" ng-cloak id="heading" disabled>Hello, {{User.u_name}}!</a>
             </li>          
             <li ng-hide="User.u_login" ng-cloak>
@@ -333,13 +321,13 @@
                     </div>
                     <noscript>
                       <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="100%" height="406" id="KSketch_Player">
-                        <param name="movie" value="swf/v1/KSketch2_Web.swf"" />
+                        <param name="movie" value="{{get_player()}}" />
                         <param name="quality" value="high" />
                         <param name="bgcolor" value="#ffffff" />
                         <param name="allowScriptAccess" value="always" />
                         <param name="allowFullScreen" value="true" />
                         <!--[if !IE]>-->
-                        <object type="application/x-shockwave-flash" width="100%" height="406" data="swf/v1/KSketch2_Web.swf"">
+                        <object type="application/x-shockwave-flash" width="100%" height="406" data="{{get_player()}}" >
                           <param name="quality" value="high" />
                           <param name="bgcolor" value="#ffffff" />
                           <param name="allowScriptAccess" value="always" />
@@ -484,8 +472,38 @@
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/jquery/jquery.js"></script>
-    <script src="js/moment/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    
+    <script type="text/javascript">
+      //var player_location = get_location();
+      var player_location = "swf/v1/KSketch2_Web.swf";
+      // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
+      //var swfVersionStr = "11.1.0";
+      var swfVersionStr = "10.2.0";
+      // To use express install, set to playerProductInstall.swf, otherwise the empty string. 
+      var xiSwfUrlStr = "swf/playerProductInstall.swf";
+      var flashvars = {};
+      var params = {};
+      params.quality = "high";
+      params.bgcolor = "#ffffff";
+      params.allowScriptAccess = "sameDomain";
+      params.allowfullscreen = "true";
+      var attributes = {};
+      attributes.id = "KSketch_Player";
+      attributes.name = "KSketch_Player";
+      attributes.align = "middle";
+      swfobject.embedSWF(
+        player_location, "flashContent", 
+        "100%", "406", 
+        swfVersionStr, xiSwfUrlStr, 
+        flashvars, params, attributes);
+      // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
+      swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
+    </script>
+    
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    <script src="js/moment/moment.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
     <script src="js/angular/view-controller.js"></script>

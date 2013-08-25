@@ -449,10 +449,13 @@ class Sketch(db.Model):
     result = {}
     jsonData = json.loads(data)
     groupId = long(jsonData['id'])
+    limit = long(jsonData['limit'])
+    offset = long(jsonData['offset'])
     group_sketches = Sketch_Groups.get_sketches_for_group(long(groupId))
     entities = []
     count = 0
-    for g_s in group_sketches:
+    next_offset = 0
+    for g_s in group_sketches[offset:]:
       sketch_id = long(g_s['sketch_id'])
       permissions = Permissions.user_access_control(sketch_id, userid)
       
@@ -479,15 +482,24 @@ class Sketch(db.Model):
                   'like': Like.get_entities_by_id(theobject.sketchId, 0)['count'],
                   'comment': Comment.get_entities_by_id(theobject.sketchId)['count']}
                 
-      entity = {'id': theobject.key().id(),
-            'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
-            'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
-            'data': data}
-      entities.append(entity)
-      count += 1
+        entity = {'id': theobject.key().id(),
+              'created': theobject.created.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"),
+              'modified': theobject.modified.replace(tzinfo=utc).strftime("%d %b %Y %H:%M:%S"), 
+              'data': data}
+        entities.append(entity)
+        count += 1
+        
+      if count >= limit:
+        next = group_sketches.index(g_s) + 1
+        if next < len(group_sketches):
+          next_offset = group_sketches.index(g_s) + 1
+        break
     result = {'method':'get_entity_by_group',
               'en_type': "Sketch",
               'count': count,
+              'limit': limit,
+              'offset': offset,
+              'next_offset': next_offset,
               'entities': entities}
     return result
   

@@ -109,6 +109,14 @@
         }        
       
       }
+            
+      function get_location() {
+        e = document.getElementById('testdiv');
+        scope = angular.element(e).scope();
+        scope.$apply(function() {
+            return scope.get_editor();
+        });
+      }
       
       function initSave() {
         var swfObject = document.getElementById('KSketch2_Web');
@@ -175,36 +183,7 @@
     </script>
     
     <!-- SWF Save/Load JS Code Go HERE! This was originally taken from "KSketchCallBacks.js". -->
-    
-    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
-    
-    <script type="text/javascript">
-      // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
-      //var swfVersionStr = "11.1.0";
-      var swfVersionStr = "10.2.0";
-      // To use express install, set to playerProductInstall.swf, otherwise the empty string. 
-      var xiSwfUrlStr = "swf/playerProductInstall.swf";
-      var flashvars = {};
-      var params = {};
-      params.quality = "high";
-      params.bgcolor = "#ffffff";
-      params.allowscriptaccess = "sameDomain";
-      params.allowfullscreen = "true";
-      var attributes = {};
-      attributes.id = "KSketch2_Web";
-      attributes.name = "KSketch2_Web";
-      attributes.align = "middle";
-      swfobject.embedSWF(
-        "swf/v2/KSketch2_Web.swf", "flashContent", 
-        "100%", "580", 
-        swfVersionStr, xiSwfUrlStr, 
-        flashvars, params, attributes);
-      // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
-      swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
-    </script>
-    
-    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
-    
+
     <script src="https://apis.google.com/js/client.js?onload=OnLoadCallback"></script>
     
     
@@ -251,13 +230,19 @@
     <!-- Top Bar -->
     <div id="topbar" class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
-        <div class="container-fluid" ng-cloak>
+        <div class="container-fluid" ng-show="waiting=='Ready'" ng-cloak>
           <!-- a class="brand" id="logo" href="#"><img style="height:36px" src="ico/KSketch-logo.png"></a -->
           <a class="brand" id="logo" href=" index.html">K-Sketch</a>
           <ul class="nav" ng-cloak>
             <li>
               <!--Username and profile link goes here.-->
-              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link"><span id="heading">Hello, {{User.u_name}}!</span></a>
+              <a ng-show="User.u_login" ng-cloak href="profile.html?id={{User.id}}" class="navbar-link">
+                <span id="heading">
+                  Hello, {{User.u_name}}
+                  <span ui-if="User.u_isadmin"> (Admin)</span>
+                  !
+                </span>
+              </a>
               <a ng-hide="User.u_login" ng-cloak id="heading" disabled>Hello, {{User.u_name}}!</a>
             </li>          
             <li ng-hide="User.u_login" ng-cloak>
@@ -627,8 +612,41 @@
 ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="js/jquery/jquery.js"></script>
-    <script src="js/moment/moment.min.js"></script>
     <script src="lib/angular/angular.min.js"></script>
+    
+        
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    
+    <script type="text/javascript">
+      //var player_location = get_location();
+      var editor_location = "swf/v2/KSketch2_Web.swf";
+      // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. 
+      //var swfVersionStr = "11.1.0";
+      var swfVersionStr = "10.2.0";
+      // To use express install, set to playerProductInstall.swf, otherwise the empty string. 
+      var xiSwfUrlStr = "swf/playerProductInstall.swf";
+      var flashvars = {};
+      var params = {};
+      params.quality = "high";
+      params.bgcolor = "#ffffff";
+      params.allowscriptaccess = "sameDomain";
+      params.allowfullscreen = "true";
+      var attributes = {};
+      attributes.id = "KSketch2_Web";
+      attributes.name = "KSketch2_Web";
+      attributes.align = "middle";
+      swfobject.embedSWF(
+        editor_location, "flashContent", 
+        "100%", "580", 
+        swfVersionStr, xiSwfUrlStr, 
+        flashvars, params, attributes);
+      // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
+      swfobject.createCSS("#flashContent", "display:block;text-align:left;border:1px solid black;padding:1px");
+    </script>
+    
+    <!-- JS code for SWF plugin. DO NOT REMOVE. -->
+    
+    <script src="js/moment/moment.min.js"></script>
     <script src="lib/angular/angular-ui.min.js"></script>
     <script src="lib/angular/angular-resource.min.js"></script>
     <script src="js/angular/sketch-controller.js"></script>

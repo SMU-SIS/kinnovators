@@ -14,6 +14,11 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
   $scope.search = "";
   $scope.showdetails = false;
   
+  $scope.player_location = "swf/v2/KSketch2_Web.swf";
+  $scope.get_player = function() {
+    return $scope.player_location;
+  }
+  
   //Date (Time Zone) Format
   $scope.tzformat = function(utc_date) {
   
@@ -97,8 +102,7 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
 /*
 	General Add/List (pass "model" to m_type)
 */
-  
-  
+ 
   $scope.get_sketch = function() {
     $scope.sketchmeta = {};
     $scope.sketchmeta.data = {'id':$scope.test, 'version':$scope.version};
@@ -109,7 +113,18 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
     var sketchmeta = new $scope.SketchResource($scope.sketchmeta.data);
     sketchmeta.$save(function(response) {
         var check = response.status;
-        if (check !== "Error" || check !== "Forbidden") {
+        if (check === "Forbidden") {
+          $scope.waiting = "Error";
+          $scope.heading = "Access Denied";
+          $scope.message = "You have not been granted permission to view this sketch.";
+          $scope.leave = true;
+        } else if (check === "Error")  {
+          $scope.waiting = "Error";
+          $scope.heading = "Oops...!";
+          $scope.message = "We're sorry, but the sketch you wanted does not exist.";
+          $scope.submessage = "Perhaps the URL that you entered was broken?";
+          $scope.leave = true;
+        } else {
           $scope.item = response;
           $scope.fileData = $scope.item.data.fileData;
           $scope.sketchModelId = $scope.item.id;
@@ -123,20 +138,6 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
             $scope.submessage = "The latest existing version has been loaded instead.";            
           } else {
             $scope.waiting = "Ready";
-          }
-        }
-        else {
-          if (check === "Forbidden") {
-            $scope.waiting = "Error";
-            $scope.heading = "Access Denied";
-            $scope.message = "You have not been granted permission to view this sketch.";
-            $scope.leave = true;
-          } else {
-            $scope.waiting = "Error";
-            $scope.heading = "Oops...!";
-            $scope.message = "We're sorry, but the sketch you wanted does not exist.";
-            $scope.submessage = "Perhaps the URL that you entered was broken?";
-            $scope.leave = true;
           }
         }
       });  
