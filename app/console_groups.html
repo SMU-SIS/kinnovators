@@ -248,9 +248,10 @@
                               </select>
                             </td>
                             <td>
+                              Group Leader: {{group_leader.u_name}}
                             </td>
                           </tr>
-                          <tr ui-if="!!verify">
+                          <tr ui-if="!!verify()">
                             <td>
                               <input type="submit" class="button btn-success btn-large" value="Submit"/>
                               <input type="submit" class="button btn-inverse btn-large"  value="Cancel"/>

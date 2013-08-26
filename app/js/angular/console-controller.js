@@ -186,10 +186,14 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
   }  
   
   $scope.groupedusers = [];
-  //$scope.group_leader = "";
+  $scope.group_leader = {'u_name':"", 'id':0};
   
   $scope.verify = function() {
-    return ($scope.group_leader.id > 0);
+    if ($scope.group_leader.id > 0 && $scope.new_group.replace(/^\s+|\s+$/g,'') !== "") {
+      return true;
+    } else {
+      return false;
+    }
   }
   
   $scope.adduser = function(user) {
@@ -205,6 +209,12 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
       $scope.allusersfound.entities.push(user);
       var index=$scope.groupedusers.indexOf(user);
       $scope.groupedusers.splice(index,1); 
+    }
+  }
+  
+  $scope.create_group = function (){
+    if ($scope.verify() === true) {
+      
     }
   }
   
@@ -234,7 +244,7 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
   }
 
   
-  $scope.console_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
+  $scope.console_pagination = {"limit":0, "offset":0, "prev_offset":0, "next_offset":0};
   
   $scope.more_sketch = function() {
     $scope.console_pagination = {"limit":5, "offset":0, "prev_offset":0, "next_offset":0};
@@ -256,7 +266,7 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
   $scope.list = function(){
     $scope.listmeta = {};
     $scope.listmeta.data = {'id':$scope.selecteduserdata.id,
-                            'show':"all",
+                            'show':"latest",
                             "limit":$scope.console_pagination.limit,
                             "offset":$scope.console_pagination.offset};
     $scope.ListResource = $resource('http://:remote_url/list/sketch/user',

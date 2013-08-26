@@ -161,7 +161,8 @@
               
               
               <li id="sc" ng-show="User.u_login" ng-cloak><a href="console_versions.html">Manage Versions</a></li>
-              <li id="cs" ng-show="User.u_login" ng-cloak><a href="console_groups.html">Manage Groups</a></li>
+              <!-- <li id="cs" ng-show="User.u_login" ng-cloak><a href="console_groups.html">Manage Groups</a></li> -->
+              <li id="cs" ng-show="User.u_login" ng-cloak class="disabled"><a>Manage Groups</a></li>
               <li class="active" id="vs" ng-show="User.u_login" ng-cloak><a>Manage Users</a></li>
             </ul>
           </div><!--/.well -->
@@ -312,9 +313,9 @@
                     <div class="span6">
                       <h4>{{selecteduserdata.u_name}}'s Sketches</h4>
                     </div>
-                    <div class="span6">
+                    <!-- <div class="span6">
                       <button class="btn btn-info" style="float:right" ui-if="console_pagination.next_offset != 0" ng-click="paginate_forward()" ng-cloak>More Results</button>
-                    </div>                    
+                    </div>  -->                   
                   </div>
                   <div class="row-fluid">
                     <div ui-if="!items.entities.length" ng-cloak>
@@ -339,6 +340,7 @@
                         </a>
                       </th>
                       <th>Description</th>
+                      <th>Likes/Comments</th>
                       <th>
                         <a href="" ng-click="predicate_users = 'created'; reverse=!reverse">Created
                         </a>
@@ -377,6 +379,11 @@
                         <td ui-if="files.data.changeDescription.length <= 50" ng-cloak>
                           {{files.data.changeDescription}}
                         </td>
+                        <td>
+                          <span class="label">Likes: {{files.data.like}}</span>
+                          <br>
+                          <span class="label">Comments: {{files.data.comment}}</span>
+                        </td>
                         <td>{{tzformat(files.created)}}</td>
                         <td>{{files.data.appver.toFixed(1)}}</td>
                         <td>
@@ -389,7 +396,7 @@
                     </tbody>
                   </table>
                   <hr/>
-                  <button class="btn btn-info" style="float:right" ui-if="console_pagination.next_offset != 0" ng-click="paginate_forward()" ng-cloak>More Results</button>
+                  <!-- <button class="btn btn-info" style="float:right" ui-if="console_pagination.next_offset != 0" ng-click="paginate_forward()" ng-cloak>More Results</button> -->
                 </div>
               </div>
             </div>

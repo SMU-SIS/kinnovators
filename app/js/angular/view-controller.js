@@ -14,7 +14,7 @@ function ViewController($scope,$resource,sharedProperties,sharedFunctions){
   $scope.search = "";
   $scope.showdetails = false;
   
-  $scope.player_location = "swf/v2/KSketch2_Web.swf";
+  $scope.player_location = "swf/Player/KSketch_Player.swf";
   $scope.get_player = function() {
     return $scope.player_location;
   }

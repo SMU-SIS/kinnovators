@@ -339,11 +339,12 @@ class Sketch(db.Model):
           entities.append(entity)
           count += 1
             
-        if count >= limit:
-          next = objects.index(object) + 1
-          if next < len(objects):
-            next_offset = objects.index(object) + 1
-          break
+        if limit != 0:
+          if count >= limit:
+            next = objects.index(object) + 1
+            if next < len(objects):
+              next_offset = objects.index(object) + 1
+            break
     
     result = {'method':'get_entities_by_id',
               'en_type': 'Sketch',
