@@ -60,7 +60,7 @@
         if (typeof window.janrain !== 'object') window.janrain = {};
         if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
         
-        janrain.settings.tokenUrl = 'http://k-sketch-test.appspot.com/user/janrain';
+        janrain.settings.tokenUrl = 'http://ksketchweb.appspot.com/user/janrain';
         
         function isReady() { janrain.ready = true; };
         if (document.addEventListener) {
@@ -74,9 +74,9 @@
         e.id = 'janrainAuthWidget';
         
         if (document.location.protocol === 'https:') {
-          e.src = 'https://rpxnow.com/js/lib/k-sketch/engage.js';
+          e.src = 'https://rpxnow.com/js/lib/ksketch/engage.js';
         } else {
-          e.src = 'http://widget-cdn.rpxnow.com/js/lib/k-sketch/engage.js';
+          e.src = 'http://widget-cdn.rpxnow.com/js/lib/ksketch/engage.js';
         }
         
         var s = document.getElementsByTagName('script')[0];
@@ -86,7 +86,7 @@
   </head>
   
   <!-- body id="ksketchapp" ng-controller="LoginController" scrolling="no" -->
-  <body ng-controller="IndexController" id="ksketchapp"  scrolling="no">
+  <body ng-controller="IndexController" id="ksketchapp"  scrolling="no" onunload="debugStop()">
 
     
     <!-- Top Bar -->

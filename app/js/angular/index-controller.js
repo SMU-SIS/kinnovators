@@ -8,7 +8,7 @@ function IndexController($scope,$resource){
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
   
   $scope.backend_locations = [
-    {url : 'k-sketch-test.appspot.com', urlName : 'remote backend' },       
+    {url : 'ksketchweb.appspot.com', urlName : 'remote backend' },       
     {url : 'localhost:8080', urlName : 'localhost' } ];
 
   $scope.showdetails = false;
@@ -24,7 +24,7 @@ function IndexController($scope,$resource){
   
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
-  $scope.remote_url = "k-sketch-test.appspot.com";
+  $scope.remote_url = "ksketchweb.appspot.com";
   $scope.waiting = "Ready";
   
   //resource calls are defined here

@@ -8,3 +8,6 @@
     $routeProvider.when('/view2', {templateUrl: 'partials/partial2.html', controller: SketchController});
     $routeProvider.otherwise({redirectTo: '/view1'});
   }]);*/
+  function debugStop() {
+  	console.log("stop.");
+  }
