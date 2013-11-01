@@ -10,11 +10,7 @@ function ProfileController($scope,$resource,sharedProperties, sharedFunctions){
   $scope.profile_user = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "g_hash": "", 'u_isadmin': false, 'u_isactive': false, 'u_changed': 0};
     
   $scope.backend_locations = [
-<<<<<<< HEAD
-    {url : 'ksketchweb.appspot.com', urlName : 'remote backend' },       
-=======
     {url : sharedProperties.getBackendUrl(), urlName : 'remote backend' },       
->>>>>>> 57f7773d73da6e3f5bb6a146206c037708c7111c
     {url : 'localhost:8080', urlName : 'localhost' } ];
 
   $scope.showdetails = false;

@@ -8,11 +8,7 @@ function ConsoleController($scope,$resource,sharedProperties, sharedFunctions){
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "", 'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
 
   $scope.backend_locations = [
-<<<<<<< HEAD
-    {url : 'ksketchweb.appspot.com', urlName : 'remote backend' },       
-=======
     {url : sharedProperties.getBackendUrl(), urlName : 'remote backend' },       
->>>>>>> 57f7773d73da6e3f5bb6a146206c037708c7111c
     {url : 'localhost:8080', urlName : 'localhost' } ];
 
   $scope.showdetails = false;
