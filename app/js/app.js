@@ -1,6 +1,33 @@
 'use strict';
 
   var myApp = angular.module('myApp', ['ui.directives', 'ngResource']);
+  myApp.service('sharedProperties', function() {
+    //Set variable Reference for Janrain accounr name here!
+    var accountJanrain = 'k-sketch';
+    //Set variable Reference for Backend here!
+    var backendUrl = 'k-sketch-test.appspot.com';
+    
+    return{
+      getJanrainAccount: function() {
+        return accountJanrain;
+      },
+      getBackendUrl: function() {
+        return backendUrl;
+      }
+    };
+  });
+  myApp.factory('sharedFunctions', function($window) {
+    return{
+      simpleSearch: function(search) {
+        if (search.replace(/^\s+|\s+$/g,'') !== "") {
+          var searchUrl = "search.html?query=" + search.replace(/^\s+|\s+$/g,'');
+          window.location.href=searchUrl;
+        }
+        return searchUrl
+      }
+    }
+  });
+
  //var myApp = angular.module('myApp', ['ngResource','ngMockE2E']);
 
   /*myApp.config(['$routeProvider', function($routeProvider) {

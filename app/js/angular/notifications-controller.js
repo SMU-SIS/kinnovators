@@ -3,16 +3,12 @@
 /* Controller for index.html */
 
 //angular.module('app', ['ngResource']);
-function IndexController($scope,$resource,sharedProperties, sharedFunctions){
+function NotificationsController($scope,$resource,sharedProperties, sharedFunctions){
     
 	$scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
   
   $scope.backend_locations = [
-<<<<<<< HEAD
-    {url : 'ksketchweb.appspot.com', urlName : 'remote backend' },       
-=======
     {url : sharedProperties.getBackendUrl(), urlName : 'remote backend' },       
->>>>>>> 57f7773d73da6e3f5bb6a146206c037708c7111c
     {url : 'localhost:8080', urlName : 'localhost' } ];
 
   $scope.showdetails = false;
@@ -30,12 +26,8 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
   
   //Replace this url with your final URL from the SingPath API path. 
   //$scope.remote_url = "localhost:8080";
-<<<<<<< HEAD
-  $scope.remote_url = "ksketchweb.appspot.com";
-=======
   $scope.remote_url = sharedProperties.getBackendUrl();
   $scope.janrain_ref = sharedProperties.getJanrainAccount();
->>>>>>> 57f7773d73da6e3f5bb6a146206c037708c7111c
   $scope.waiting = "Ready";
   
   //resource calls are defined here
@@ -44,7 +36,33 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
                           {},{'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}
                              }
                       );
-                          
+  $scope.getuser = function(){
+    $scope.getusermeta = {};
+    $scope.getusermeta.data = {'id':0};
+    $scope.UserResource = $resource('http://:remote_url/user/getuser',
+                    {"remote_url":$scope.remote_url}, 
+                    {'save': { method: 'POST',    params: {} }});
+ 
+    $scope.waiting = "Loading";     
+    var getusermeta = new $scope.UserResource($scope.getusermeta.data);
+    getusermeta.$save(function(response) {
+          var result = response;
+          $scope.iiii = result.u_login;
+          if (result.u_login === "True" || result.u_login === true) {
+            $scope.User = result;
+            $scope.get_all_notification();             
+          } else {
+            if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
+            {
+              var referLink = document.createElement("a");
+              referLink.href = "index.html";
+              document.body.appendChild(referLink);
+              referLink.click();
+            }
+            else { window.location.replace("index.html");} 
+          }
+    });
+  }                          
   $scope.getuser = function(){
     $scope.UserResource = $resource('http://:remote_url/user/getuser',
                         {'remote_url':$scope.remote_url},
@@ -53,21 +71,28 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
     $scope.waiting = "Loading";     
     $scope.UserResource.get(function(response) {
           var result = response;
+          $scope.iiii = result.u_login;
           if (result.u_login === "True" || result.u_login === true) {
             $scope.User = result;
-            $scope.get_notification();            
+            $scope.get_all_notification();            
           } else {
-            $scope.User = {"id": 0, "u_name" :"Anonymous User",  "u_realname" :"Anonymous User", "u_login": false, "u_email": "", "g_hash": "",  'u_created': "", 'u_lastlogin': "", 'u_logincount': "", 'u_version': 1.0, 'u_isadmin': false, 'u_isactive': false};
+            if (navigator.userAgent.match(/MSIE\s(?!9.0)/))
+            {
+              var referLink = document.createElement("a");
+              referLink.href = "index.html";
+              document.body.appendChild(referLink);
+              referLink.click();
+            }
+            else { window.location.replace("index.html");} 
           }
-          $scope.waiting = "Ready";
     });
   }
   
   $scope.setData = function(fileData) {
     $scope.fileData = fileData;
   }
-  
-  $scope.get_notification = function() {
+
+  $scope.get_all_notification = function() {
     $scope.AllNotificationResource = $resource('http://:remote_url/get/notification',
     {"remote_url":$scope.remote_url}, 
              {'get': {method: 'JSONP', isArray: false, params:{callback: 'JSON_CALLBACK'}}});
@@ -86,8 +111,11 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
             }
           }
         }
+        $scope.waiting = "Ready";
      });  
   }  
+  
+  
 
   
   $scope.accept = {};
@@ -127,7 +155,7 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
               $scope.message = result.message;
               $scope.submessage = result.submessage;
             }                 
-            $scope.get_notification();
+            $scope.get_all_notification();
           }); 
   };
 
@@ -136,8 +164,7 @@ function IndexController($scope,$resource,sharedProperties, sharedFunctions){
     $scope.heading = "";
     $scope.message = "";
     $scope.submessage = "";
-  }
-  
+  }  
   $scope.simpleSearch = function() {
     sharedFunctions.simpleSearch($scope.search);
   }
